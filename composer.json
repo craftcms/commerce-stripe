@@ -1,0 +1,48 @@
+{
+  "name": "craftcms/commerce-stripe",
+  "description": "Stripe integration for Craft Commerce",
+  "version": "1.0.0",
+  "type": "craft-plugin",
+  "keywords": [
+    "stripe",
+    "commerce",
+    "craftcms",
+    "omnipay",
+    "yii2"
+  ],
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Pixel & Tonic",
+      "homepage": "https://pixelandtonic.com/"
+    }
+  ],
+  "support": {
+    "email": "support@craftcms.com",
+    "issues": "https://github.com/craftcms/commerce-stripe/issues?state=open",
+    "source": "https://github.com/craftcms/commerce-stripe",
+    "docs": "https://github.com/craftcms/commerce-stripe",
+    "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
+  },
+  "require": {
+    "craftcms/commerce": "*",
+    "omnipay/stripe": "~2.4"
+  },
+  "autoload": {
+    "psr-4": {
+      "craft\\commerce\\stripe\\": "src/"
+    }
+  },
+  "repositories": [
+    {
+      "type": "composer",
+      "url": "https://asset-packagist.org"
+    }
+  ],
+  "extra": {
+    "name": "Stripe",
+    "handle": "commerce-stripe",
+    "changelogUrl": "https://raw.githubusercontent.com/craftcms/commerce-stripe/master/CHANGELOG.md",
+    "downloadUrl": "https://github.com/craftcms/commerce-stripe/archive/master.zip"
+  }
+}
