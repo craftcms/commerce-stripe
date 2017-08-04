@@ -3,7 +3,7 @@
 namespace craft\commerce\stripe\gateways;
 
 use Craft;
-use craft\commerce\base\CreditCardGateway;
+use craft\commerce\omnipay\base\CreditCardGateway;
 use craft\commerce\stripe\models\StripePaymentForm;
 use Omnipay\Common\AbstractGateway;
 use Omnipay\Omnipay;
