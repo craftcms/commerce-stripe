@@ -2,9 +2,10 @@
 
 namespace craft\commerce\stripe;
 
-use craft\commerce\Plugin as Commerce;
+use craft\commerce\services\Gateways;
 use craft\commerce\stripe\gateways\Stripe;
 use craft\events\RegisterComponentTypesEvent;
+use yii\base\Event;
 
 
 /**
@@ -25,7 +26,7 @@ class Plugin extends \craft\base\Plugin
     {
         parent::init();
 
-        Commerce::getInstance()->getGateways()->on('registerGatewayTypes', function(RegisterComponentTypesEvent $event) {
+        Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES,  function(RegisterComponentTypesEvent $event) {
             $event->types[] = Stripe::class;
         });
     }
