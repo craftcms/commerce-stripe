@@ -5,6 +5,7 @@ namespace craft\commerce\stripe\gateways;
 use Craft;
 use craft\commerce\omnipay\base\CreditCardGateway;
 use craft\commerce\stripe\models\StripePaymentForm;
+use Omnipay\Common\AbstractGateway;
 use Omnipay\Omnipay;
 use Omnipay\Stripe\Gateway;
 
@@ -79,7 +80,7 @@ class Stripe extends CreditCardGateway
     /**
      * @inheritdoc
      */
-    protected function createGateway(): Gateway
+    protected function createGateway(): AbstractGateway
     {
         /** @var Gateway $gateway */
         $gateway = Omnipay::create($this->getGatewayClassName());
