@@ -10,7 +10,6 @@ use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\stripe\models\StripePaymentForm;
 use craft\commerce\stripe\responses\Response;
-use ReflectionProperty;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Error\Card as CardError;
@@ -23,6 +22,8 @@ use yii\base\NotSupportedException;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since     1.0
+ *
+ * TODO Events.
  */
 class Gateway extends BaseGateway
 {
