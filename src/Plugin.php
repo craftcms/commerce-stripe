@@ -3,7 +3,7 @@
 namespace craft\commerce\stripe;
 
 use craft\commerce\services\Gateways;
-use craft\commerce\stripe\gateways\Stripe;
+use craft\commerce\stripe\gateways\Gateway;
 use craft\events\RegisterComponentTypesEvent;
 use yii\base\Event;
 
@@ -27,7 +27,7 @@ class Plugin extends \craft\base\Plugin
         parent::init();
 
         Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES,  function(RegisterComponentTypesEvent $event) {
-            $event->types[] = Stripe::class;
+            $event->types[] = Gateway::class;
         });
     }
 }

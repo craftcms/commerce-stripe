@@ -1,4 +1,4 @@
-{% from "_includes/forms" import textField %}
+{% from "_includes/forms" import textField, lightswitchField %}
 
 {{ textField({
     label: "API Key"|t('commerce'),
@@ -18,4 +18,11 @@
     name: 'publishableKey',
     value: gateway.publishableKey,
     errors: gateway.getErrors('publishableKey')
+}) }}
+
+{{ lightswitchField({
+    label: "Send receipt email?"|t('commerce'),
+    name: 'sendReceiptEmail',
+    on: gateway.sendReceiptEmail,
+    errors: gateway.getErrors('sendReceiptEmail'),
 }) }}

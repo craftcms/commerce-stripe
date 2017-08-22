@@ -8,10 +8,9 @@
 namespace craft\commerce\stripe\migrations;
 
 use Craft;
-use craft\commerce\stripe\gateways\Stripe;
+use craft\commerce\stripe\gateways\Gateway;
 use craft\db\Migration;
 use craft\db\Query;
-use craft\helpers\Json;
 
 /**
  * Installation Migration
@@ -64,7 +63,7 @@ class Install extends Migration
         foreach ($gateways as $gateway) {
 
             $values = [
-                'type' => Stripe::class,
+                'type' => Gateway::class,
             ];
 
             $dbConnection->createCommand()
