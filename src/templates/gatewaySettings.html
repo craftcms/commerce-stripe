@@ -21,6 +21,13 @@
 }) }}
 
 {{ lightswitchField({
+    label: "Enforce 3D Secure if card supports it?"|t('commerce'),
+    name: 'enforce3dSecure',
+    on: gateway.enforce3dSecure,
+    errors: gateway.getErrors('enforce3dSecure'),
+}) }}
+
+{{ lightswitchField({
     label: "Send receipt email?"|t('commerce'),
     name: 'sendReceiptEmail',
     on: gateway.sendReceiptEmail,

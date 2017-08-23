@@ -2,7 +2,7 @@
 
 {% set currentYear = date()|date_modify("+1 year").format('Y') %}
 
-<div id="gateway-{{ gateway.id }}-form" class="stripe-form gateway-form {% if order and order.gatewayId != gateway.id %}hidden{% endif %}" xmlns="http://www.w3.org/1999/html" data-publishablekey="{{ gateway.publishableKey ?? '' }}">
+<div id="gateway-{{ gateway.id }}-form" class="stripe-form gateway-form {% if order and order.gatewayId != gateway.id %}hidden{% endif %}" xmlns="http://www.w3.org/1999/html" data-publishablekey="{{ gateway.publishableKey ?? '' }}" data-enforce3dsecure="{{ gateway.enforce3dSecure ?? '' }}">
 
     <form method="POST">
         <input type="hidden" name="action" value="commerce/payments/pay"/>

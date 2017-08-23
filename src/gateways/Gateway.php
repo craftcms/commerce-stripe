@@ -46,6 +46,11 @@ class Gateway extends BaseGateway
      */
     public $sendReceiptEmail;
 
+    /**
+     * @var bool
+     */
+    public $enforce3dSecure;
+
     // Public Methods
     // =========================================================================
 
