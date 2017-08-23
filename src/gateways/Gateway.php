@@ -10,6 +10,7 @@ use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\stripe\models\StripePaymentForm;
 use craft\commerce\stripe\responses\Response;
+use craft\commerce\stripe\StripePaymentBundle;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Error\Card as CardError;
@@ -51,7 +52,7 @@ class Gateway extends BaseGateway
     public function init()
     {
         parent::init();
-        
+
         Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
         Stripe::setApiKey($this->apiKey);
     }
@@ -84,7 +85,9 @@ class Gateway extends BaseGateway
 
         $params = array_merge($defaults, $params);
 
-        Craft::$app->getView()->registerJsFile('https://js.stripe.com/v2/');
+        $view = Craft::$app->getView();
+        $view->registerJsFile('https://js.stripe.com/v3/', ['onload' => 'window.stripeLoaded = true;']);
+        $view->registerAssetBundle(StripePaymentBundle::class);
 
         return Craft::$app->getView()->renderTemplate('commerce-stripe/paymentForm', $params);
     }
