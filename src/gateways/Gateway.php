@@ -11,6 +11,8 @@ use craft\commerce\models\Transaction;
 use craft\commerce\stripe\models\StripePaymentForm;
 use craft\commerce\stripe\responses\Response;
 use craft\commerce\stripe\StripePaymentBundle;
+use craft\helpers\Json;
+use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Error\Card as CardError;
@@ -238,7 +240,11 @@ class Gateway extends BaseGateway
             $request['receipt_email'] = $transaction->getOrder()->email;
         }
 
-        $request['source'] = $this->_createPaymentSource($transaction, $paymentForm);
+        if ($paymentForm->threeDSecure) {
+
+        } else {
+            $request['source'] = $this->_createPaymentSource($transaction, $paymentForm);
+        }
 
         return $request;
     }
@@ -249,7 +255,6 @@ class Gateway extends BaseGateway
         {
             return $paymentForm->token;
         }
-
         $order = $transaction->getOrder();
 
         $source = [];
@@ -339,4 +344,20 @@ class Gateway extends BaseGateway
 
         return $data;
     }
+
+    public function processWebHook(): string
+    {
+        $data = Json::decodeIfJson(Craft::$app->getRequest()->getRawBody());
+
+        if ($data) {
+            return 'parsed';
+        }
+    }
+
+    public function supportsWebhooks(): bool
+    {
+        return true;
+    }
+
+
 }

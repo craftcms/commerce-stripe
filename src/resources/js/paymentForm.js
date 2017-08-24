@@ -1,4 +1,5 @@
 function initStripe() {
+    // Because this might get executed before Stripe is loaded.
     if (typeof Stripe === "undefined") {
         setTimeout(initStripe, 200);
     } else {
@@ -47,11 +48,12 @@ function initStripe() {
                     if (result.error) {
                         updateErrorMessage(result);
                     } else {
+                        $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
+
                         if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure')))
                         {
-                            // 3D secure
+                            $form.append($('<input type="hidden" name="threeDSecure"/>').val(1));
                         } else {
-                            $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
                             $form.get(0).submit();
                         }
                     }
