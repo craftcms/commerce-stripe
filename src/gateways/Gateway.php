@@ -8,16 +8,20 @@ use craft\commerce\base\Gateway as BaseGateway;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\Transaction;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\models\StripePaymentForm;
 use craft\commerce\stripe\responses\Response;
 use craft\commerce\stripe\StripePaymentBundle;
 use craft\helpers\Json;
-use craft\web\Response as WebResponse;
+use craft\helpers\UrlHelper;
 use Stripe\ApiResource;
 use Stripe\Charge;
+use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
 use Stripe\Refund;
+use Stripe\Source;
 use Stripe\Stripe;
+use Stripe\Webhook;
 use yii\base\NotSupportedException;
 
 /**
@@ -53,6 +57,11 @@ class Gateway extends BaseGateway
      */
     public $enforce3dSecure;
 
+    /**
+     * @var string
+     */
+    public $signingSecret;
+    
     // Public Methods
     // =========================================================================
 
@@ -63,7 +72,76 @@ class Gateway extends BaseGateway
         Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
         Stripe::setApiKey($this->apiKey);
     }
-    
+
+
+    /**
+     * @inheritdoc
+     */
+    public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
+    {
+        /** @var StripePaymentForm $form */
+        $requestData = $this->_buildRequestData($transaction);
+        $paymentSource = $this->_createPaymentSource($transaction, $form, $requestData);
+        $requestData['capture'] = false;
+
+        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
+        {
+            // This should only happen for 3D secure payments.
+            $response = $this->_createResponseFromApiResource($paymentSource);
+            $response->setRedirectUrl($paymentSource->redirect->url);
+
+            return $response;
+        }
+
+        $requestData['source'] = $paymentSource;
+
+        try {
+            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
+
+            return $this->_createResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->_createResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function capture(Transaction $transaction, string $reference): RequestResponseInterface
+    {
+        try {
+            $charge = Charge::retrieve($reference);
+            $charge->capture();
+
+            return $this->_createResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->_createResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function completeAuthorize(Transaction $transaction): RequestResponseInterface
+    {
+        // It's exactly the same thing,
+        return $this->completePurchase($transaction);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function completePurchase(Transaction $transaction): RequestResponseInterface
+    {
+        $sourceId = Craft::$app->getRequest()->getParam('source');
+        $paymentSource = Source::retrieve($sourceId);
+
+        $response = $this->_createResponseFromApiResource($paymentSource);
+        $response->setProcessing(true);
+
+        return $response;
+    }
+
     /**
      * @inheritdoc
      */
@@ -110,6 +188,123 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function processWebHook(): string
+    {
+        $rawData = Craft::$app->getRequest()->getRawBody();
+        $secret = $this->signingSecret;
+        $stripeSignature = $_SERVER["HTTP_STRIPE_SIGNATURE"] ?? '';
+
+        if (!$secret || !$stripeSignature) {
+            Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
+
+            return 'ok';
+        }
+
+        try {
+            // Check the payload and signature
+            Webhook::constructEvent($rawData, $stripeSignature, $secret);
+        } catch (\Exception $exception) {
+            Craft::warning('Webhook signature check failed: '.$exception->getMessage(), 'stripe');
+
+            return 'ok';
+        }
+
+        $data = Json::decodeIfJson($rawData);
+
+        if ($data) {
+            $dataObject = $data['data']['object'] ?? null;
+            if ($dataObject) {
+
+                $transactionHash = $dataObject['metadata']['transactionReference'] ?? null;
+                $transaction = $transactionHash ? Commerce::getInstance()->getTransactions()->getTransactionByHash($transactionHash) : null;
+
+                if (!$transaction) {
+                    Craft::warning('Transaction not found when processing webhook '.$data['id'], 'stripe');
+
+                    return 'ok';
+                }
+
+                try {
+                    switch ($data['type']) {
+                        case 'source.chargeable':
+                            $sourceId = $dataObject['id'];
+                            $requestData = $this->_buildRequestData($transaction);
+                            $requestData['source'] = $sourceId;
+                            $requestData['capture'] = !($transaction->type === TransactionRecord::TYPE_AUTHORIZE);
+
+                            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
+                            $transaction->reference = $charge->id;
+                            $transaction->status = TransactionRecord::STATUS_SUCCESS;
+                            break;
+                        case 'source.canceled':
+                        case 'source.failed':
+                            $transaction->status = TransactionRecord::STATUS_FAILED;
+                            break;
+                    }
+
+                    Commerce::getInstance()->getTransactions()->saveTransaction($transaction);
+
+                    if ($transaction->status === TransactionRecord::STATUS_SUCCESS) {
+                        $transaction->order->updateOrderPaidTotal();
+                    }
+
+                } catch (\Exception $exception) {
+                    Craft::error('Could not process webhook '.$data['id'].': '.$exception->getMessage(), 'stripe');
+                    $transaction->status = TransactionRecord::STATUS_FAILED;
+                    Commerce::getInstance()->getTransactions()->saveTransaction($transaction);
+                }
+            }
+
+            return 'ok';
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
+    {
+        /** @var StripePaymentForm $form */
+        $requestData = $this->_buildRequestData($transaction);
+        $paymentSource = $this->_createPaymentSource($transaction, $form, $requestData);
+
+        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
+        {
+            // This should only happen for 3D secure payments.
+            $response = $this->_createResponseFromApiResource($paymentSource);
+            $response->setRedirectUrl($paymentSource->redirect->url);
+
+            return $response;
+        }
+
+        $requestData['source'] = $paymentSource;
+
+        try {
+            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
+
+            return $this->_createResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->_createResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function refund(Transaction $transaction, string $reference): RequestResponseInterface
+    {
+        try {
+            $refund = Refund::create(['charge' => $reference], ['idempotency_key' => $transaction->hash]);
+
+            return $this->_createResponseFromApiResource($refund);
+        } catch (\Exception $exception) {
+            return $this->_createResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function supportsAuthorize(): bool
     {
         return true;
@@ -128,7 +323,7 @@ class Gateway extends BaseGateway
      */
     public function supportsCompleteAuthorize(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -136,7 +331,7 @@ class Gateway extends BaseGateway
      */
     public function supportsCompletePurchase(): bool
     {
-        return false;
+        return true;
     }
 
     /**
@@ -155,72 +350,29 @@ class Gateway extends BaseGateway
         return true;
     }
 
-    public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
+    /**
+     * @inheritdoc
+     */
+    public function supportsWebhooks(): bool
     {
-        /** @var StripePaymentForm $form */
-        $requestData = $this->_createPaymentRequest($transaction, $form);
-        $requestData['capture'] = false;
-
-        try {
-            $charge = Charge::create($requestData);
-
-            return $this->_createResponseFromCharge($charge);
-        } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
-        }
+        return true;
     }
 
-    public function capture(Transaction $transaction, string $reference): RequestResponseInterface
-    {
-        try {
-            $charge = Charge::retrieve($reference);
-            $charge->capture();
+    // Private methods
+    // =========================================================================
 
-            return $this->_createResponseFromCharge($charge);
-        } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
-        }
-    }
-
-    public function completeAuthorize(Transaction $transaction): RequestResponseInterface
-    {
-        // TODO 3d secure.
-        throw new NotSupportedException('This gateway does not support the completeAuthorize operation');
-    }
-
-    public function completePurchase(Transaction $transaction): RequestResponseInterface
-    {
-        // TODO 3d secure.
-        throw new NotSupportedException('This gateway does not support the completePurchase operation');
-    }
-
-    public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
-    {
-        /** @var StripePaymentForm $form */
-        $requestData = $this->_createPaymentRequest($transaction, $form);
-
-        try {
-            $charge = Charge::create($requestData);
-
-            return $this->_createResponseFromCharge($charge);
-        } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
-        }
-    }
-
-    public function refund(Transaction $transaction, string $reference): RequestResponseInterface
-    {
-        $refund = Refund::create(['charge' => $reference]);
-
-        $data = $this->_extractPropertiesFromApiResource($refund);
-
-        return new Response($data);
-    }
-
-    private function _createPaymentRequest(Transaction $transaction, StripePaymentForm $paymentForm)
+    /**
+     * Build the request data array.
+     *
+     * @param Transaction $transaction
+     *
+     * @return array
+     * @throws NotSupportedException
+     */
+    private function _buildRequestData(Transaction $transaction)
     {
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
-        
+
         if (!$currency) {
             throw new NotSupportedException('The currency “'.$transaction->paymentCurrency.'” is not supported!');
         }
@@ -240,21 +392,43 @@ class Gateway extends BaseGateway
             $request['receipt_email'] = $transaction->getOrder()->email;
         }
 
-        if ($paymentForm->threeDSecure) {
-
-        } else {
-            $request['source'] = $this->_createPaymentSource($transaction, $paymentForm);
-        }
-
         return $request;
     }
 
-    private function _createPaymentSource(Transaction $transaction, StripePaymentForm $paymentForm)
+    /**
+     * Create a payment source.
+     *
+     * Depending on input, it can be an array of data, a string or a Source object.
+     *
+     * @param Transaction       $transaction
+     * @param StripePaymentForm $paymentForm
+     * @param array             $request
+     *
+     * @return array|string|Source
+     */
+    private function _createPaymentSource(Transaction $transaction, StripePaymentForm $paymentForm, array $request)
     {
+        if ($paymentForm->threeDSecure) {
+            unset($request['description']);
+
+            $request['type'] = 'three_d_secure';
+
+            $request['three_d_secure'] = [
+                'card' => $paymentForm->token
+            ];
+
+            $request['redirect'] = [
+                'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
+            ];
+
+            return Source::create($request);
+        }
+
         if ($paymentForm->token)
         {
             return $paymentForm->token;
         }
+
         $order = $transaction->getOrder();
 
         $source = [];
@@ -276,11 +450,11 @@ class Gateway extends BaseGateway
                 $source['address_line2'] = $billingAddress->address2;
                 $source['address_city'] = $billingAddress->city;
                 $source['address_zip'] = $billingAddress->zipCode;
-                
+
                 if ($billingAddress->getCountry()) {
                     $source['address_country'] = $billingAddress->getCountry()->iso;
                 }
-                
+
                 if ($billingAddress->getState()) {
                     $source['address_state'] = $billingAddress->getState()->abbreviation ?: $billingAddress->getState()->name;
                 } else {
@@ -292,12 +466,28 @@ class Gateway extends BaseGateway
         return $source;
     }
 
-    private function _createResponseFromCharge(Charge $charge)
+    /**
+     * Create a Response object from an ApiResponse object.
+     *
+     * @param ApiResource $resource
+     *
+     * @return Response
+     */
+    private function _createResponseFromApiResource(ApiResource $resource): Response
     {
-        $data = $this->_extractPropertiesFromApiResource($charge);
+        $data = $resource->jsonSerialize();
+
         return new Response($data);
     }
 
+    /**
+     * Create a Response object from an Exception.
+     *
+     * @param \Exception $exception
+     *
+     * @return Response
+     * @throws \Exception
+     */
     private function _createResponseFromError(\Exception $exception)
     {
         if ($exception instanceof CardError) {
@@ -306,58 +496,17 @@ class Gateway extends BaseGateway
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
             $data['id'] = $body['error']['charge'];
+        } else if ($exception instanceof Base) {
+            // So it's not a card being declined but something else. ¯\_(ツ)_/¯
+            $body = $exception->getJsonBody();
+            $data = $body;
+            $data['id'] = null;
+            $data['message'] = $body['error']['message'];
+            $data['code'] = $body['error']['code'] ?? $body['error']['type'];
         } else {
-            // So it's not a card being declined. ¯\_(ツ)_/¯
             throw $exception;
         }
 
         return new Response($data);
     }
-
-    /**
-     * Extract data from a Stripe Api Resource.
-     *
-     * @param ApiResource $resource
-     *
-     * @return array $data
-     */
-    private function _extractPropertiesFromApiResource(ApiResource $resource): array
-    {
-        $reflection = new \ReflectionClass($resource);
-
-        // It's either extract properties per class or parse the docbloc. Let's take the easy way out.
-        $docblock = $reflection->getDocComment();
-        $pattern = '/.*\$([a-z0-9_]+)$/mi';
-
-        if(!preg_match_all($pattern, $docblock, $matches))
-        {
-            return [];
-        }
-
-        $fields = $matches[1];
-
-        $data = [];
-
-        foreach ($fields as $field) {
-            $data[$field] = $resource->{$field};
-        }
-
-        return $data;
-    }
-
-    public function processWebHook(): string
-    {
-        $data = Json::decodeIfJson(Craft::$app->getRequest()->getRawBody());
-
-        if ($data) {
-            return 'parsed';
-        }
-    }
-
-    public function supportsWebhooks(): bool
-    {
-        return true;
-    }
-
-
 }

@@ -13,6 +13,16 @@ class Response implements RequestResponseInterface
     protected $data = [];
 
     /**
+     * @var string
+     */
+    private $_redirect = '';
+
+    /**
+     * @var bool
+     */
+    private $_processing = false;
+
+    /**
      * Response constructor.
      *
      * @param $data
@@ -22,6 +32,15 @@ class Response implements RequestResponseInterface
         $this->data = $data;
     }
 
+    public function setRedirectUrl(string $url)
+    {
+        $this->_redirect = $url;
+    }
+
+    public function setProcessing(bool $status)
+    {
+        $this->_processing = $status;
+    }
     /**
      * @inheritdoc
      */
@@ -33,9 +52,17 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
+    public function isProcessing(): bool
+    {
+        return $this->_processing;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function isRedirect(): bool
     {
-        return false;
+        return !empty($this->_redirect);
     }
 
     /**
@@ -43,7 +70,7 @@ class Response implements RequestResponseInterface
      */
     public function getRedirectMethod()
     {
-        return '';
+        return 'GET';
     }
 
     /**
@@ -59,7 +86,7 @@ class Response implements RequestResponseInterface
      */
     public function getRedirectUrl()
     {
-        return '';
+        return $this->_redirect;
     }
 
     /**
@@ -111,7 +138,7 @@ class Response implements RequestResponseInterface
      */
     public function redirect()
     {
-        throw new NotImplementedException('Redirect is not implemented for this gateway.');
+        throw new NotImplementedException('Redirecting directly is not implemented for this gateway.');
     }
 
 }

@@ -48,14 +48,13 @@ function initStripe() {
                     if (result.error) {
                         updateErrorMessage(result);
                     } else {
-                        $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
-
                         if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure')))
                         {
                             $form.append($('<input type="hidden" name="threeDSecure"/>').val(1));
-                        } else {
-                            $form.get(0).submit();
                         }
+
+                        $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
+                        $form.get(0).submit();
                     }
                 });
             });

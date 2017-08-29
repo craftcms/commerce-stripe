@@ -20,8 +20,19 @@
     errors: gateway.getErrors('publishableKey')
 }) }}
 
+{{ textField({
+    label: "Signing secret"|t("commerce"),
+    instructions: "Your webhook endpoint signing secret."|t("commerce"),
+    id: 'signingSecret',
+    name: 'signingSecret',
+    class: 'ltr',
+    value: gateway.signingSecret,
+    errors: gateway.getErrors('signingSecret')
+}) }}
+
 {{ lightswitchField({
-    label: "Enforce 3D Secure if card supports it?"|t('commerce'),
+    label: "Enforce 3D Secure"|t('commerce'),
+    instructions: "If card supports but does not require 3D Secure, this will ensure completing 3D Secure process",
     name: 'enforce3dSecure',
     on: gateway.enforce3dSecure,
     errors: gateway.getErrors('enforce3dSecure'),
