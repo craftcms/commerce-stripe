@@ -14,6 +14,7 @@ use craft\commerce\stripe\responses\Response;
 use craft\commerce\stripe\StripePaymentBundle;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
+use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Error\Base;
@@ -171,10 +172,17 @@ class Gateway extends BaseGateway
         $params = array_merge($defaults, $params);
 
         $view = Craft::$app->getView();
-        $view->registerJsFile('https://js.stripe.com/v3/', ['onload' => 'window.stripeLoaded = true;']);
+
+        $previousMode = $view->getTemplateMode();
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $view->registerJsFile('https://js.stripe.com/v3/');
         $view->registerAssetBundle(StripePaymentBundle::class);
 
-        return Craft::$app->getView()->renderTemplate('commerce-stripe/paymentForm', $params);
+        $html = Craft::$app->getView()->renderTemplate('commerce-stripe/paymentForm', $params);
+        $view->setTemplateMode($previousMode);
+
+        return $html;
     }
 
     /**

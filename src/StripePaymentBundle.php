@@ -22,10 +22,6 @@ class StripePaymentBundle extends AssetBundle
     {
         $this->sourcePath = '@craft/commerce/stripe/resources';
 
-        $this->depends = [
-            CpAsset::class,
-        ];
-
         $this->css = [
             'css/paymentForm.css',
         ];

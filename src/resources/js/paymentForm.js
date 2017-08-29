@@ -15,7 +15,9 @@ function initStripe() {
                     displayError.textContent = '';
                 }
 
-                $('.modal').data('modal').updateSizeAndPosition();
+                if ($('.modal').data('modal')) {
+                    $('.modal').data('modal').updateSizeAndPosition();
+                }
             }
 
             var stripe = Stripe($container.data('publishablekey'));
@@ -32,14 +34,19 @@ function initStripe() {
             // Create an instance of the card Element
             var card = elements.create('card', {
                 style: style,
-                hidePostalCode: true});
+                hidePostalCode: true}
+            );
 
             card.addEventListener('change', updateErrorMessage);
 
             // Add an instance of the card Element into the `card-element` <div>
             card.mount($('.card-data', $container).empty().get(0));
 
-            $form = $('form', $container);
+            var $form = $('form', $container);
+
+            if ($form.length === 0) {
+                $form = $container.parents('form');
+            }
 
             $form.on('submit', function (ev) {
                 ev.preventDefault();
@@ -59,7 +66,9 @@ function initStripe() {
                 });
             });
 
-            $('.modal').data('modal').updateSizeAndPosition();
+            if ($('.modal').data('modal')) {
+                $('.modal').data('modal').updateSizeAndPosition();
+            }
         });
     }
 }
