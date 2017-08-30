@@ -51,7 +51,16 @@ function initStripe() {
             $form.on('submit', function (ev) {
                 ev.preventDefault();
 
-                stripe.createSource(card).then(function(result) {
+                var cardHolderName, orderEmail;
+
+                if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0 )
+                {
+                    cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
+                }
+
+                orderEmail = $('input[name=orderEmail]').val();
+
+                stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
                     } else {
