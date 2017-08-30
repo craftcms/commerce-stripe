@@ -26,3 +26,27 @@ To install the plugin, follow these instructions.
 ## Setup
 
 To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe”.
+
+## 3D secure payments
+
+To allow 3D Secure payments, you must perform some additional steps.
+
+### Configure Stripe
+
+Set up a webhook endpoint in your Stripe dashboard API settings that emits at least the following events:
+
+ * `source.cancelled`
+ * `source.chargeable`
+ * `source.failed`
+
+The URL for this endpoint can be found in your Stripe gateway settings.
+
+### Configure the gateway
+
+When the endpoint has been set up, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the appropriate field.
+
+### Forcing a 3D secure payment.
+
+For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
+
+Cards that do not support 3d secure payment will be unaffected by this setting.
