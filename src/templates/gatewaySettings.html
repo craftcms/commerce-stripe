@@ -39,7 +39,7 @@
 }) }}
 
 {{ lightswitchField({
-    label: "Send receipt email?"|t('commerce'),
+    label: "Send Stripe's receipt email?"|t('commerce'),
     name: 'sendReceiptEmail',
     on: gateway.sendReceiptEmail,
     errors: gateway.getErrors('sendReceiptEmail'),
