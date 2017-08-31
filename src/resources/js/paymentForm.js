@@ -51,6 +51,12 @@ function initStripe() {
             $form.on('submit', function (ev) {
                 ev.preventDefault();
 
+                if (window.commerceProcessingPayment) {
+                    return false;
+                }
+
+                window.commerceProcessingPayment = true;
+
                 var cardHolderName, orderEmail;
 
                 if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0 )
@@ -63,6 +69,7 @@ function initStripe() {
                 stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
+                        window.commerceProcessingPayment = false;
                     } else {
                         if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure')))
                         {
