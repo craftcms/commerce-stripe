@@ -48,14 +48,17 @@ function initStripe() {
                 $form = $container.parents('form');
             }
 
+            // Remove already bound events
+            $form.off('submit');
+
             $form.on('submit', function (ev) {
                 ev.preventDefault();
 
-                if (window.commerceProcessingPayment) {
+                if ($form.data('processing')) {
                     return false;
                 }
 
-                window.commerceProcessingPayment = true;
+                $form.data('processing', true);
 
                 var cardHolderName, orderEmail;
 
@@ -69,7 +72,7 @@ function initStripe() {
                 stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
-                        window.commerceProcessingPayment = false;
+                        $form.data('processing', false);
                     } else {
                         if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure')))
                         {
