@@ -417,7 +417,8 @@ class Gateway extends BaseGateway
     private function _createPaymentSource(Transaction $transaction, StripePaymentForm $paymentForm, array $request)
     {
         if ($paymentForm->threeDSecure) {
-            unset($request['description']);
+            unset($request['description'], $request['receipt_email']);
+
 
             $request['type'] = 'three_d_secure';
 
