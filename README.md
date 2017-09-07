@@ -45,6 +45,12 @@ The URL for this endpoint can be found in your Stripe gateway settings.
 
 When the endpoint has been set up, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the appropriate field.
 
+### Disabling CSRF for webhooks.
+
+You must disable CSRF protection for the incoming requests, assuming it is enabled for the site (default for Craft since 3.0).
+
+A clean example for how to go about this can be found [here](https://craftcms.stackexchange.com/a/20301/258).
+
 ### Forcing a 3D secure payment.
 
 For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
