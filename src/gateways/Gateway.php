@@ -302,7 +302,7 @@ class Gateway extends BaseGateway
     public function refund(Transaction $transaction, string $reference): RequestResponseInterface
     {
         try {
-            $refund = Refund::create(['charge' => $reference], ['idempotency_key' => $transaction->hash]);
+            $refund = Refund::create(['charge' => $reference], ['idempotency_key' => $reference]);
 
             return $this->_createResponseFromApiResource($refund);
         } catch (\Exception $exception) {
