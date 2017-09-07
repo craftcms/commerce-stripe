@@ -7,7 +7,6 @@
     "stripe",
     "commerce",
     "craftcms",
-    "omnipay",
     "yii2"
   ],
   "license": "MIT",
