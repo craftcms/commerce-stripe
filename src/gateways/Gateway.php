@@ -227,7 +227,7 @@ class Gateway extends BaseGateway
                 $transaction = $transactionHash ? Commerce::getInstance()->getTransactions()->getTransactionByHash($transactionHash) : null;
 
                 if (!$transaction) {
-                    Craft::warning('Transaction not found when processing webhook '.$data['id'], 'stripe');
+                    Craft::warning('Transaction with the hash “'.$transactionHash.'” not found when processing webhook '.$data['id'], 'stripe');
 
                     return 'ok';
                 }
