@@ -15,6 +15,7 @@ use craft\commerce\stripe\StripePaymentBundle;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Error\Base;
@@ -196,16 +197,19 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function processWebHook(): string
+    public function processWebHook(): WebResponse
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
+        $response = Craft::$app->getResponse();
+
         $secret = $this->signingSecret;
         $stripeSignature = $_SERVER["HTTP_STRIPE_SIGNATURE"] ?? '';
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
 
-            return 'ok';
+            $response->data =  'ok';
+            return $response;
         }
 
         try {
@@ -214,7 +218,8 @@ class Gateway extends BaseGateway
         } catch (\Exception $exception) {
             Craft::warning('Webhook signature check failed: '.$exception->getMessage(), 'stripe');
 
-            return 'ok';
+            $response->data =  'ok';
+            return $response;
         }
 
         $data = Json::decodeIfJson($rawData);
@@ -229,41 +234,61 @@ class Gateway extends BaseGateway
                 if (!$transaction) {
                     Craft::warning('Transaction with the hash “'.$transactionHash.'” not found when processing webhook '.$data['id'], 'stripe');
 
-                    return 'ok';
+                    $response->data =  'ok';
+                    return $response;
                 }
 
+                $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
+                $childTransaction->type = $transaction->type;
+                $childTransaction->reference = $data['id'];
+
                 try {
+                    // Todo probably worth moving each event handling out to a separate method
                     switch ($data['type']) {
                         case 'source.chargeable':
                             $sourceId = $dataObject['id'];
                             $requestData = $this->_buildRequestData($transaction);
                             $requestData['source'] = $sourceId;
-                            $requestData['capture'] = !($transaction->type === TransactionRecord::TYPE_AUTHORIZE);
+                            $requestData['capture'] = !($childTransaction->type === TransactionRecord::TYPE_AUTHORIZE);
 
-                            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
-                            $transaction->reference = $charge->id;
-                            $transaction->status = TransactionRecord::STATUS_SUCCESS;
+                            try {
+                                $charge = Charge::create($requestData, ['idempotency_key' => $childTransaction->hash]);
+
+                                $response = $this->_createResponseFromApiResource($charge);
+                            } catch (\Exception $exception) {
+                                $response = $this->_createResponseFromError($exception);
+                            }
+
+                            if ($response->isSuccessful()) {
+                                $transaction->status = TransactionRecord::STATUS_SUCCESS;
+                            } else {
+                                $transaction->status = TransactionRecord::STATUS_FAILED;
+                            }
+
+                            $childTransaction->response = $response->getData();
+                            $childTransaction->code = $response->getCode();
+                            $childTransaction->reference = $response->getTransactionReference();
+                            $childTransaction->message = $response->getMessage();
+
                             break;
                         case 'source.canceled':
                         case 'source.failed':
-                            $transaction->status = TransactionRecord::STATUS_FAILED;
+                            $childTransaction->status = TransactionRecord::STATUS_FAILED;
+                            $childTransaction->reference = $data['id'];
+                            $childTransaction->code = $data['type'];
                             break;
                     }
 
-                    Commerce::getInstance()->getTransactions()->saveTransaction($transaction);
-
-                    if ($transaction->status === TransactionRecord::STATUS_SUCCESS) {
-                        $transaction->order->updateOrderPaidTotal();
-                    }
-
+                    Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
                 } catch (\Exception $exception) {
                     Craft::error('Could not process webhook '.$data['id'].': '.$exception->getMessage(), 'stripe');
-                    $transaction->status = TransactionRecord::STATUS_FAILED;
-                    Commerce::getInstance()->getTransactions()->saveTransaction($transaction);
+                    $childTransaction->status = TransactionRecord::STATUS_FAILED;
+                    Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
                 }
             }
 
-            return 'ok';
+            $response->data =  'ok';
+            return $response;
         }
     }
 
