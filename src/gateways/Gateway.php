@@ -112,7 +112,7 @@ class Gateway extends BaseGateway
     {
         try {
             $charge = Charge::retrieve($reference);
-            $charge->capture();
+            $charge->capture([], ['idempotency_key' => $reference]);
 
             return $this->_createResponseFromApiResource($charge);
         } catch (\Exception $exception) {
