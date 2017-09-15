@@ -237,13 +237,19 @@ class Gateway extends BaseGateway
                     $response->data =  'ok';
                     return $response;
                 }
+                
+                // We're not handling webhooks that are not for processing transactions.
+                if ($transaction->status !== TransactionRecord::STATUS_PROCESSING) {
+                    $response->data =  'ok';
+                    return $response;
+                }
 
                 $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
                 $childTransaction->type = $transaction->type;
                 $childTransaction->reference = $data['id'];
 
                 try {
-                    // Todo probably worth moving each event handling out to a separate method
+                    // Todo probably worth moving each event handling out to a separate method and refactor this in general
                     switch ($data['type']) {
                         case 'source.chargeable':
                             $sourceId = $dataObject['id'];
