@@ -24,6 +24,7 @@
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
+    "craftcms/commerce": "*",
     "stripe/stripe-php": "^5.0"
   },
   "autoload": {
