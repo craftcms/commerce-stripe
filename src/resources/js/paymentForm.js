@@ -54,31 +54,34 @@ function initStripe() {
             $form.on('submit', function (ev) {
                 ev.preventDefault();
 
+                // If form submitted already, disregard.
                 if ($form.data('processing')) {
                     return false;
                 }
 
                 $form.data('processing', true);
 
+                // Compose card holder info
                 var cardHolderName, orderEmail;
 
-                if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0 )
-                {
+                if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0 ) {
                     cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
                 }
 
                 orderEmail = $('input[name=orderEmail]').val();
 
+                // Tokenize the credit card detauls and create a payment source
                 stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
                         $form.data('processing', false);
                     } else {
-                        if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure')))
-                        {
+                        // Signal to backend that 3D secure payment is required if card or gateway options demands so.
+                        if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure'))) {
                             $form.append($('<input type="hidden" name="threeDSecure"/>').val(1));
                         }
 
+                        // Add the payment source token to the form.
                         $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
                         $form.get(0).submit();
                     }

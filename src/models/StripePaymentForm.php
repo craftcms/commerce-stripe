@@ -29,10 +29,6 @@ class StripePaymentForm extends CreditCardPaymentForm
      */
     public function rules(): array
     {
-        if (empty($this->token)) {
-            return parent::rules();
-        }
-
-        return [];
+        return [['token'], 'required'];
     }
 }
