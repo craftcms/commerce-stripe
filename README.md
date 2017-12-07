@@ -29,7 +29,7 @@ To add the Stripe payment gateway, go to Commerce → Settings → Gateways, cre
 
 ## Payment security enforcement
 
-This plugin does not allow submitting credit card details directly to Stripe gateway. Instead, you must tokenize the card before submitting the payment form. See [here]('src/resources/js/paymentForm.js') for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
+This plugin does not allow submitting credit card details directly to Stripe gateway. Instead, you must tokenize the card before submitting the payment form. See [here](src/resources/js/paymentForm.js) for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
 
 ## 3D secure payments
 
