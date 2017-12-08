@@ -68,7 +68,7 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getRedirectMethod()
+    public function getRedirectMethod(): string
     {
         return 'GET';
     }
@@ -76,7 +76,7 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getRedirectData()
+    public function getRedirectData(): array
     {
         return [];
     }
@@ -84,7 +84,7 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getRedirectUrl()
+    public function getRedirectUrl(): string
     {
         return $this->_redirect;
     }
@@ -92,19 +92,19 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getTransactionReference()
+    public function getTransactionReference(): string
     {
         if (empty($this->data)) {
             return '';
         }
 
-        return $this->data['id'];
+        return (string)$this->data['id'];
     }
 
     /**
      * @inheritdoc
      */
-    public function getCode()
+    public function getCode(): string
     {
         if (empty($this->data['code'])) {
             return '';
@@ -124,7 +124,7 @@ class Response implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getMessage()
+    public function getMessage(): string
     {
         if (empty($this->data['message'])) {
             return '';
