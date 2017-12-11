@@ -207,7 +207,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function deletePaymentSource($token)
+    public function deletePaymentSource($token): bool
     {
         try {
             $source = Source::retrieve($token);
@@ -215,6 +215,8 @@ class Gateway extends BaseGateway
         } catch (\Throwable $throwable) {
             // Assume deleted.
         }
+
+        return true;
     }
 
 
