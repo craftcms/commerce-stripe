@@ -2,7 +2,7 @@
 
 namespace craft\commerce\stripe\models;
 
-use craft\commerce\models\payments\CreditCardPaymentForm;
+use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\stripe\Plugin;
 
@@ -12,13 +12,18 @@ use craft\commerce\stripe\Plugin;
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since     1.0
  */
-class StripePaymentForm extends CreditCardPaymentForm
+class StripePaymentForm extends BasePaymentForm
 {
 
     /**
      * @var string $customer the Stripe customer token.
      */
     public $customer;
+
+    /**
+     * @var string Token
+     */
+    public $token;
 
     // Public methods
     // =========================================================================
