@@ -52,6 +52,4 @@ class StripePaymentForm extends CreditCardPaymentForm
         $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->userId);
         $this->customer = $customer->customerId;
     }
-
-
 }
