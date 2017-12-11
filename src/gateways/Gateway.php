@@ -153,7 +153,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource($sourceData): PaymentSource
+    public function createPaymentSource(BasePaymentForm $sourceData): PaymentSource
     {
         /** @var StripePaymentForm $sourceData */
         $user = Craft::$app->getUser();
