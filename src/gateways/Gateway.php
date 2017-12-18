@@ -9,6 +9,7 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\base\Gateway as BaseGateway;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\models\Transaction;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -36,11 +37,18 @@ use yii\base\NotSupportedException;
  *
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since     1.0
- *
- * TODO Events.
  */
 class Gateway extends BaseGateway
 {
+    // Constants
+    // =========================================================================
+
+    /**
+     * @event BuildGatewayRequestEvent The event that is triggered when a gateway request is being built.
+     */
+    const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
+
+
     // Properties
     // =========================================================================
 
@@ -163,7 +171,7 @@ class Gateway extends BaseGateway
         }
 
         $customers = StripePlugin::getInstance()->getCustomers();
-        $customer = $customers->getCustomer($this, $user->getId());
+        $customer = $customers->getCustomer($this->id, $user->getId());
 
         if (!$customer) {
             $stripeCustomer = Customer::create([
@@ -443,12 +451,23 @@ class Gateway extends BaseGateway
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             'currency' => $transaction->paymentCurrency,
             'description' => Craft::t('commerce', 'Order').' #'.$transaction->orderId,
-            'metadata' => [
-                'transactionId' => $transaction->id,
-                'clientIp' => Craft::$app->getRequest()->userIP,
-                'transactionReference' => $transaction->hash,
-            ]
         ];
+
+        $event = new BuildGatewayRequestEvent([
+            'transaction' => $transaction,
+            'metadata' => []
+        ]);
+
+        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
+
+        $metadata = [
+            'transactionId' => $transaction->id,
+            'clientIp' => Craft::$app->getRequest()->userIP,
+            'transactionReference' => $transaction->hash,
+        ];
+
+        // Allow other plugins to add metadata, but do not allow tampering.
+        $request['metadata'] = array_merge($event->metadata, $metadata);
 
         if ($this->sendReceiptEmail) {
             $request['receipt_email'] = $transaction->getOrder()->email;

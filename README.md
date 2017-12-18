@@ -60,3 +60,26 @@ A clean example for how to go about this can be found [here](https://craftcms.st
 For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
 
 Cards that do not support 3d secure payment will be unaffected by this setting.
+
+## Events
+
+### The `buildGatewayRequest` event
+
+Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+
+Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `transactionId`, `clientIp` and `transactionReference` metadata keys.
+
+```php
+use craft\commerce\models\Transaction;
+use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+use yii\base\Event;
+
+// ...
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
+    if ($e->transaction->type === 'refund') {
+        $e->metadata['someKey'] = 'some value';
+    }
+});
+```
