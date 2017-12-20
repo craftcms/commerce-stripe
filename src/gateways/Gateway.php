@@ -581,10 +581,17 @@ class Gateway extends BaseGateway
      */
     private function _handle3DSecureFlowEvent(array $data) {
         $dataObject = $data['data']['object'];
-
         $sourceId = $dataObject['id'];
-        $transaction = Commerce::getInstance()->getTransactions()->getTransactionByReferenceAndStatus($sourceId, TransactionRecord::STATUS_PROCESSING);
+        $counter = 0;
+        $limit = 20;
 
+        do {
+            // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
+            sleep(1);
+            $transaction = Commerce::getInstance()->getTransactions()->getTransactionByReferenceAndStatus($sourceId, TransactionRecord::STATUS_PROCESSING);
+            $counter++;
+        } while (!$transaction && $counter < $limit);
+        
         if (!$transaction) {
             Craft::warning('Transaction with the reference “'.$sourceId.'” and status “'.TransactionRecord::STATUS_PROCESSING.'” not found when processing webhook '.$data['id'], 'stripe');
 
