@@ -46,6 +46,10 @@ class Install extends Migration
         $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'gatewayId'), '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
         $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'userId'), '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE', null);
 
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'gatewayId', false), '{{%stripe_customers}}', 'gatewayId', false);
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'userId', false), '{{%stripe_customers}}', 'userId', false);
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'customerId', true), '{{%stripe_customers}}', 'customerId', true);
+
         return true;
     }
 
