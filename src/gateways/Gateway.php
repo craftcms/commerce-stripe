@@ -591,7 +591,7 @@ class Gateway extends BaseGateway
             $transaction = Commerce::getInstance()->getTransactions()->getTransactionByReferenceAndStatus($sourceId, TransactionRecord::STATUS_PROCESSING);
             $counter++;
         } while (!$transaction && $counter < $limit);
-        
+
         if (!$transaction) {
             Craft::warning('Transaction with the reference “'.$sourceId.'” and status “'.TransactionRecord::STATUS_PROCESSING.'” not found when processing webhook '.$data['id'], 'stripe');
 
