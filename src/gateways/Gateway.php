@@ -4,16 +4,16 @@ namespace craft\commerce\stripe\gateways;
 
 use Craft;
 use craft\commerce\errors\PaymentException;
+use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\base\Gateway as BaseGateway;
 use craft\commerce\base\RequestResponseInterface;
-use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\models\Transaction;
 use craft\commerce\records\Transaction as TransactionRecord;
-use craft\commerce\stripe\models\StripePaymentForm;
+use craft\commerce\stripe\models\PaymentForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\Response;
 use craft\commerce\stripe\StripePaymentBundle;
@@ -94,7 +94,7 @@ class Gateway extends BaseGateway
      */
     public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var StripePaymentForm $form */
+        /** @var PaymentForm $form */
         $requestData = $this->_buildRequestData($transaction);
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
         $requestData['capture'] = false;
@@ -163,7 +163,7 @@ class Gateway extends BaseGateway
      */
     public function createPaymentSource(BasePaymentForm $sourceData): PaymentSource
     {
-        /** @var StripePaymentForm $sourceData */
+        /** @var PaymentForm $sourceData */
         $user = Craft::$app->getUser();
 
         if ($user->isGuest) {
@@ -275,7 +275,7 @@ class Gateway extends BaseGateway
      */
     public function getPaymentFormModel()
     {
-        return new StripePaymentForm();
+        return new PaymentForm();
     }
 
     /**
@@ -324,7 +324,7 @@ class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var StripePaymentForm $form */
+        /** @var PaymentForm $form */
         $requestData = $this->_buildRequestData($transaction);
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
 
@@ -481,14 +481,14 @@ class Gateway extends BaseGateway
      *
      * Depending on input, it can be an array of data, a string or a Source object.
      *
-     * @param Transaction       $transaction
-     * @param StripePaymentForm $paymentForm
-     * @param array             $request
+     * @param Transaction $transaction
+     * @param PaymentForm $paymentForm
+     * @param array       $request
      *
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
      */
-    private function _buildRequestPaymentSource(Transaction $transaction, StripePaymentForm $paymentForm, array $request)
+    private function _buildRequestPaymentSource(Transaction $transaction, PaymentForm $paymentForm, array $request)
     {
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
