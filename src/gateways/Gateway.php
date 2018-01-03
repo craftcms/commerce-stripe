@@ -3,16 +3,18 @@
 namespace craft\commerce\stripe\gateways;
 
 use Craft;
+use craft\commerce\base\Plan as BasePlan;
+use craft\commerce\base\RequestResponseInterface;
+use craft\commerce\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
+use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\base\Gateway as BaseGateway;
-use craft\commerce\base\RequestResponseInterface;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\models\Customer as CustomerModel;
-use craft\commerce\models\Transaction;
-use craft\commerce\records\Transaction as TransactionRecord;
+use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\models\PaymentForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\Response;
@@ -23,9 +25,11 @@ use craft\web\View;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Charge;
+use Stripe\Collection;
 use Stripe\Customer;
 use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
+use Stripe\Plan as StripePlan;
 use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Stripe;
@@ -278,6 +282,53 @@ class Gateway extends BaseGateway
         return new PaymentForm();
     }
 
+    public function getPlanModel(): BasePlan
+    {
+        return new Plan();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getPlanSettingsHtml(array $params = [])
+    {
+        return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSubscriptionPlanByReference(string $reference): string
+    {
+        if (empty($reference)) {
+            return '';
+        }
+
+        $plan = StripePlan::retrieve($reference);
+
+        return Json::encode($plan->jsonSerialize());
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSubscriptionPlans(): array
+    {
+        /** @var Collection $plans */
+        $plans = StripePlan::all();
+        $output = [];
+
+        if (\count($plans->data)) {
+            foreach ($plans->data as $plan) {
+                $plan = $plan->jsonSerialize();
+                $output[] = ['reference' => $plan['id'], 'name' => $plan['name']];
+            }
+        }
+
+        return $output;
+    }
+
+
     /**
      * @inheritdoc
      */
@@ -291,8 +342,8 @@ class Gateway extends BaseGateway
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
-
             $response->data =  'ok';
+
             return $response;
         }
 
@@ -301,8 +352,8 @@ class Gateway extends BaseGateway
             Webhook::constructEvent($rawData, $stripeSignature, $secret);
         } catch (\Exception $exception) {
             Craft::warning('Webhook signature check failed: '.$exception->getMessage(), 'stripe');
-
             $response->data =  'ok';
+
             return $response;
         }
 
@@ -312,11 +363,13 @@ class Gateway extends BaseGateway
             if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
                 $this->_handle3DSecureFlowEvent($data);
             }
-
-            $response->data =  'ok';
-
-            return $response;
+        } else {
+            Craft::warning('Could not decode JSON payload.', 'stripe');
         }
+
+        $response->data =  'ok';
+
+        return $response;
     }
 
     /**
