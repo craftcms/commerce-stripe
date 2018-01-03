@@ -8,10 +8,10 @@
 namespace craft\commerce\stripe\migrations;
 
 use Craft;
-use craft\commerce\stripe\gateways\Stripe;
+use craft\commerce\stripe\gateways\Gateway;
 use craft\db\Migration;
 use craft\db\Query;
-use craft\helpers\Json;
+use craft\helpers\MigrationHelper;
 
 /**
  * Installation Migration
@@ -32,6 +32,24 @@ class Install extends Migration
         // Convert any built-in Stripe gateways to ours
         $this->_convertGateways();
 
+        $this->createTable('{{%stripe_customers}}', [
+            'id' => $this->primaryKey(),
+            'userId' => $this->integer()->notNull(),
+            'gatewayId' => $this->integer()->notNull(),
+            'customerId' => $this->string()->notNull(),
+            'response' => $this->text(),
+            'dateCreated' => $this->dateTime()->notNull(),
+            'dateUpdated' => $this->dateTime()->notNull(),
+            'uid' => $this->uid(),
+        ]);
+
+        $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'gatewayId'), '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
+        $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'userId'), '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE', null);
+
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'gatewayId', false), '{{%stripe_customers}}', 'gatewayId', false);
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'userId', false), '{{%stripe_customers}}', 'userId', false);
+        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'customerId', true), '{{%stripe_customers}}', 'customerId', true);
+
         return true;
     }
 
@@ -40,6 +58,10 @@ class Install extends Migration
      */
     public function safeDown()
     {
+
+        MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_customers}}', $this);
+        $this->dropTable('{{%stripe_customers}}');
+
         return true;
     }
 
@@ -64,7 +86,7 @@ class Install extends Migration
         foreach ($gateways as $gateway) {
 
             $values = [
-                'type' => Stripe::class,
+                'type' => Gateway::class,
             ];
 
             $dbConnection->createCommand()

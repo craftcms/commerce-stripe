@@ -7,7 +7,6 @@
     "stripe",
     "commerce",
     "craftcms",
-    "omnipay",
     "yii2"
   ],
   "license": "MIT",
@@ -25,8 +24,8 @@
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
-    "craftcms/commerce-omnipay": "*",
-    "omnipay/stripe": "~2.4"
+    "craftcms/commerce": "*",
+    "stripe/stripe-php": "^5.0"
   },
   "autoload": {
     "psr-4": {

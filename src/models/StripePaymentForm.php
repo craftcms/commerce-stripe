@@ -3,6 +3,8 @@
 namespace craft\commerce\stripe\models;
 
 use craft\commerce\models\payments\CreditCardPaymentForm;
+use craft\commerce\models\PaymentSource;
+use craft\commerce\stripe\Plugin;
 
 /**
  * Stripe Payment form model.
@@ -12,6 +14,14 @@ use craft\commerce\models\payments\CreditCardPaymentForm;
  */
 class StripePaymentForm extends CreditCardPaymentForm
 {
+
+    /**
+     * @var string $customer the Stripe customer token.
+     */
+    public $customer;
+
+    // Public methods
+    // =========================================================================
     /**
      * @inheritdoc
      */
@@ -27,12 +37,19 @@ class StripePaymentForm extends CreditCardPaymentForm
     /**
      * @inheritdoc
      */
-    public function rules()
+    public function rules(): array
     {
-        if (empty($this->token)) {
-            return parent::rules();
-        }
+        return [[['token'], 'required']];
+    }
 
-        return [];
+    /**
+     * @inheritdoc
+     */
+    public function populateFromPaymentSource(PaymentSource $paymentSource)
+    {
+        $this->token = $paymentSource->token;
+
+        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->userId);
+        $this->customer = $customer->customerId;
     }
 }

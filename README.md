@@ -26,3 +26,60 @@ To install the plugin, follow these instructions.
 ## Setup
 
 To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe”.
+
+## Payment security enforcement
+
+This plugin does not allow submitting credit card details directly to Stripe gateway. Instead, you must tokenize the card before submitting the payment form. See [here](src/resources/js/paymentForm.js) for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
+
+## 3D secure payments
+
+To allow 3D Secure payments, you must perform some additional steps.
+
+### Configure Stripe
+
+Set up a webhook endpoint in your Stripe dashboard API settings that emits at least the following events:
+
+ * `source.cancelled`
+ * `source.chargeable`
+ * `source.failed`
+
+The URL for this endpoint can be found in your Stripe gateway settings.
+
+### Configure the gateway
+
+When the endpoint has been set up, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the appropriate field.
+
+### Disabling CSRF for webhooks.
+
+You must disable CSRF protection for the incoming requests, assuming it is enabled for the site (default for Craft since 3.0).
+
+A clean example for how to go about this can be found [here](https://craftcms.stackexchange.com/a/20301/258).
+
+### Forcing a 3D secure payment.
+
+For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
+
+Cards that do not support 3d secure payment will be unaffected by this setting.
+
+## Events
+
+### The `buildGatewayRequest` event
+
+Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+
+Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `transactionId`, `clientIp` and `transactionReference` metadata keys.
+
+```php
+use craft\commerce\models\Transaction;
+use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+use yii\base\Event;
+
+// ...
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
+    if ($e->transaction->type === 'refund') {
+        $e->metadata['someKey'] = 'some value';
+    }
+});
+```
