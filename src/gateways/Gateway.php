@@ -360,8 +360,15 @@ class Gateway extends BaseGateway
         $data = Json::decodeIfJson($rawData);
 
         if ($data) {
-            if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
-                $this->_handle3DSecureFlowEvent($data);
+            switch ($data['type']) {
+                case 'plan.deleted':
+                case 'plan.updated':
+                    $this->_handlePlanEvent($data);
+                    break;
+                default:
+                    if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
+                        $this->_handle3DSecureFlowEvent($data);
+                    }
             }
         } else {
             Craft::warning('Could not decode JSON payload.', 'stripe');
@@ -632,7 +639,8 @@ class Gateway extends BaseGateway
      * @return void
      * @throws \craft\commerce\errors\TransactionException
      */
-    private function _handle3DSecureFlowEvent(array $data) {
+    private function _handle3DSecureFlowEvent(array $data)
+    {
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
@@ -697,5 +705,34 @@ class Gateway extends BaseGateway
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
         }
+    }
+
+    /**
+     * Handle Plan events
+     *
+     * @param array $data
+     *
+     * @return void
+     */
+    private function _handlePlanEvent(array $data)
+    {
+        $planService = Commerce::getInstance()->getPlans();
+
+        if ($data['type'] == 'plan.deleted') {
+            $plans = $planService->getAllPlans();
+
+            foreach ($plans as $plan) {
+                if ($plan->reference === $data['data']['object']['id']) {
+                    $planService->archivePlanById($plan->id);
+
+                    // TODO probably going to rename this and going to need a place to view these.
+                    $this->_importantLog($plan->name.' was archived because the corresponding plan was deleted on Stripe. (event "'.$data['id'].'")');
+                }
+            }
+        }
+    }
+
+    private function _importantLog($message) {
+        Craft::trace($message);
     }
 }
