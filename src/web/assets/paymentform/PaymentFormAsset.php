@@ -5,22 +5,22 @@
  * @license   https://craftcms.com/license
  */
 
-namespace craft\commerce\stripe;
+namespace craft\commerce\stripe\web\assets\paymentform;
 
 use craft\web\AssetBundle;
 use craft\web\assets\cp\CpAsset;
 
 /**
- * Asset bundle for the Dashboard
+ * Asset bundle for the Payment Form
  */
-class StripePaymentBundle extends AssetBundle
+class PaymentFormAsset extends AssetBundle
 {
     /**
      * @inheritdoc
      */
     public function init()
     {
-        $this->sourcePath = '@craft/commerce/stripe/resources';
+        $this->sourcePath = __DIR__;
 
         $this->css = [
             'css/paymentForm.css',

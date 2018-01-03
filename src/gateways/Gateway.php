@@ -16,7 +16,7 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\models\PaymentForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\Response;
-use craft\commerce\stripe\StripePaymentBundle;
+use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
@@ -262,7 +262,7 @@ class Gateway extends BaseGateway
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
         $view->registerJsFile('https://js.stripe.com/v3/');
-        $view->registerAssetBundle(StripePaymentBundle::class);
+        $view->registerAssetBundle(PaymentFormAsset::class);
 
         $html = Craft::$app->getView()->renderTemplate('commerce-stripe/paymentForm', $params);
         $view->setTemplateMode($previousMode);
