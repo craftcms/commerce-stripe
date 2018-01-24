@@ -5,7 +5,7 @@ namespace craft\commerce\stripe\responses;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
 
-class Response implements RequestResponseInterface
+class PaymentResponse implements RequestResponseInterface
 {
     /**
      * @var

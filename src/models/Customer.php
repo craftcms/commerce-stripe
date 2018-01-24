@@ -6,6 +6,7 @@ use Craft;
 use craft\commerce\base\GatewayInterface;
 use craft\commerce\base\Model;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
 
 /**
@@ -38,9 +39,9 @@ class Customer extends Model
     public $gatewayId;
 
     /**
-     * @var string Token
+     * @var string Reference
      */
-    public $customerId;
+    public $reference;
 
     /**
      * @var string Response data
@@ -67,7 +68,7 @@ class Customer extends Model
      */
     public function __toString()
     {
-        return $this->customerId;
+        return $this->reference;
     }
 
     /**
@@ -98,4 +99,16 @@ class Customer extends Model
         return $this->_gateway;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function rules()
+    {
+
+        return [
+            [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
+            [['gatewayId', 'userId', 'reference', 'response'], 'required']
+        ];
+
+    }
 }

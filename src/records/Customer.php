@@ -4,6 +4,7 @@ namespace craft\commerce\stripe\records;
 
 use craft\commerce\records\Gateway;
 use craft\db\ActiveRecord;
+use craft\records\User;
 use yii\db\ActiveQueryInterface;
 
 /**
@@ -12,7 +13,7 @@ use yii\db\ActiveQueryInterface;
  * @property int               $id
  * @property int               $userId
  * @property int               $gatewayId
- * @property string            $customerId
+ * @property string            $reference
  * @property string            $response
  * @property Gateway           $gateway
  *
@@ -43,15 +44,12 @@ class Customer extends ActiveRecord
     }
 
     /**
-     * @inheritdoc
+     * Return the payment source's owner user.
+     *
+     * @return ActiveQueryInterface The relational query object.
      */
-    public function rules()
+    public function getUser(): ActiveQueryInterface
     {
-
-        return [
-            [['customerId'], 'unique', 'targetAttribute' => ['gatewayId', 'customerId']],
-            [['gatewayId', 'userId', 'customerId', 'response'], 'required']
-        ];
-
+        return $this->hasOne(User::class, ['id' => 'userId']);
     }
 }

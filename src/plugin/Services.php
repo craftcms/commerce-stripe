@@ -3,6 +3,7 @@
 namespace craft\commerce\stripe\plugin;
 
 use craft\commerce\stripe\services\Customers;
+use craft\commerce\stripe\services\Invoices;
 
 /**
  * Trait Services
@@ -16,13 +17,23 @@ trait Services
     // =========================================================================
 
     /**
-     * Returns the address service
+     * Returns the customers service
      *
      * @return Customers The customers service
      */
     public function getCustomers(): Customers
     {
         return $this->get('customers');
+    }
+
+    /**
+     * Returns the invoices service
+     *
+     * @return Invoices The invoices service
+     */
+    public function getInvoices(): Invoices
+    {
+        return $this->get('invoices');
     }
 
     // Private Methods
@@ -37,6 +48,7 @@ trait Services
     {
         $this->setComponents([
             'customers' => Customers::class,
+            'invoices' => Invoices::class,
         ]);
     }
 }

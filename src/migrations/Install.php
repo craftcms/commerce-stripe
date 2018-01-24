@@ -36,19 +36,32 @@ class Install extends Migration
             'id' => $this->primaryKey(),
             'userId' => $this->integer()->notNull(),
             'gatewayId' => $this->integer()->notNull(),
-            'customerId' => $this->string()->notNull(),
+            'reference' => $this->string()->notNull(),
             'response' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
             'uid' => $this->uid(),
         ]);
 
-        $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'gatewayId'), '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
-        $this->addForeignKey($this->db->getForeignKeyName('{{%stripe_customers}}', 'userId'), '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE', null);
+        $this->createTable('{{%stripe_invoices}}', [
+            'id' => $this->primaryKey(),
+            'reference' => $this->string(),
+            'subscriptionId' => $this->integer()->notNull(),
+            'invoiceData' => $this->text(),
+            'dateCreated' => $this->dateTime()->notNull(),
+            'dateUpdated' => $this->dateTime()->notNull(),
+            'uid' => $this->uid(),
+        ]);
 
-        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'gatewayId', false), '{{%stripe_customers}}', 'gatewayId', false);
-        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'userId', false), '{{%stripe_customers}}', 'userId', false);
-        $this->createIndex($this->db->getIndexName('{{%stripe_customers}}', 'customerId', true), '{{%stripe_customers}}', 'customerId', true);
+        $this->addForeignKey(null, '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
+        $this->addForeignKey(null, '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE', null);
+        $this->addForeignKey(null, '{{%stripe_invoices}}', 'subscriptionId', '{{%commerce_subscriptions}}', 'id', 'CASCADE', null);
+
+        $this->createIndex(null, '{{%stripe_customers}}', 'gatewayId', false);
+        $this->createIndex(null, '{{%stripe_customers}}', 'userId', false);
+        $this->createIndex(null, '{{%stripe_customers}}', 'reference', true);
+        $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', true);
+        $this->createIndex(null, '{{%stripe_invoices}}', 'reference', true);
 
         return true;
     }
@@ -59,8 +72,10 @@ class Install extends Migration
     public function safeDown()
     {
 
+        MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_invoices}}', $this);
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_customers}}', $this);
         $this->dropTable('{{%stripe_customers}}');
+        $this->dropTable('{{%stripe_invoices}}');
 
         return true;
     }

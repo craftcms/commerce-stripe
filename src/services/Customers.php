@@ -12,13 +12,7 @@ use yii\base\Exception;
 
 /**
  * Customer service.
- *
- * @property Customer         $savedCustomer
- * @property array|Customer[] $allCustomers
- * @property mixed            $lastUsedAddresses
- * @property int              $customerId
- * @property Customer         $customer
- *
+ **
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  2.0
  */
@@ -47,7 +41,7 @@ class Customers extends Component
     /**
      * Save a customer
      *
-     * @param Customer $customer The payment source being saved.
+     * @param Customer $customer The customer being saved.
      *
      * @return bool Whether the payment source was saved successfully
      * @throws Exception if payment source not found by id.
@@ -67,11 +61,10 @@ class Customers extends Component
 
         $record->userId = $customer->userId;
         $record->gatewayId = $customer->gatewayId;
-        $record->customerId = $customer->customerId;
+        $record->reference = $customer->reference;
         $record->response = $customer->response;
 
-        $record->validate();
-        $customer->addErrors($record->getErrors());
+        $customer->validate();
 
         if (!$customer->hasErrors()) {
             // Save it!
@@ -109,7 +102,7 @@ class Customers extends Component
     // =========================================================================
 
     /**
-     * Returns a Query object prepped for retrieving gateways.
+     * Returns a Query object prepped for retrieving customers.
      *
      * @return Query The query object.
      */
@@ -120,7 +113,7 @@ class Customers extends Component
                 'id',
                 'gatewayId',
                 'userId',
-                'customerId',
+                'reference',
                 'response',
             ])
             ->from(['{{%stripe_customers}}']);

@@ -6,19 +6,28 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionGateway as BaseGateway;
+use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
+use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
+use craft\commerce\stripe\errors\CustomerException;
+use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\models\Customer as CustomerModel;
+use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\models\PaymentForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\commerce\stripe\responses\Response;
+use craft\commerce\stripe\responses\PaymentResponse;
+use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
+use craft\elements\User;
+use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
@@ -29,10 +38,12 @@ use Stripe\Collection;
 use Stripe\Customer;
 use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
+use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Stripe;
+use Stripe\Subscription as StripeSubscription;
 use Stripe\Webhook;
 use yii\base\NotSupportedException;
 
@@ -44,6 +55,7 @@ use yii\base\NotSupportedException;
  */
 class Gateway extends BaseGateway
 {
+    // TODO Figure out all the logging of errors and critical logging
     // Constants
     // =========================================================================
 
@@ -106,7 +118,7 @@ class Gateway extends BaseGateway
         if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
         {
             // This should only happen for 3D secure payments.
-            $response = $this->_createResponseFromApiResource($paymentSource);
+            $response = $this->_createPaymentResponseFromApiResource($paymentSource);
             $response->setRedirectUrl($paymentSource->redirect->url);
 
             return $response;
@@ -118,9 +130,9 @@ class Gateway extends BaseGateway
         try {
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
-            return $this->_createResponseFromApiResource($charge);
+            return $this->_createPaymentResponseFromApiResource($charge);
         } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
+            return $this->_createPaymentResponseFromError($exception);
         }
     }
 
@@ -133,9 +145,9 @@ class Gateway extends BaseGateway
             $charge = Charge::retrieve($reference);
             $charge->capture([], ['idempotency_key' => $reference]);
 
-            return $this->_createResponseFromApiResource($charge);
+            return $this->_createPaymentResponseFromApiResource($charge);
         } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
+            return $this->_createPaymentResponseFromError($exception);
         }
     }
 
@@ -156,7 +168,7 @@ class Gateway extends BaseGateway
         $sourceId = Craft::$app->getRequest()->getParam('source');
         $paymentSource = Source::retrieve($sourceId);
 
-        $response = $this->_createResponseFromApiResource($paymentSource);
+        $response = $this->_createPaymentResponseFromApiResource($paymentSource);
         $response->setProcessing(true);
 
         return $response;
@@ -170,30 +182,11 @@ class Gateway extends BaseGateway
         /** @var PaymentForm $sourceData */
         $user = Craft::$app->getUser();
 
-        if ($user->isGuest) {
+        if ($user->getIsGuest()) {
             $user->loginRequired();
         }
 
-        $customers = StripePlugin::getInstance()->getCustomers();
-        $customer = $customers->getCustomer($this->id, $user->getId());
-
-        if (!$customer) {
-            $stripeCustomer = Customer::create([
-                'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->getId()]),
-                'email' => $user->getIdentity()->email
-            ]);
-
-            $customerModel = new CustomerModel([
-                'userId' => $user->getId(),
-                'gatewayId' => $this->id,
-                'customerId' => $stripeCustomer->id,
-                'response' => $stripeCustomer->jsonSerialize()
-            ]);
-
-            $customers->saveCustomer($customerModel);
-        } else {
-            $stripeCustomer = Customer::retrieve($customer->customerId);
-        }
+        $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
 
         $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
@@ -282,6 +275,9 @@ class Gateway extends BaseGateway
         return new PaymentForm();
     }
 
+    /**
+     * @inheritdoc
+     */
     public function getPlanModel(): BasePlan
     {
         return new Plan();
@@ -359,19 +355,26 @@ class Gateway extends BaseGateway
 
         $data = Json::decodeIfJson($rawData);
 
-        if ($data) {
-            switch ($data['type']) {
-                case 'plan.deleted':
-                case 'plan.updated':
-                    $this->_handlePlanEvent($data);
-                    break;
-                default:
-                    if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
-                        $this->_handle3DSecureFlowEvent($data);
-                    }
+        try {
+            if ($data) {
+                switch ($data['type']) {
+                    case 'plan.deleted':
+                    case 'plan.updated':
+                        $this->_handlePlanEvent($data);
+                        break;
+                    case 'invoice.payment_succeeded':
+                        $this->_handleInvoiceSucceededEvent($data);
+                        break;
+                    default:
+                        if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
+                            $this->_handle3DSecureFlowEvent($data);
+                        }
+                }
+            } else {
+                Craft::warning('Could not decode JSON payload.', 'stripe');
             }
-        } else {
-            Craft::warning('Could not decode JSON payload.', 'stripe');
+        } catch (\Throwable $exception) {
+            Craft::error('Exception while processing webhook: '.$exception->getMessage(), 'stripe');
         }
 
         $response->data =  'ok';
@@ -391,7 +394,7 @@ class Gateway extends BaseGateway
         if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
         {
             // This should only happen for 3D secure payments.
-            $response = $this->_createResponseFromApiResource($paymentSource);
+            $response = $this->_createPaymentResponseFromApiResource($paymentSource);
             $response->setRedirectUrl($paymentSource->redirect->url);
 
             return $response;
@@ -403,9 +406,9 @@ class Gateway extends BaseGateway
         try {
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
-            return $this->_createResponseFromApiResource($charge);
+            return $this->_createPaymentResponseFromApiResource($charge);
         } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
+            return $this->_createPaymentResponseFromError($exception);
         }
     }
 
@@ -417,11 +420,49 @@ class Gateway extends BaseGateway
         try {
             $refund = Refund::create(['charge' => $reference], ['idempotency_key' => 'refund_'.$reference]);
 
-            return $this->_createResponseFromApiResource($refund);
+            return $this->_createPaymentResponseFromApiResource($refund);
         } catch (\Exception $exception) {
-            return $this->_createResponseFromError($exception);
+            return $this->_createPaymentResponseFromError($exception);
         }
     }
+
+    /**
+     * @inheritdoc
+     * @throws SubscriptionException if there was a problem subscribing to the plan
+     */
+    public function subscribe(User $user, BasePlan $plan,  array $parameters = []): SubscriptionResponseInterface
+    {
+        try {
+            $stripeCustomer = $this->_getStripeCustomer($user);
+        } catch (CustomerException $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        $sources = $stripeCustomer->sources->all();
+
+        if (\count($sources->data) === 0) {
+            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
+        }
+
+        try {
+            $subscription = StripeSubscription::create([
+                'customer' => $stripeCustomer->id,
+                'items' => [['plan' => $plan->reference]],
+                'metadata' => [
+                    'commerce_subscription' => true
+                ]
+            ]);
+        } catch (\Throwable $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        return $this->_createSubscriptionResponse($subscription);
+    }
+
 
     /**
      * @inheritdoc
@@ -592,13 +633,13 @@ class Gateway extends BaseGateway
      *
      * @param ApiResource $resource
      *
-     * @return Response
+     * @return PaymentResponse
      */
-    private function _createResponseFromApiResource(ApiResource $resource): Response
+    private function _createPaymentResponseFromApiResource(ApiResource $resource): PaymentResponse
     {
         $data = $resource->jsonSerialize();
 
-        return new Response($data);
+        return new PaymentResponse($data);
     }
 
     /**
@@ -606,10 +647,10 @@ class Gateway extends BaseGateway
      *
      * @param \Exception $exception
      *
-     * @return Response
+     * @return PaymentResponse
      * @throws \Exception
      */
-    private function _createResponseFromError(\Exception $exception)
+    private function _createPaymentResponseFromError(\Exception $exception): PaymentResponse
     {
         if ($exception instanceof CardError) {
             $body = $exception->getJsonBody();
@@ -628,16 +669,92 @@ class Gateway extends BaseGateway
             throw $exception;
         }
 
-        return new Response($data);
+        return new PaymentResponse($data);
+    }
+
+    /**
+     * Create a Subscription Response object from an ApiResponse object.
+     *
+     * @param ApiResource $resource
+     *
+     * @return SubscriptionResponseInterface
+     */
+    private function _createSubscriptionResponse(ApiResource $resource): SubscriptionResponseInterface
+    {
+        $data = $resource->jsonSerialize();
+
+        return new SubscriptionResponse($data);
+    }
+
+    /**
+     * Get the Stripe customer for a User.
+     *
+     * @param User $user
+     *
+     * @return Customer
+     * @throws CustomerException if wasn't able to create or retrieve Stripe Customer.
+     */
+    private function _getStripeCustomer(User $user): Customer
+    {
+        try {
+            $customers = StripePlugin::getInstance()->getCustomers();
+            $customer = $customers->getCustomer($this->id, $user->id);
+
+            if (!$customer) {
+                $stripeCustomer = Customer::create([
+                    'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
+                    'email' => $user->email
+                ]);
+
+                $customerModel = new CustomerModel([
+                    'userId' => $user->id,
+                    'gatewayId' => $this->id,
+                    'reference' => $stripeCustomer->id,
+                    'response' => $stripeCustomer->jsonSerialize()
+                ]);
+
+                $customers->saveCustomer($customerModel);
+            } else {
+                $stripeCustomer = Customer::retrieve($customer->reference);
+            }
+        } catch (\Exception $exception) {
+            throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
+        }
+
+        return $stripeCustomer;
+    }
+
+    /**
+     * Handle a successful invoice payment event.
+     *
+     * @param array $data
+     *
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    private function _handleInvoiceSucceededEvent(array $data)
+    {
+        $stripeInvoice = StripeInvoice::retrieve($data['data']['object']['id']);
+        $stripeSubscription = StripeSubscription::retrieve($data['data']['object']['subscription']);
+        $subscription = Subscription::find()->reference($stripeSubscription->id)->one();
+
+        $invoice = new Invoice();
+        $invoice->subscriptionId = $subscription->id;
+        $invoice->reference = $stripeInvoice->id;
+        $invoice->invoiceData = $stripeInvoice->jsonSerialize();
+        StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
+
+        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription->current_period_end);
+        Craft::$app->getElements()->saveElement($subscription);
     }
 
     /**
      * Handle 3D Secure related event.
      *
-     * @param array       $data
+     * @param array $data
      *
      * @return void
-     * @throws \craft\commerce\errors\TransactionException
      */
     private function _handle3DSecureFlowEvent(array $data)
     {
@@ -674,9 +791,9 @@ class Gateway extends BaseGateway
                     try {
                         $charge = Charge::create($requestData, ['idempotency_key' => $childTransaction->hash]);
 
-                        $stripeResponse = $this->_createResponseFromApiResource($charge);
+                        $stripeResponse = $this->_createPaymentResponseFromApiResource($charge);
                     } catch (\Exception $exception) {
-                        $stripeResponse = $this->_createResponseFromError($exception);
+                        $stripeResponse = $this->_createPaymentResponseFromError($exception);
                     }
 
                     if ($stripeResponse->isSuccessful()) {
