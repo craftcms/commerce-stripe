@@ -70,4 +70,22 @@ class SubscriptionResponse implements SubscriptionResponseInterface
 
         return DateTimeHelper::toDateTime($timestamp);
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function isCanceled(): bool
+    {
+        return (bool)$this->data['status'] == 'canceled';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function isScheduledForCancelation(): bool
+    {
+        return (bool)$this->data['cancel_at_period_end'];
+    }
+
+
 }
