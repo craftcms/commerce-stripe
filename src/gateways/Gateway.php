@@ -29,6 +29,7 @@ use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
 use craft\elements\User;
 use craft\helpers\DateTimeHelper;
+use craft\helpers\Db;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
@@ -135,6 +136,21 @@ class Gateway extends BaseGateway
             return $this->_createPaymentResponseFromApiResource($charge);
         } catch (\Exception $exception) {
             return $this->_createPaymentResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function cancelSubscription(string $reference, array $parameters = []): SubscriptionResponseInterface
+    {
+        try {
+            $stripeSubscription = StripeSubscription::retrieve($reference);
+            $response = $stripeSubscription->cancel();
+
+            return $this->_createSubscriptionResponse($response);
+        } catch (\Throwable $exception) {
+            throw new SubscriptionException('Failed to cancel subscription: '.$exception->getMessage());
         }
     }
 
@@ -399,6 +415,9 @@ class Gateway extends BaseGateway
                     case 'invoice.payment_succeeded':
                         $this->_handleInvoiceSucceededEvent($data);
                         break;
+                    case 'customer.subscription.deleted':
+                        $this->_handleSubscriptionExpired($data);
+                        break;
                     default:
                         if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
                             $this->_handle3DSecureFlowEvent($data);
@@ -484,9 +503,6 @@ class Gateway extends BaseGateway
             $subscription = StripeSubscription::create([
                 'customer' => $stripeCustomer->id,
                 'items' => [['plan' => $plan->reference]],
-                'metadata' => [
-                    'commerce_subscription' => true
-                ]
             ]);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
@@ -759,36 +775,53 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * Handle a successful invoice payment event.
+     * Handle an expired subscription.
      *
      * @param array $data
      *
      * @throws \Throwable
-     * @throws \craft\errors\ElementNotFoundException
-     * @throws \yii\base\Exception
+     */
+    private function _handleSubscriptionExpired(array $data)
+    {
+        $stripeSubscription = $data['data']['object'];
+
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+        $subscription->isExpired = true;
+        $subscription->dateExpired = Db::prepareDateForDb(new \DateTime());
+
+        Craft::$app->getElements()->saveElement($subscription);
+    }
+
+    /**
+     * Handle a successful invoice payment event.
+     *
+     * @param array $data
+     *
+     * @return void
+     * @throws \Throwable
      */
     private function _handleInvoiceSucceededEvent(array $data)
     {
-        $stripeInvoice = StripeInvoice::retrieve($data['data']['object']['id']);
+        $stripeInvoice = $data['data']['object'];
 
         // Sanity check
-        if (!$stripeInvoice->paid) {
+        if (!$stripeInvoice['paid']) {
             return;
         }
 
-        $stripeSubscription = StripeSubscription::retrieve($data['data']['object']['subscription']);
+        $stripeSubscription = StripeSubscription::retrieve($stripeInvoice['subscription']);
         $subscription = Subscription::find()->reference($stripeSubscription->id)->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “'.$stripeSubscription->id.'” not found when processing webhook '.$data['id'], 'stripe');
-            
+
             return;
         }
 
         $invoice = new Invoice();
         $invoice->subscriptionId = $subscription->id;
-        $invoice->reference = $stripeInvoice->id;
-        $invoice->invoiceData = $stripeInvoice->jsonSerialize();
+        $invoice->reference = $stripeInvoice['id'];
+        $invoice->invoiceData = $stripeInvoice;
         StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
 
         $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription->current_period_end);
