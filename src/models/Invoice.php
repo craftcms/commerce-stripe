@@ -31,7 +31,7 @@ class Invoice extends Model
     public $reference;
 
     /**
-     * @var string invoice data
+     * @var mixed invoice data
      */
     public $invoiceData;
 

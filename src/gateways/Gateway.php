@@ -11,6 +11,7 @@ use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
@@ -29,6 +30,7 @@ use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
 use craft\elements\User;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
+use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use craft\web\Response as WebResponse;
@@ -290,6 +292,38 @@ class Gateway extends BaseGateway
     {
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSubscriptionPayments(Subscription $subscription): array
+    {
+        $payments = [];
+
+        $invoices = StripePlugin::getInstance()->getInvoices()->getSubscriptionInvoices($subscription->id);
+
+        foreach ($invoices as $invoice) {
+            $data = $invoice->invoiceData;
+            $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(StringHelper::toUpperCase($data['currency']));
+
+            if (!$currency) {
+                Craft::warning('Unsupported currency - '.$data['currency'], 'stripe');
+                continue;
+            }
+
+            $payment = new SubscriptionPayment([
+                'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
+                'paymentCurrency' => $currency,
+                'paymentDate' => $data['date'],
+                'paymentReference' => $data['charge'],
+            ]);
+
+            $payments[] = $payment;
+        }
+
+        return $payments;
+    }
+
 
     /**
      * @inheritdoc
@@ -736,8 +770,20 @@ class Gateway extends BaseGateway
     private function _handleInvoiceSucceededEvent(array $data)
     {
         $stripeInvoice = StripeInvoice::retrieve($data['data']['object']['id']);
+
+        // Sanity check
+        if (!$stripeInvoice->paid) {
+            return;
+        }
+
         $stripeSubscription = StripeSubscription::retrieve($data['data']['object']['subscription']);
         $subscription = Subscription::find()->reference($stripeSubscription->id)->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$stripeSubscription->id.'” not found when processing webhook '.$data['id'], 'stripe');
+            
+            return;
+        }
 
         $invoice = new Invoice();
         $invoice->subscriptionId = $subscription->id;

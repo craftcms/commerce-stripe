@@ -35,12 +35,13 @@ class Invoices extends Component
      *
      * @param int $subscriptionId The subscription id.
      *
-     * @return Invoices[]
+     * @return Invoice[]
      */
     public function getSubscriptionInvoices(int $subscriptionId)
     {
         $results = $this->_createInvoiceQuery()
             ->where(['subscriptionId' => $subscriptionId])
+            ->orderBy(['dateCreated' => SORT_DESC])
             ->all();
 
         $invoices = [];
