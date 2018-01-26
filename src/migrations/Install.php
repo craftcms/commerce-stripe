@@ -60,7 +60,7 @@ class Install extends Migration
         $this->createIndex(null, '{{%stripe_customers}}', 'gatewayId', false);
         $this->createIndex(null, '{{%stripe_customers}}', 'userId', false);
         $this->createIndex(null, '{{%stripe_customers}}', 'reference', true);
-        $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', true);
+        $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', false);
         $this->createIndex(null, '{{%stripe_invoices}}', 'reference', true);
 
         return true;
