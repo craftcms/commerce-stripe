@@ -11,6 +11,8 @@ use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
+use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
@@ -19,10 +21,11 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
-use craft\commerce\stripe\models\PaymentForm;
+use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentResponse;
 use craft\commerce\stripe\responses\SubscriptionResponse;
@@ -41,7 +44,6 @@ use Stripe\Collection;
 use Stripe\Customer;
 use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
-use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Refund;
 use Stripe\Source;
@@ -113,7 +115,7 @@ class Gateway extends BaseGateway
      */
     public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var PaymentForm $form */
+        /** @var Payment $form */
         $requestData = $this->_buildRequestData($transaction);
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
         $requestData['capture'] = false;
@@ -142,11 +144,12 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function cancelSubscription(string $reference, array $parameters = []): SubscriptionResponseInterface
+    public function cancelSubscription(string $reference, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
             $stripeSubscription = StripeSubscription::retrieve($reference);
-            $response = $stripeSubscription->cancel();
+            /** @var CancelSubscription $parameters */
+            $response = $stripeSubscription->cancel(['at_period_end' => !$parameters->cancelImmediately]);
 
             return $this->_createSubscriptionResponse($response);
         } catch (\Throwable $exception) {
@@ -197,7 +200,7 @@ class Gateway extends BaseGateway
      */
     public function createPaymentSource(BasePaymentForm $sourceData): PaymentSource
     {
-        /** @var PaymentForm $sourceData */
+        /** @var Payment $sourceData */
         $user = Craft::$app->getUser();
 
         if ($user->getIsGuest()) {
@@ -254,6 +257,14 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function getCancelSubscriptionFormModel(): BaseCancelSubscriptionForm
+    {
+        return new CancelSubscription();
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getSettingsHtml()
     {
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings', ['gateway' => $this]);
@@ -290,7 +301,7 @@ class Gateway extends BaseGateway
      */
     public function getPaymentFormModel()
     {
-        return new PaymentForm();
+        return new Payment();
     }
 
     /**
@@ -307,6 +318,11 @@ class Gateway extends BaseGateway
     public function getPlanSettingsHtml(array $params = [])
     {
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
+    }
+
+    public function getSubscriptionFormModel(): SubscriptionForm
+    {
+        return new SubscriptionForm();
     }
 
     /**
@@ -339,7 +355,6 @@ class Gateway extends BaseGateway
 
         return $payments;
     }
-
 
     /**
      * @inheritdoc
@@ -374,11 +389,10 @@ class Gateway extends BaseGateway
         return $output;
     }
 
-
     /**
      * @inheritdoc
      */
-    public function processWebHook(): WebResponse
+        public function processWebHook(): WebResponse
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
@@ -440,7 +454,7 @@ class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var PaymentForm $form */
+        /** @var Payment $form */
         $requestData = $this->_buildRequestData($transaction);
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
 
@@ -483,7 +497,7 @@ class Gateway extends BaseGateway
      * @inheritdoc
      * @throws SubscriptionException if there was a problem subscribing to the plan
      */
-    public function subscribe(User $user, BasePlan $plan,  array $parameters = []): SubscriptionResponseInterface
+    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
             $stripeCustomer = $this->_getStripeCustomer($user);
@@ -503,6 +517,7 @@ class Gateway extends BaseGateway
             $subscription = StripeSubscription::create([
                 'customer' => $stripeCustomer->id,
                 'items' => [['plan' => $plan->reference]],
+                'trial_period_days' => $parameters->trialDays
             ]);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
@@ -633,13 +648,13 @@ class Gateway extends BaseGateway
      * Depending on input, it can be an array of data, a string or a Source object.
      *
      * @param Transaction $transaction
-     * @param PaymentForm $paymentForm
+     * @param Payment     $paymentForm
      * @param array       $request
      *
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
      */
-    private function _buildRequestPaymentSource(Transaction $transaction, PaymentForm $paymentForm, array $request)
+    private function _buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request)
     {
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
@@ -809,11 +824,11 @@ class Gateway extends BaseGateway
             return;
         }
 
-        $stripeSubscription = StripeSubscription::retrieve($stripeInvoice['subscription']);
-        $subscription = Subscription::find()->reference($stripeSubscription->id)->one();
+        $stripeSubscription = $stripeInvoice['subscription'];
+        $subscription = Subscription::find()->reference($stripeSubscription)->one();
 
         if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$stripeSubscription->id.'” not found when processing webhook '.$data['id'], 'stripe');
+            Craft::warning('Subscription with the reference “'.$stripeSubscription.'” not found when processing webhook '.$data['id'], 'stripe');
 
             return;
         }
@@ -824,8 +839,17 @@ class Gateway extends BaseGateway
         $invoice->invoiceData = $stripeInvoice;
         StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
 
-        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription->current_period_end);
-        Craft::$app->getElements()->saveElement($subscription);
+        $lineItems = $stripeInvoice['lines']['data'];
+
+        // Find the relevant line item and update subscription end date
+        foreach ($lineItems as $lineItem) {
+            if ($lineItem['id'] === $stripeSubscription) {
+                $subscription->nextPaymentDate = DateTimeHelper::toDateTime($lineItem['period']['end']);
+
+                Craft::$app->getElements()->saveElement($subscription);
+                return;
+            }
+        }
     }
 
     /**
