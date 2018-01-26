@@ -1,6 +1,6 @@
 <?php
 
-namespace craft\commerce\stripe\models;
+namespace craft\commerce\stripe\models\forms;
 
 use craft\commerce\models\payments\CreditCardPaymentForm;
 use craft\commerce\models\PaymentSource;
@@ -12,7 +12,7 @@ use craft\commerce\stripe\Plugin;
  * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since     1.0
  */
-class PaymentForm extends CreditCardPaymentForm
+class Payment extends CreditCardPaymentForm
 {
 
     /**
