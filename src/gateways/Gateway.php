@@ -432,6 +432,9 @@ class Gateway extends BaseGateway
                     case 'customer.subscription.deleted':
                         $this->_handleSubscriptionExpired($data);
                         break;
+                    case 'customer.subscription.updated':
+                        $this->_handleSubscriptionUpdated($data);
+                        break;
                     default:
                         if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
                             $this->_handle3DSecureFlowEvent($data);
@@ -808,6 +811,27 @@ class Gateway extends BaseGateway
     }
 
     /**
+     * Handle an updated subscription.
+     *
+     * @param array $data
+     *
+     * @throws \Throwable
+     */
+    private function _handleSubscriptionUpdated(array $data)
+    {
+        $stripeSubscription = $data['data']['object'];
+        $isCanceled = $data['data']['object']['canceled_at'];
+
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+        $subscription->isCanceled = (bool) $isCanceled;
+        $subscription->dateCanceled = $isCanceled ? DateTimeHelper::toDateTime($isCanceled) : null;
+        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
+
+        Craft::$app->getElements()->saveElement($subscription);
+
+    }
+
+    /**
      * Handle a successful invoice payment event.
      *
      * @param array $data
@@ -844,8 +868,8 @@ class Gateway extends BaseGateway
         // Find the relevant line item and update subscription end date
         foreach ($lineItems as $lineItem) {
             if ($lineItem['id'] === $stripeSubscription) {
-                $subscription->nextPaymentDate = DateTimeHelper::toDateTime($lineItem['period']['end']);
 
+                $subscription->nextPaymentDate = DateTimeHelper::toDateTime($lineItem['period']['end']);
                 Craft::$app->getElements()->saveElement($subscription);
                 return;
             }
