@@ -1,0 +1,16 @@
+{% import "_includes/forms" as forms %}
+
+<fieldset class="cancel-optionss">
+    <div class="multitext">
+        <div class="multitextrow">
+            {{ forms.selectField({
+                label: 'Cancel subscription'|t('commerce'),
+                name: 'cancelImmediately',
+                options: [
+                    {label: 'Immediately'|t('commerce'), value: '1'|hash},
+                    {label: 'On period end', value: '0'|hash}
+                ]
+            }) }}
+        </div>
+    </div>
+</fieldset>

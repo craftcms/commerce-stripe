@@ -4,6 +4,7 @@ namespace craft\commerce\stripe\gateways;
 
 use Craft;
 use craft\commerce\base\Plan as BasePlan;
+use craft\commerce\base\PlanInterface;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\base\SubscriptionResponseInterface;
@@ -15,6 +16,7 @@ use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubs
 use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\PaymentSource;
+use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -23,6 +25,7 @@ use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\Customer as CustomerModel;
+use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\models\forms\Payment;
@@ -144,10 +147,10 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function cancelSubscription(string $reference, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
+    public function cancelSubscription(Subscription $subscription, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
-            $stripeSubscription = StripeSubscription::retrieve($reference);
+            $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
             /** @var CancelSubscription $parameters */
             $response = $stripeSubscription->cancel(['at_period_end' => !$parameters->cancelImmediately]);
 
@@ -245,13 +248,28 @@ class Gateway extends BaseGateway
         return true;
     }
 
-
     /**
      * @inheritdoc
      */
     public static function displayName(): string
     {
         return Craft::t('commerce', 'Stripe');
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getCancelSubscriptionFormHtml(): string
+    {
+        $view = Craft::$app->getView();
+
+        $previousMode = $view->getTemplateMode();
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $html = $view->renderTemplate('commerce-stripe/cancelSubscriptionForm');
+        $view->setTemplateMode($previousMode);
+
+        return $html;
     }
 
     /**
@@ -265,9 +283,19 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getNextPaymentAmount(Subscription $subscription): string
     {
-        return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings', ['gateway' => $this]);
+        $data = Json::decode($subscription->subscriptionData);
+        $currencyCode = StringHelper::toUpperCase($data['plan']['currency']);
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
+
+        if (!$currency) {
+            Craft::warning('Unsupported currency - '.$currencyCode, 'stripe');
+
+            return (float)0;
+        }
+
+        return $data['plan']['amount'] / (10 ** $currency->minorUnit).' '.$currencyCode;
     }
 
     /**
@@ -290,7 +318,7 @@ class Gateway extends BaseGateway
         $view->registerJsFile('https://js.stripe.com/v3/');
         $view->registerAssetBundle(PaymentFormAsset::class);
 
-        $html = Craft::$app->getView()->renderTemplate('commerce-stripe/paymentForm', $params);
+        $html = $view->renderTemplate('commerce-stripe/paymentForm', $params);
         $view->setTemplateMode($previousMode);
 
         return $html;
@@ -320,6 +348,33 @@ class Gateway extends BaseGateway
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsHtml()
+    {
+        return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings', ['gateway' => $this]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSubscriptionFormHtml(): string
+    {
+        $view = Craft::$app->getView();
+
+        $previousMode = $view->getTemplateMode();
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $html = $view->renderTemplate('commerce-stripe/subscriptionForm');
+        $view->setTemplateMode($previousMode);
+
+        return $html;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function getSubscriptionFormModel(): SubscriptionForm
     {
         return new SubscriptionForm();
@@ -392,7 +447,35 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-        public function processWebHook(): WebResponse
+    public function getSwitchPlansFormHtml(PlanInterface $originalPlan, PlanInterface $targetPlan): string
+    {
+        $view = Craft::$app->getView();
+
+        $previousMode = $view->getTemplateMode();
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        /** @var Plan $originalPlan */
+        /** @var Plan $targetPlan */
+        $html = $view->renderTemplate('commerce-stripe/switchPlansForm', ['plansOnSameCycle' => $originalPlan->isOnSamePaymentCycleAs($targetPlan)]);
+
+        $view->setTemplateMode($previousMode);
+
+        return $html;
+    }
+
+
+    /**
+     * @inheritdoc
+     */
+    public function getSwitchPlansFormModel(): SwitchPlansForm
+    {
+        return new SwitchPlans();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function processWebHook(): WebResponse
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
@@ -485,6 +568,23 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function reactivateSubscription(Subscription $subscription): SubscriptionResponseInterface
+    {
+        /** @var Plan $plan */
+        $plan = $subscription->getPlan();
+
+        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        $stripeSubscription->items = [[
+            'id' => $stripeSubscription->items->data[0]->id,
+            'plan' => $plan->reference,
+        ]];
+
+        return $this->_createSubscriptionResponse($stripeSubscription->save());
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function refund(Transaction $transaction, string $reference): RequestResponseInterface
     {
         try {
@@ -495,42 +595,6 @@ class Gateway extends BaseGateway
             return $this->_createPaymentResponseFromError($exception);
         }
     }
-
-    /**
-     * @inheritdoc
-     * @throws SubscriptionException if there was a problem subscribing to the plan
-     */
-    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
-    {
-        try {
-            $stripeCustomer = $this->_getStripeCustomer($user);
-        } catch (CustomerException $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
-        }
-
-        $sources = $stripeCustomer->sources->all();
-
-        if (\count($sources->data) === 0) {
-            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
-        }
-
-        try {
-            $subscription = StripeSubscription::create([
-                'customer' => $stripeCustomer->id,
-                'items' => [['plan' => $plan->reference]],
-                'trial_period_days' => $parameters->trialDays
-            ]);
-        } catch (\Throwable $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
-        }
-
-        return $this->_createSubscriptionResponse($subscription);
-    }
-
 
     /**
      * @inheritdoc
@@ -547,6 +611,7 @@ class Gateway extends BaseGateway
     {
         return true;
     }
+
 
     /**
      * @inheritdoc
@@ -572,11 +637,18 @@ class Gateway extends BaseGateway
         return true;
     }
 
-
     /**
      * @inheritdoc
      */
     public function supportsPurchase(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function supportsReactivation(): bool
     {
         return true;
     }
@@ -598,8 +670,8 @@ class Gateway extends BaseGateway
     }
 
     // Private methods
-    // =========================================================================
 
+    // =========================================================================
     /**
      * Build the request data array.
      *
@@ -708,6 +780,41 @@ class Gateway extends BaseGateway
         $data = $resource->jsonSerialize();
 
         return new PaymentResponse($data);
+    }
+
+    /**
+     * @inheritdoc
+     * @throws SubscriptionException if there was a problem subscribing to the plan
+     */
+    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
+    {
+        try {
+            $stripeCustomer = $this->_getStripeCustomer($user);
+        } catch (CustomerException $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        $sources = $stripeCustomer->sources->all();
+
+        if (\count($sources->data) === 0) {
+            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
+        }
+
+        try {
+            $subscription = StripeSubscription::create([
+                'customer' => $stripeCustomer->id,
+                'items' => [['plan' => $plan->reference]],
+                'trial_period_days' => $parameters->trialDays
+            ]);
+        } catch (\Throwable $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        return $this->_createSubscriptionResponse($subscription);
     }
 
     /**

@@ -1,0 +1,20 @@
+{% import "_includes/forms" as forms %}
+
+<fieldset class="subscription-switch">
+    <div class="cost">
+        <select name="prorate">
+            <option value="{{ '1'|hash }}">{{ 'Prorate the switch cost'|t('commerce') }}</option>
+            <option value="{{ '0'|hash }}">{{ 'Do not prorate the switch cost'|t('commerce') }}</option>
+        </select>
+    </div>
+    <div>
+        {% if plansOnSameCycle %}
+            <select name="payImmediately">
+                <option value="{{ '1'|hash }}">{{ 'Pay immediately'|t('commerce') }}</option>
+                <option value="{{ '0'|hash }}">{{ 'Add to next invoice'|t('commerce') }}</option>
+            </select>
+        {% else %}
+            {{ 'The switch will be billed immediately'|t('commerce') }}
+        {% endif %}
+    </div>
+</fieldset>
