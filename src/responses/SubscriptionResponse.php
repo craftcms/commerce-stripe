@@ -76,7 +76,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
      */
     public function isCanceled(): bool
     {
-        return (bool)$this->data['status'] == 'canceled';
+        return $this->data['status'] === 'canceled';
     }
 
     /**
