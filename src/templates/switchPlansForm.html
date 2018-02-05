@@ -9,8 +9,8 @@
     </div>
     <div>
         {% if plansOnSameCycle %}
-            <select name="payImmediately">
-                <option value="{{ '1'|hash }}">{{ 'Pay immediately'|t('commerce') }}</option>
+            <select name="billImmediately">
+                <option value="{{ '1'|hash }}">{{ 'Create an invoice immediately'|t('commerce') }}</option>
                 <option value="{{ '0'|hash }}">{{ 'Add to next invoice'|t('commerce') }}</option>
             </select>
         {% else %}
