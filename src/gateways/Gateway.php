@@ -30,6 +30,7 @@ use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\Plugin;
 use craft\commerce\stripe\responses\PaymentResponse;
 use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
@@ -47,6 +48,7 @@ use Stripe\Collection;
 use Stripe\Customer;
 use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
+use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Refund;
 use Stripe\Source;
@@ -512,6 +514,9 @@ class Gateway extends BaseGateway
                     case 'invoice.payment_succeeded':
                         $this->_handleInvoiceSucceededEvent($data);
                         break;
+                    case 'invoice.created':
+                        $this->_handleInvoiceCreated($data);
+                        break;
                     case 'customer.subscription.deleted':
                         $this->_handleSubscriptionExpired($data);
                         break;
@@ -640,6 +645,14 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function supportsPlanSwitch(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function supportsPurchase(): bool
     {
         return true;
@@ -668,6 +681,32 @@ class Gateway extends BaseGateway
     {
         return true;
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function switchSubscriptionPlan(Subscription $subscription, BasePlan $plan, SwitchPlansForm $parameters): SubscriptionResponseInterface
+    {
+        /** @var SwitchPlans $parameters */
+        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        $stripeSubscription->items = [[
+            'id' => $stripeSubscription->items->data[0]->id,
+            'plan' => $plan->reference,
+        ]];
+        $stripeSubscription->prorate = (bool) $parameters->prorate;
+
+        $response = $this->_createSubscriptionResponse($stripeSubscription->save());
+
+        if ($parameters->billImmediately) {
+            $invoice = StripeInvoice::create(array(
+                'customer' => $stripeSubscription->customer,
+                'subscription' => $stripeSubscription->id
+            ));
+        }
+
+        return $response;
+    }
+
 
     // Private methods
 
@@ -930,12 +969,39 @@ class Gateway extends BaseGateway
         $isCanceled = $data['data']['object']['canceled_at'];
 
         $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
-        $subscription->isCanceled = (bool) $isCanceled;
-        $subscription->dateCanceled = $isCanceled ? DateTimeHelper::toDateTime($isCanceled) : null;
-        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
 
-        Craft::$app->getElements()->saveElement($subscription);
+        // See if we care about this subscription at all
+        if ($subscription) {
+            $subscription->isCanceled = (bool) $isCanceled;
+            $subscription->dateCanceled = $isCanceled ? DateTimeHelper::toDateTime($isCanceled) : null;
+            $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
 
+            $planHandle = $isCanceled = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByHandle($planHandle);
+
+            if ($plan && $plan->id !== $subscription->planId) {
+                $subscription->planId = $plan->id;
+            } else {
+                $this->_importantLog($subscription->reference.' was switched to a plan on Stripe that does not exist on this Site. (event "'.$data['id'].'")');
+            }
+
+            Craft::$app->getElements()->saveElement($subscription);
+        }
+    }
+
+    /**
+     * Handle a created invoice.
+     *
+     * @param array $data
+     */
+    private function _handleInvoiceCreated(array $data)
+    {
+        $stripeInvoice = $data['data']['object'];
+
+        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && empty($stripeInvoice['paid'])) {
+            $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
+            $invoice->pay();
+        }
     }
 
     /**
@@ -1084,6 +1150,6 @@ class Gateway extends BaseGateway
     }
 
     private function _importantLog($message) {
-        Craft::trace($message);
+        Craft::trace($message, 'stripe');
     }
 }
