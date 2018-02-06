@@ -53,7 +53,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
             return 0;
         }
 
-        return (int)$this->data['plan']['trial_period_days'];
+        return (int)(($this->data['trial_end'] - $this->data['trial_start']) / 60 / 60 / 24);
     }
 
     /**
