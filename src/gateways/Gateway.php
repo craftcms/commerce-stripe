@@ -950,6 +950,13 @@ class Gateway extends BaseGateway
         $stripeSubscription = $data['data']['object'];
 
         $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
+
+            return;
+        }
+
         $subscription->isExpired = true;
         $subscription->dateExpired = Db::prepareDateForDb(new \DateTime());
 
@@ -969,6 +976,12 @@ class Gateway extends BaseGateway
         $isCanceled = $data['data']['object']['canceled_at'];
 
         $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
+
+            return;
+        }
 
         // See if we care about this subscription at all
         if ($subscription) {
@@ -1021,11 +1034,11 @@ class Gateway extends BaseGateway
             return;
         }
 
-        $stripeSubscription = $stripeInvoice['subscription'];
-        $subscription = Subscription::find()->reference($stripeSubscription)->one();
+        $subscriptionReference = $stripeInvoice['subscription'];
+        $subscription = Subscription::find()->reference($subscriptionReference)->one();
 
         if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$stripeSubscription.'” not found when processing webhook '.$data['id'], 'stripe');
+            Craft::warning('Subscription with the reference “'.$subscriptionReference.'” not found when processing webhook '.$data['id'], 'stripe');
 
             return;
         }
@@ -1040,7 +1053,7 @@ class Gateway extends BaseGateway
 
         // Find the relevant line item and update subscription end date
         foreach ($lineItems as $lineItem) {
-            if ($lineItem['id'] === $stripeSubscription) {
+            if ($lineItem['id'] === $subscriptionReference) {
 
                 $subscription->nextPaymentDate = DateTimeHelper::toDateTime($lineItem['period']['end']);
                 Craft::$app->getElements()->saveElement($subscription);
