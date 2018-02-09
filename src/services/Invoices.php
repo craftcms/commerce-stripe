@@ -85,8 +85,10 @@ class Invoices extends Component
         if ($invoice->validate()) {
             $record->save(false);
             $invoice->id = $record->id;
-
-            $this->trigger(self::EVENT_SAVE_INVOICE, new SaveInvoiceEvent(['invoice' => $invoice]));
+            
+            if ($this->hasEventHandlers(self::EVENT_SAVE_INVOICE)) {
+                $this->trigger(self::EVENT_SAVE_INVOICE, new SaveInvoiceEvent(['invoice' => $invoice]));
+            }
 
             return true;
         }
