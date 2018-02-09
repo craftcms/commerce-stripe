@@ -23,6 +23,7 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\stripe\models\forms\SwitchPlans;
@@ -65,7 +66,6 @@ use yii\base\NotSupportedException;
  */
 class Gateway extends BaseGateway
 {
-    // TODO Figure out all the logging of errors and critical logging
     // Constants
     // =========================================================================
 
@@ -74,6 +74,10 @@ class Gateway extends BaseGateway
      */
     const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
 
+    /**
+     * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
+     */
+    const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
     // Properties
     // =========================================================================
@@ -528,6 +532,13 @@ class Gateway extends BaseGateway
                             $this->_handle3DSecureFlowEvent($data);
                         }
                 }
+
+                if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
+                    $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
+                        'webhookData' => $data
+                    ]));
+                }
+
             } else {
                 Craft::warning('Could not decode JSON payload.', 'stripe');
             }
