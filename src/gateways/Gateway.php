@@ -225,6 +225,9 @@ class Gateway extends BaseGateway
 
         $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
+        $stripeCustomer->default_source = $stripeResponse->id;
+        $stripeCustomer->save();
+
         switch ($stripeResponse->type) {
             case 'card':
                 $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
