@@ -6,12 +6,12 @@ use craft\commerce\stripe\models\Invoice;
 use yii\base\Event;
 
 /**
- * Class SaveInvoiceEvent
+ * Class CreateInvoiceEvent
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  1.0
  */
-class SaveInvoiceEvent extends Event
+class CreateInvoiceEvent extends Event
 {
     // Properties
     // =========================================================================

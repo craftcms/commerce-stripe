@@ -15,7 +15,7 @@ class Subscription extends BasePlan
     /**
      * @inheritdoc
      */
-    public function getFriendlyPlanName(): string
+    public function getFriendlyName(): string
     {
         return $this->getPlanData()['name'];
     }

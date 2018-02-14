@@ -3,7 +3,7 @@
 {% set planList = [] %}
 <div id="planList">
     {% if plan is not null and plan.id %}
-        {% set planList = planList|merge([{'label': plan.getFriendlyPlanName(), 'value': plan.reference}]) %}
+        {% set planList = planList|merge([{'label': plan.getFriendlyName(), 'value': plan.reference}]) %}
     {% endif %}
 
     {% set planInput %}

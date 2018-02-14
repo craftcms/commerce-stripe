@@ -11,6 +11,7 @@ use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\SubscriptionException;
+use craft\commerce\models\Currency;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm;
@@ -23,6 +24,7 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\Customer as CustomerModel;
@@ -37,7 +39,6 @@ use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
 use craft\elements\User;
 use craft\helpers\DateTimeHelper;
-use craft\helpers\Db;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
@@ -74,6 +75,11 @@ class Gateway extends BaseGateway
      */
     const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
 
+    /**
+     * @event CreateInvoiceEvent The event that is triggered when an invoice is being created on the gateway.
+     */
+    const EVENT_CREATE_INVOICE = 'createInvoice';
+    
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
      */
@@ -117,7 +123,6 @@ class Gateway extends BaseGateway
         Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
         Stripe::setApiKey($this->apiKey);
     }
-
 
     /**
      * @inheritdoc
@@ -404,14 +409,7 @@ class Gateway extends BaseGateway
                 continue;
             }
 
-            $payment = new SubscriptionPayment([
-                'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
-                'paymentCurrency' => $currency,
-                'paymentDate' => $data['date'],
-                'paymentReference' => $data['charge'],
-            ]);
-
-            $payments[] = $payment;
+            $payments[] = $this->_createSubscriptionPayment($data, $currency);
         }
 
         return $payments;
@@ -614,6 +612,41 @@ class Gateway extends BaseGateway
 
     /**
      * @inheritdoc
+     * @throws SubscriptionException if there was a problem subscribing to the plan
+     */
+    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
+    {
+        try {
+            $stripeCustomer = $this->_getStripeCustomer($user);
+        } catch (CustomerException $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        $sources = $stripeCustomer->sources->all();
+
+        if (\count($sources->data) === 0) {
+            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
+        }
+
+        try {
+            $subscription = StripeSubscription::create([
+                'customer' => $stripeCustomer->id,
+                'items' => [['plan' => $plan->reference]],
+                'trial_period_days' => $parameters->trialDays
+            ]);
+        } catch (\Throwable $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+        }
+
+        return $this->_createSubscriptionResponse($subscription);
+    }
+
+    /**
+     * @inheritdoc
      */
     public function supportsAuthorize(): bool
     {
@@ -718,10 +751,9 @@ class Gateway extends BaseGateway
         return $response;
     }
 
-
     // Private methods
-
     // =========================================================================
+
     /**
      * Build the request data array.
      *
@@ -779,7 +811,7 @@ class Gateway extends BaseGateway
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
      */
-    private function _buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request)
+    private function _buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request): Source
     {
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
@@ -833,41 +865,6 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * @inheritdoc
-     * @throws SubscriptionException if there was a problem subscribing to the plan
-     */
-    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
-    {
-        try {
-            $stripeCustomer = $this->_getStripeCustomer($user);
-        } catch (CustomerException $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
-        }
-
-        $sources = $stripeCustomer->sources->all();
-
-        if (\count($sources->data) === 0) {
-            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
-        }
-
-        try {
-            $subscription = StripeSubscription::create([
-                'customer' => $stripeCustomer->id,
-                'items' => [['plan' => $plan->reference]],
-                'trial_period_days' => $parameters->trialDays
-            ]);
-        } catch (\Throwable $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
-        }
-
-        return $this->_createSubscriptionResponse($subscription);
-    }
-
-    /**
      * Create a Response object from an Exception.
      *
      * @param \Exception $exception
@@ -895,6 +892,26 @@ class Gateway extends BaseGateway
         }
 
         return new PaymentResponse($data);
+    }
+
+    /**
+     * Create a subscription payment from invoice.
+     *
+     * @param $data
+     * @param $currency
+     *
+     * @return SubscriptionPayment
+     */
+    private function _createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
+    {
+        $payment = new SubscriptionPayment([
+            'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
+            'paymentCurrency' => $currency,
+            'paymentDate' => $data['date'],
+            'paymentReference' => $data['charge'],
+        ]);
+
+        return $payment;
     }
 
     /**
@@ -950,135 +967,12 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * Handle an expired subscription.
-     *
-     * @param array $data
-     *
-     * @throws \Throwable
-     */
-    private function _handleSubscriptionExpired(array $data)
-    {
-        $stripeSubscription = $data['data']['object'];
-
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
-
-        if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
-
-            return;
-        }
-
-        $subscription->isExpired = true;
-        $subscription->dateExpired = Db::prepareDateForDb(new \DateTime());
-
-        Craft::$app->getElements()->saveElement($subscription);
-    }
-
-    /**
-     * Handle an updated subscription.
-     *
-     * @param array $data
-     *
-     * @throws \Throwable
-     */
-    private function _handleSubscriptionUpdated(array $data)
-    {
-        $stripeSubscription = $data['data']['object'];
-        $isCanceled = $data['data']['object']['canceled_at'];
-
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
-
-        if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
-
-            return;
-        }
-
-        // See if we care about this subscription at all
-        if ($subscription) {
-            $subscription->isCanceled = (bool) $isCanceled;
-            $subscription->dateCanceled = $isCanceled ? DateTimeHelper::toDateTime($isCanceled) : null;
-            $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
-
-            $planHandle = $isCanceled = $data['data']['object']['plan']['id'];
-            $plan = Commerce::getInstance()->getPlans()->getPlanByHandle($planHandle);
-
-            if ($plan && $plan->id !== $subscription->planId) {
-                $subscription->planId = $plan->id;
-            } else {
-                $this->_importantLog($subscription->reference.' was switched to a plan on Stripe that does not exist on this Site. (event "'.$data['id'].'")');
-            }
-
-            Craft::$app->getElements()->saveElement($subscription);
-        }
-    }
-
-    /**
-     * Handle a created invoice.
-     *
-     * @param array $data
-     */
-    private function _handleInvoiceCreated(array $data)
-    {
-        $stripeInvoice = $data['data']['object'];
-
-        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && empty($stripeInvoice['paid'])) {
-            $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
-            $invoice->pay();
-        }
-    }
-
-    /**
-     * Handle a successful invoice payment event.
-     *
-     * @param array $data
-     *
-     * @return void
-     * @throws \Throwable
-     */
-    private function _handleInvoiceSucceededEvent(array $data)
-    {
-        $stripeInvoice = $data['data']['object'];
-
-        // Sanity check
-        if (!$stripeInvoice['paid']) {
-            return;
-        }
-
-        $subscriptionReference = $stripeInvoice['subscription'];
-        $subscription = Subscription::find()->reference($subscriptionReference)->one();
-
-        if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$subscriptionReference.'” not found when processing webhook '.$data['id'], 'stripe');
-
-            return;
-        }
-
-        $invoice = new Invoice();
-        $invoice->subscriptionId = $subscription->id;
-        $invoice->reference = $stripeInvoice['id'];
-        $invoice->invoiceData = $stripeInvoice;
-        StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
-
-        $lineItems = $stripeInvoice['lines']['data'];
-
-        // Find the relevant line item and update subscription end date
-        foreach ($lineItems as $lineItem) {
-            if ($lineItem['id'] === $subscriptionReference) {
-
-                $subscription->nextPaymentDate = DateTimeHelper::toDateTime($lineItem['period']['end']);
-                Craft::$app->getElements()->saveElement($subscription);
-                return;
-            }
-        }
-    }
-
-    /**
      * Handle 3D Secure related event.
      *
      * @param array $data
      *
      * @return void
+     * @throws \craft\commerce\errors\TransactionException if unable to save transaction
      */
     private function _handle3DSecureFlowEvent(array $data)
     {
@@ -1149,31 +1043,153 @@ class Gateway extends BaseGateway
     }
 
     /**
+     * Handle a created invoice.
+     *
+     * @param array $data
+     */
+    private function _handleInvoiceCreated(array $data)
+    {
+        $stripeInvoice = $data['data']['object'];
+
+        if ($this->hasEventHandlers(self::EVENT_CREATE_INVOICE)) {
+            $this->trigger(self::EVENT_CREATE_INVOICE, new CreateInvoiceEvent([
+                'invoiceData' => $stripeInvoice
+            ]));
+        }
+
+        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && empty($stripeInvoice['paid'])) {
+            $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
+            $invoice->pay();
+        }
+    }
+
+    /**
+     * Handle a successful invoice payment event.
+     *
+     * @param array $data
+     *
+     * @return void
+     * @throws \Throwable
+     */
+    private function _handleInvoiceSucceededEvent(array $data)
+    {
+        $stripeInvoice = $data['data']['object'];
+
+        // Sanity check
+        if (!$stripeInvoice['paid']) {
+            return;
+        }
+
+        $subscriptionReference = $stripeInvoice['subscription'];
+        $subscription = Subscription::find()->reference($subscriptionReference)->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$subscriptionReference.'” not found when processing webhook '.$data['id'], 'stripe');
+
+            return;
+        }
+
+        $invoice = new Invoice();
+        $invoice->subscriptionId = $subscription->id;
+        $invoice->reference = $stripeInvoice['id'];
+        $invoice->invoiceData = $stripeInvoice;
+        StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
+
+        $lineItems = $stripeInvoice['lines']['data'];
+
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(StringHelper::toUpperCase($invoice->invoiceData['currency']));
+
+        // Find the relevant line item and update subscription end date
+        foreach ($lineItems as $lineItem) {
+            if ($lineItem['id'] === $subscriptionReference) {
+                $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
+                Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($lineItem['period']['end']));
+                return;
+            }
+        }
+    }
+
+    /**
      * Handle Plan events
      *
      * @param array $data
      *
      * @return void
+     * @throws \yii\base\InvalidConfigException If plan not
      */
     private function _handlePlanEvent(array $data)
     {
         $planService = Commerce::getInstance()->getPlans();
 
         if ($data['type'] == 'plan.deleted') {
-            $plans = $planService->getAllPlans();
+            $plan = $planService->getPlanByReference($data['data']['object']['id']);
 
-            foreach ($plans as $plan) {
-                if ($plan->reference === $data['data']['object']['id']) {
-                    $planService->archivePlanById($plan->id);
-
-                    // TODO probably going to rename this and going to need a place to view these.
-                    $this->_importantLog($plan->name.' was archived because the corresponding plan was deleted on Stripe. (event "'.$data['id'].'")');
-                }
+            if ($plan) {
+                $planService->archivePlanById($plan->id);
+                Craft::warning($plan->name.' was archived because the corresponding plan was deleted on Stripe. (event "'.$data['id'].'")', 'stripe');
             }
         }
     }
 
-    private function _importantLog($message) {
-        Craft::trace($message, 'stripe');
+    /**
+     * Handle an expired subscription.
+     *
+     * @param array $data
+     *
+     * @throws \Throwable
+     */
+    private function _handleSubscriptionExpired(array $data)
+    {
+        $stripeSubscription = $data['data']['object'];
+
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
+
+            return;
+        }
+
+        Commerce::getInstance()->getSubscriptions()->expireSubscription($subscription);
+    }
+
+    /**
+     * Handle an updated subscription.
+     *
+     * @param array $data
+     *
+     * @throws \Throwable
+     */
+    private function _handleSubscriptionUpdated(array $data)
+    {
+        $stripeSubscription = $data['data']['object'];
+        $canceledAt = $data['data']['object']['canceled_at'];
+
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+
+        if (!$subscription) {
+            Craft::warning('Subscription with the reference “'.$stripeSubscription['id'].'” not found when processing webhook '.$data['id'], 'stripe');
+
+            return;
+        }
+
+        // See if we care about this subscription at all
+        if ($subscription) {
+
+            $subscription->isCanceled = (bool) $canceledAt;
+            $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
+            $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
+
+            $planHandle = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByHandle($planHandle);
+
+            if ($plan) {
+                $subscription->planId = $plan->id;
+            } else {
+                Craft::warning($subscription->reference.' was switched to a plan on Stripe that does not exist on this Site. (event "'.$data['id'].'")', 'stripe');
+            }
+
+            Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
+        }
     }
 }

@@ -3,7 +3,7 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
-use craft\commerce\stripe\events\SaveInvoiceEvent;
+use craft\commerce\stripe\events\PayInvoiceEvent;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\records\Invoice as InvoiceRecord;
 use craft\db\Query;
@@ -23,7 +23,7 @@ class Invoices extends Component
     // =========================================================================
 
     /**
-     * @event SaveInvoiceEvent The event that is triggered when an invoice is saved
+     * @event SaveInvoiceEvent The event that is triggered when an invoice is saved.
      */
     const EVENT_SAVE_INVOICE = 'afterSaveInvoice';
 
@@ -85,9 +85,10 @@ class Invoices extends Component
         if ($invoice->validate()) {
             $record->save(false);
             $invoice->id = $record->id;
-            
+
+            // Fire a 'afterSaveInvoice' event.
             if ($this->hasEventHandlers(self::EVENT_SAVE_INVOICE)) {
-                $this->trigger(self::EVENT_SAVE_INVOICE, new SaveInvoiceEvent(['invoice' => $invoice]));
+                $this->trigger(self::EVENT_SAVE_INVOICE, new PayInvoiceEvent(['invoice' => $invoice]));
             }
 
             return true;
