@@ -11,7 +11,7 @@ use yii\base\Event;
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  1.0
  */
-class PayInvoiceEvent extends Event
+class SaveInvoiceEvent extends Event
 {
     // Properties
     // =========================================================================
