@@ -17,7 +17,7 @@ class CreateInvoiceEvent extends Event
     // =========================================================================
 
     /**
-     * @var Invoice The invoice being saved.
+     * @var array The invoice data.
      */
-    public $invoice;
+    public $invoiceData;
 }
