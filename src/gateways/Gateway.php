@@ -11,6 +11,7 @@ use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\SubscriptionException;
+use craft\commerce\errors\TransactionException;
 use craft\commerce\models\Currency;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
@@ -745,7 +746,7 @@ class Gateway extends BaseGateway
         $response = $this->_createSubscriptionResponse($stripeSubscription->save());
 
         if ($parameters->billImmediately) {
-            $invoice = StripeInvoice::create(array(
+            StripeInvoice::create(array(
                 'customer' => $stripeSubscription->customer,
                 'subscription' => $stripeSubscription->id
             ));
@@ -760,12 +761,12 @@ class Gateway extends BaseGateway
     /**
      * Build the request data array.
      *
-     * @param Transaction $transaction
+     * @param Transaction $transaction the transaction to be used as base
      *
      * @return array
      * @throws NotSupportedException
      */
-    private function _buildRequestData(Transaction $transaction)
+    private function _buildRequestData(Transaction $transaction): array
     {
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
@@ -805,11 +806,9 @@ class Gateway extends BaseGateway
     /**
      * Build a payment source for request.
      *
-     * Depending on input, it can be an array of data, a string or a Source object.
-     *
-     * @param Transaction $transaction
-     * @param Payment     $paymentForm
-     * @param array       $request
+     * @param Transaction $transaction the transaction to be used as base
+     * @param Payment     $paymentForm the payment form
+     * @param array       $request     the request data
      *
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
@@ -873,7 +872,7 @@ class Gateway extends BaseGateway
      * @param \Exception $exception
      *
      * @return PaymentResponse
-     * @throws \Exception
+     * @throws \Exception if not a Stripe exception
      */
     private function _createPaymentResponseFromError(\Exception $exception): PaymentResponse
     {
@@ -898,10 +897,10 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * Create a subscription payment from invoice.
+     * Create a subscription payment model from invoice.
      *
-     * @param $data
-     * @param $currency
+     * @param array $data
+     * @param Currency $currency the currency used for payment
      *
      * @return SubscriptionPayment
      */
@@ -932,50 +931,12 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * Get the Stripe customer for a User.
-     *
-     * @param User $user
-     *
-     * @return Customer
-     * @throws CustomerException if wasn't able to create or retrieve Stripe Customer.
-     */
-    private function _getStripeCustomer(User $user): Customer
-    {
-        try {
-            $customers = StripePlugin::getInstance()->getCustomers();
-            $customer = $customers->getCustomer($this->id, $user->id);
-
-            if (!$customer) {
-                $stripeCustomer = Customer::create([
-                    'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
-                    'email' => $user->email
-                ]);
-
-                $customerModel = new CustomerModel([
-                    'userId' => $user->id,
-                    'gatewayId' => $this->id,
-                    'reference' => $stripeCustomer->id,
-                    'response' => $stripeCustomer->jsonSerialize()
-                ]);
-
-                $customers->saveCustomer($customerModel);
-            } else {
-                $stripeCustomer = Customer::retrieve($customer->reference);
-            }
-        } catch (\Exception $exception) {
-            throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
-        }
-
-        return $stripeCustomer;
-    }
-
-    /**
-     * Handle 3D Secure related event.
+     * Handle a 3D Secure related event.
      *
      * @param array $data
      *
      * @return void
-     * @throws \craft\commerce\errors\TransactionException if unable to save transaction
+     * @throws TransactionException if unable to save transaction
      */
     private function _handle3DSecureFlowEvent(array $data)
     {
@@ -1072,7 +1033,7 @@ class Gateway extends BaseGateway
      * @param array $data
      *
      * @return void
-     * @throws \Throwable
+     * @throws \Throwable if something went wrong when processing the invoice
      */
     private function _handleInvoiceSucceededEvent(array $data)
     {
@@ -1107,6 +1068,7 @@ class Gateway extends BaseGateway
             if ($lineItem['id'] === $subscriptionReference) {
                 $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
                 Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($lineItem['period']['end']));
+
                 return;
             }
         }
@@ -1194,5 +1156,43 @@ class Gateway extends BaseGateway
 
             Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
         }
+    }
+
+    /**
+     * Get the Stripe customer for a User.
+     *
+     * @param User $user
+     *
+     * @return Customer
+     * @throws CustomerException if wasn't able to create or retrieve Stripe Customer.
+     */
+    private function _getStripeCustomer(User $user): Customer
+    {
+        try {
+            $customers = StripePlugin::getInstance()->getCustomers();
+            $customer = $customers->getCustomer($this->id, $user->id);
+
+            if (!$customer) {
+                $stripeCustomer = Customer::create([
+                    'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
+                    'email' => $user->email
+                ]);
+
+                $customerModel = new CustomerModel([
+                    'userId' => $user->id,
+                    'gatewayId' => $this->id,
+                    'reference' => $stripeCustomer->id,
+                    'response' => $stripeCustomer->jsonSerialize()
+                ]);
+
+                $customers->saveCustomer($customerModel);
+            } else {
+                $stripeCustomer = Customer::retrieve($customer->reference);
+            }
+        } catch (\Exception $exception) {
+            throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
+        }
+
+        return $stripeCustomer;
     }
 }
