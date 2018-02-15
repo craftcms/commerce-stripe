@@ -406,6 +406,7 @@ class Gateway extends BaseGateway
 
         foreach ($invoices as $invoice) {
             $data = $invoice->invoiceData;
+
             $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(StringHelper::toUpperCase($data['currency']));
 
             if (!$currency) {
@@ -413,8 +414,11 @@ class Gateway extends BaseGateway
                 continue;
             }
 
-            $payments[] = $this->_createSubscriptionPayment($data, $currency);
+            $payments[$data['date']] = $this->_createSubscriptionPayment($data, $currency);
         }
+
+        // Sort them by time invoiced, not the time they were saved to DB
+        krsort($payments);
 
         return $payments;
     }
@@ -911,6 +915,9 @@ class Gateway extends BaseGateway
             'paymentCurrency' => $currency,
             'paymentDate' => $data['date'],
             'paymentReference' => $data['charge'],
+            'paid' => $data['paid'],
+            'forgiven' => $data['forgiven'],
+            'response' => Json::encode($data)
         ]);
 
         return $payment;
