@@ -13,6 +13,13 @@ use craft\commerce\models\subscriptions\SwitchPlansForm;
 class SwitchPlans extends SwitchPlansForm
 {
     /**
+     * Whether plan change should be prorated
+     *
+     * @var int
+     */
+    public $prorate = false;
+
+    /**
      * @var bool whether the plan change should be billed immediately.
      */
     public $billImmediately = false;
