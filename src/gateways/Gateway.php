@@ -1074,6 +1074,8 @@ class Gateway extends BaseGateway
                     $childTransaction->status = TransactionRecord::STATUS_FAILED;
                     $childTransaction->reference = $data['id'];
                     $childTransaction->code = $data['type'];
+                    $childTransaction->message = Craft::t('commerce-stripe', 'Failed to process the charge.');
+                    $childTransaction->response = Json::encode($data);
                     break;
             }
 
