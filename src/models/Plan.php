@@ -30,7 +30,8 @@ class Plan extends BasePlan
      *
      * @return bool
      */
-    public function isOnSamePaymentCycleAs(Plan $plan) {
+    public function isOnSamePaymentCycleAs(Plan $plan)
+    {
         $thisPlanData = Json::decode($this->planData);
         $otherPlanData = Json::decode($plan->planData);
 

@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\web\assets\paymentform;
 
 use craft\web\AssetBundle;
-use craft\web\assets\cp\CpAsset;
 
 /**
  * Asset bundle for the Payment Form

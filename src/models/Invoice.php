@@ -4,6 +4,7 @@ namespace craft\commerce\stripe\models;
 
 use craft\commerce\base\Model;
 use craft\commerce\elements\Subscription;
+
 /**
  * Stripe Payment form model.
  *
@@ -35,7 +36,7 @@ class Invoice extends Model
      */
     public $invoiceData;
 
-       /**
+    /**
      * @var Subscription
      */
     private $_subscription;
@@ -70,7 +71,8 @@ class Invoice extends Model
     /**
      * @inheritdoc
      */
-    public function rules() {
+    public function rules()
+    {
         return [
             [['subscriptionId', 'reference', 'invoiceData'], 'required']
         ];

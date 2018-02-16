@@ -109,6 +109,5 @@ class Customer extends Model
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
             [['gatewayId', 'userId', 'reference', 'response'], 'required']
         ];
-
     }
 }

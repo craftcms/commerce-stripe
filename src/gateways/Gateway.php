@@ -14,10 +14,10 @@ use craft\commerce\errors\SubscriptionException;
 use craft\commerce\errors\TransactionException;
 use craft\commerce\models\Currency;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
-use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
@@ -27,14 +27,14 @@ use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\Customer as CustomerModel;
+use craft\commerce\stripe\models\forms\CancelSubscription;
+use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
-use craft\commerce\stripe\models\forms\Payment;
-use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\Plugin;
+use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentResponse;
 use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
@@ -43,8 +43,8 @@ use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
-use craft\web\View;
 use craft\web\Response as WebResponse;
+use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Collection;
@@ -113,7 +113,7 @@ class Gateway extends BaseGateway
      * ```
      */
     const EVENT_CREATE_INVOICE = 'createInvoice';
-    
+
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
      *
@@ -190,8 +190,7 @@ class Gateway extends BaseGateway
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
         $requestData['capture'] = false;
 
-        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
-        {
+        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
             // This should only happen for 3D secure payments.
             $response = $this->_createPaymentResponseFromApiResource($paymentSource);
             $response->setRedirectUrl($paymentSource->redirect->url);
@@ -570,7 +569,7 @@ class Gateway extends BaseGateway
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
-            $response->data =  'ok';
+            $response->data = 'ok';
 
             return $response;
         }
@@ -580,7 +579,7 @@ class Gateway extends BaseGateway
             Webhook::constructEvent($rawData, $stripeSignature, $secret);
         } catch (\Exception $exception) {
             Craft::warning('Webhook signature check failed: '.$exception->getMessage(), 'stripe');
-            $response->data =  'ok';
+            $response->data = 'ok';
 
             return $response;
         }
@@ -617,7 +616,6 @@ class Gateway extends BaseGateway
                         'webhookData' => $data
                     ]));
                 }
-
             } else {
                 Craft::warning('Could not decode JSON payload.', 'stripe');
             }
@@ -625,7 +623,7 @@ class Gateway extends BaseGateway
             Craft::error('Exception while processing webhook: '.$exception->getMessage(), 'stripe');
         }
 
-        $response->data =  'ok';
+        $response->data = 'ok';
 
         return $response;
     }
@@ -639,8 +637,7 @@ class Gateway extends BaseGateway
         $requestData = $this->_buildRequestData($transaction);
         $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
 
-        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect')
-        {
+        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
             // This should only happen for 3D secure payments.
             $response = $this->_createPaymentResponseFromApiResource($paymentSource);
             $response->setRedirectUrl($paymentSource->redirect->url);
@@ -669,10 +666,12 @@ class Gateway extends BaseGateway
         $plan = $subscription->getPlan();
 
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
-        $stripeSubscription->items = [[
-            'id' => $stripeSubscription->items->data[0]->id,
-            'plan' => $plan->reference,
-        ]];
+        $stripeSubscription->items = [
+            [
+                'id' => $stripeSubscription->items->data[0]->id,
+                'plan' => $plan->reference,
+            ]
+        ];
 
         return $this->_createSubscriptionResponse($stripeSubscription->save());
     }
@@ -814,19 +813,21 @@ class Gateway extends BaseGateway
     {
         /** @var SwitchPlans $parameters */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
-        $stripeSubscription->items = [[
-            'id' => $stripeSubscription->items->data[0]->id,
-            'plan' => $plan->reference,
-        ]];
-        $stripeSubscription->prorate = (bool) $parameters->prorate;
+        $stripeSubscription->items = [
+            [
+                'id' => $stripeSubscription->items->data[0]->id,
+                'plan' => $plan->reference,
+            ]
+        ];
+        $stripeSubscription->prorate = (bool)$parameters->prorate;
 
         $response = $this->_createSubscriptionResponse($stripeSubscription->save());
 
         if ($parameters->billImmediately) {
-            StripeInvoice::create(array(
+            StripeInvoice::create([
                 'customer' => $stripeSubscription->customer,
                 'subscription' => $stripeSubscription->id
-            ));
+            ]);
         }
 
         return $response;
@@ -911,13 +912,11 @@ class Gateway extends BaseGateway
             return Source::create($request);
         }
 
-        if ($paymentForm->token)
-        {
+        if ($paymentForm->token) {
             $source = Source::retrieve($paymentForm->token);
 
             // If this was a stored source and it required 3D secure, let's repeat the process.
-            if (!empty($source->card->three_d_secure))
-            {
+            if (!empty($source->card->three_d_secure)) {
                 $paymentForm->threeDSecure = true;
 
                 return $this->_buildRequestPaymentSource($transaction, $paymentForm, $request);
@@ -976,7 +975,7 @@ class Gateway extends BaseGateway
     /**
      * Create a subscription payment model from invoice.
      *
-     * @param array $data
+     * @param array    $data
      * @param Currency $currency the currency used for payment
      *
      * @return SubscriptionPayment
@@ -1223,7 +1222,7 @@ class Gateway extends BaseGateway
         // See if we care about this subscription at all
         if ($subscription) {
 
-            $subscription->isCanceled = (bool) $canceledAt;
+            $subscription->isCanceled = (bool)$canceledAt;
             $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
             $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
 

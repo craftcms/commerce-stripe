@@ -2,7 +2,6 @@
 
 namespace craft\commerce\stripe\events;
 
-use craft\commerce\stripe\models\Invoice;
 use yii\base\Event;
 
 /**

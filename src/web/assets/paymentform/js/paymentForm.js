@@ -33,8 +33,9 @@ function initStripe() {
 
             // Create an instance of the card Element
             var card = elements.create('card', {
-                style: style,
-                hidePostalCode: true}
+                    style: style,
+                    hidePostalCode: true
+                }
             );
 
             card.addEventListener('change', updateErrorMessage);
@@ -51,7 +52,7 @@ function initStripe() {
             // Remove already bound events
             $form.off('submit');
 
-            $form.on('submit', function (ev) {
+            $form.on('submit', function(ev) {
                 ev.preventDefault();
 
                 // If form submitted already, disregard.
@@ -64,7 +65,7 @@ function initStripe() {
                 // Compose card holder info
                 var cardHolderName, orderEmail;
 
-                if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0 ) {
+                if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0) {
                     cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
                 }
 

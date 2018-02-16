@@ -41,6 +41,7 @@ class PaymentResponse implements RequestResponseInterface
     {
         $this->_processing = $status;
     }
+
     /**
      * @inheritdoc
      */

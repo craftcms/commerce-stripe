@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\web\assets\plansettings;
 
 use craft\web\AssetBundle;
-use craft\web\assets\cp\CpAsset;
 
 /**
  * Asset bundle for editing Craft subscription plans

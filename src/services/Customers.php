@@ -5,14 +5,13 @@ namespace craft\commerce\stripe\services;
 use Craft;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
-use craft\commerce\stripe\gateways\Gateway;
 use craft\db\Query;
 use yii\base\Component;
 use yii\base\Exception;
 
 /**
  * Customer service.
- **
+ *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  2.0
  */

@@ -1,8 +1,7 @@
 var $stripeButton = $('.stripe-refresh-plans');
 
-$stripeButton.on('click', function (ev) {
-    if ($stripeButton.hasClass('disabled'))
-    {
+$stripeButton.on('click', function(ev) {
+    if ($stripeButton.hasClass('disabled')) {
         return;
     }
 
@@ -15,8 +14,7 @@ $stripeButton.on('click', function (ev) {
         gatewayId: gatewayId
     };
 
-    Craft.postActionRequest('commerce-stripe', data, function(response, textStatus)
-    {
+    Craft.postActionRequest('commerce-stripe', data, function(response, textStatus) {
         $stripeButton.removeClass('disabled').siblings('.spinner').addClass('hidden');
 
         if (textStatus === 'success') {
@@ -33,7 +31,7 @@ $stripeButton.on('click', function (ev) {
                         currentPlanStillExists = true;
                     }
 
-                    $planSelect.append('<option value="'+response[i].reference+'">'+response[i].name+'</option>');
+                    $planSelect.append('<option value="' + response[i].reference + '">' + response[i].name + '</option>');
                 }
 
                 if (currentPlanStillExists) {

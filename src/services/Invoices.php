@@ -14,7 +14,7 @@ use yii\base\Exception;
 
 /**
  * Invoice service.
- **
+ *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  2.0
  */
@@ -38,7 +38,7 @@ class Invoices extends Component
      *     // Do something with the data...
      * });
      * ```
-    */
+     */
     const EVENT_SAVE_INVOICE = 'afterSaveInvoice';
 
     // Public Methods

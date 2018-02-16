@@ -3,9 +3,9 @@
 namespace craft\commerce\stripe\controllers;
 
 use Craft;
+use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\gateways\Gateway;
 use craft\web\Controller as BaseController;
-use craft\commerce\Plugin as Commerce;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
@@ -15,7 +15,6 @@ use yii\web\Response;
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  3.0
  */
-
 class DefaultController extends BaseController
 {
     /**

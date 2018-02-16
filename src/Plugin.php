@@ -36,7 +36,7 @@ class Plugin extends \craft\base\Plugin
 
         $this->_setPluginComponents();
 
-        Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES,  function(RegisterComponentTypesEvent $event) {
+        Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES, function(RegisterComponentTypesEvent $event) {
             $event->types[] = Gateway::class;
         });
     }
