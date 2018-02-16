@@ -24,14 +24,6 @@ class Plan extends BasePlan
     }
 
     /**
-     * @inheritdoc
-     */
-    public function getFriendlyName(): string
-    {
-        return $this->getPlanData()['name'];
-    }
-
-    /**
      * Returns true if this plan is on the same payment cycle as another plan.
      *
      * @param Plan $plan
