@@ -86,6 +86,11 @@ class Gateway extends BaseGateway
      */
     const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
+    /**
+     * string The Stripe API version to use.
+     */
+    const STRIPE_API_VERSION = '2017-12-14';
+
     // Properties
     // =========================================================================
 
@@ -113,7 +118,7 @@ class Gateway extends BaseGateway
      * @var string
      */
     public $signingSecret;
-    
+
     // Public Methods
     // =========================================================================
 
@@ -123,6 +128,7 @@ class Gateway extends BaseGateway
 
         Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
         Stripe::setApiKey($this->apiKey);
+        Stripe::setApiVersion(static::STRIPE_API_VERSION);
     }
 
     /**
