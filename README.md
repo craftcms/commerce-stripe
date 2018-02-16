@@ -3,11 +3,11 @@ Stripe payment gateway for Craft Commerce
 
 This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcommerce.com/).
 
-
 ## Requirements
 
 This plugin requires Craft Commerce 2.0.1-alpha.4 or later.
 
+This plugin uses Stripe API version '2018-02-06'.
 
 ## Installation
 
@@ -86,3 +86,34 @@ A clean example for how to go about this can be found [here](https://craftcms.st
 For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to true in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
 
 This setting affect all Stripe gateways on your Commerce installation.
+
+## Subscriptions
+
+### Creating a subscription plan
+
+1. To create a subscription plan, it must first be [created on Stripe](https://dashboard.stripe.com/test/subscriptions/products).
+2. Go to Commerce → Settings → Subscription plans and create a new subscription plan.
+
+### Options when subscribing
+
+#### The `trialDays` parameter
+
+When subscribing, you can pass a `trialDays` parameter. The first full billing cycle will start once the number of trial days lapse. Default value is `0`.
+
+### Options when cancelling a subscription.
+
+#### The `cancelImmediately` parameter
+
+If this parameter is set to `true`, the subscription is canceled immediately. Otherwise, it is marked to cancel at the end of the current billing cycle. Defaults to `false`.
+
+### Options when switching between different subscription plans
+
+#### The `prorate` parameter
+
+If this parameter is set to true, the subscription switch will be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
+
+### The `billImmediately` parameter
+
+If this parameter is set to true, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to true and switching to a cheaper plan) is applied to the next invoice.
+
+Please note, that the subscription switch will be billed immediately regardless of this parameter if the billing periods differ.
