@@ -73,16 +73,64 @@ class Gateway extends BaseGateway
 
     /**
      * @event BuildGatewayRequestEvent The event that is triggered when a gateway request is being built.
+     *
+     * Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+     *
+     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `transactionId`, `clientIp` and `transactionReference` metadata keys.
+     *
+     * ```php
+     * use craft\commerce\models\Transaction;
+     * use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
+     *     if ($e->transaction->type === 'refund') {
+     *         $e->metadata['someKey'] = 'some value';
+     *     }
+     * });
+     * ```
+     *
      */
     const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
 
     /**
      * @event CreateInvoiceEvent The event that is triggered when an invoice is being created on the gateway.
+     *
+     * Plugins get a chance to do something when an invoice is created on the Stripe gateway.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\CreateInvoiceEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
+     *     if ($e->invoiceData['billing'] === 'send_invoice') {
+     *         // Forward this invoice to the accounting dpt.
+     *     }
+     * });
+     * ```
      */
     const EVENT_CREATE_INVOICE = 'createInvoice';
     
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
+     *
+     * Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless the Gateway has done something with the webhook or not.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\ReceiveWebhookEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_WEBHOOK, function(ReceiveWebhookEvent $e) {
+     *     if ($e->webhookData['type'] == 'charge.dispute.created') {
+     *         if ($e->webhookData['data']['object']['amount'] > 1000000) {
+     *             // Be concerned that USD 10,000 charge is being disputed.
+     *         }
+     *     }
+     * });
+     * ```
      */
     const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
