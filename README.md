@@ -35,15 +35,39 @@ This plugin does not allow submitting credit card details directly to Stripe gat
 
 To allow 3D Secure payments, you must perform some additional steps.
 
+### Forcing a 3D secure payment.
+
+For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
+
+Cards that do not support 3d secure payment will be unaffected by this setting.
+
+## Webhooks
+
 ### Configure Stripe
 
-Set up a webhook endpoint in your Stripe dashboard API settings that emits at least the following events:
+Set up a webhook endpoint in your Stripe dashboard API settings. The URL for this endpoint can be found in your Commerce Stripe gateway settings.
+
+It is recommended to emit all possible events, but the required events are:
+
+#### For 3D secure payments
 
  * `source.cancelled`
  * `source.chargeable`
  * `source.failed`
 
-The URL for this endpoint can be found in your Stripe gateway settings.
+#### For subscriptions
+
+The bare minimum of events required are:
+
+* `invoice.payment_succeeded`
+* `customer.subscription.deleted`
+
+However, it is strongly recommended to enable the following events as well to ensure your Commerce subscriptions stay in sync with your Stripe dashboard:
+
+* `plan.deleted`
+* `plan.updated`
+* `invoice.created`
+* `customer.subscription.updated`
 
 ### Configure the gateway
 
@@ -55,85 +79,10 @@ You must disable CSRF protection for the incoming requests, assuming it is enabl
 
 A clean example for how to go about this can be found [here](https://craftcms.stackexchange.com/a/20301/258).
 
-### Forcing a 3D secure payment.
+## Configuration settings
 
-For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
+### The `chargeInvoicesImmediately` setting
 
-Cards that do not support 3d secure payment will be unaffected by this setting.
+For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to true in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
 
-## Events
-
-### The `afterSaveInvoice` event
-
-Plugins can get notified whenever a new invoice for a subscription is being saved.
-
-```php
-use craft\commerce\models\Invoice;
-use craft\commerce\stripe\events\SaveInvoiceEvent;
-use craft\commerce\stripe\services\Invoices;
-use yii\base\Event;
-
-// ...
-
-Event::on(Invoices::class, Invoices::EVENT_SAVE_INVOICE, function(SaveInvoiceEvent $e) {
-    $stripeInvoiceId = $e->invoice->invoiceId;
-    // Do something with the data...
-});
-```
-
-### The `buildGatewayRequest` event
-
-Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
-
-Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `transactionId`, `clientIp` and `transactionReference` metadata keys.
-
-```php
-use craft\commerce\models\Transaction;
-use craft\commerce\stripe\events\BuildGatewayRequestEvent;
-use craft\commerce\stripe\gateways\Gateway as StripeGateway;
-use yii\base\Event;
-
-// ...
-
-Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
-    if ($e->transaction->type === 'refund') {
-        $e->metadata['someKey'] = 'some value';
-    }
-});
-```
-
-### The `createInvoice` event
-
-Plugins get a chance to do something when an invoice is created on the Stripe gateway.
-
-```php
-use craft\commerce\stripe\events\CreateInvoiceEvent;
-use craft\commerce\stripe\gateways\Gateway as StripeGateway;
-use yii\base\Event;
-
-// ...
-
-Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
-    foreach ($e->invoiceData['lines'] as $lineItem) {
-        // Do something with the line item information.
-    }
-});
-```
-
-### The `receiveWebhook` event
-
-Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless the Gateway has done something with the webhook or not.
-
-```php
-use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\gateways\Gateway as StripeGateway;
-use yii\base\Event;
-
-// ...
-
-Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_WEBHOOK, function(ReceiveWebhookEvent $e) {
-    if ($e->webhookData['type'] == 'charge.dispute.created') {
-        // Alert the merchant about a charge dispute...
-    }
-});
-```
+This setting affect all Stripe gateways on your Commerce installation.
