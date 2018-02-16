@@ -53,6 +53,7 @@ use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
+use Stripe\Product as StripeProduct;
 use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Stripe;
@@ -137,7 +138,7 @@ class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2017-12-14';
+    const STRIPE_API_VERSION = '2018-02-06';
 
     // Properties
     // =========================================================================
@@ -176,7 +177,7 @@ class Gateway extends BaseGateway
 
         Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
         Stripe::setApiKey($this->apiKey);
-        Stripe::setApiVersion(static::STRIPE_API_VERSION);
+        Stripe::setApiVersion(self::STRIPE_API_VERSION);
     }
 
     /**
@@ -487,8 +488,12 @@ class Gateway extends BaseGateway
         }
 
         $plan = StripePlan::retrieve($reference);
+        $plan = $plan->jsonSerialize();
 
-        return Json::encode($plan->jsonSerialize());
+        $product = StripeProduct::retrieve($plan['product']);
+        $product = $product->jsonSerialize();
+
+        return Json::encode(['plan' => $plan, 'product' => $product]);
     }
 
     /**
@@ -500,10 +505,24 @@ class Gateway extends BaseGateway
         $plans = StripePlan::all();
         $output = [];
 
+        $planList = [];
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
                 $plan = $plan->jsonSerialize();
-                $output[] = ['reference' => $plan['id'], 'name' => $plan['name']];
+                $planList[$plan['product']] = $plan['id'];
+            }
+
+            /** @var Collection $products */
+            $products = StripeProduct::all([
+                'limit' => 100,
+                'ids' => array_keys($planList)
+            ]);
+
+            if (\count($products->data)) {
+                foreach ($products->data as $product) {
+                    $product = $product->jsonSerialize();
+                    $output[] = ['name' => $product['name'], 'reference' => $planList[$product['id']]];
+                }
             }
         }
 

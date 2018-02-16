@@ -34,6 +34,6 @@ class Plan extends BasePlan
         $thisPlanData = Json::decode($this->planData);
         $otherPlanData = Json::decode($plan->planData);
 
-        return $thisPlanData['interval'] === $otherPlanData['interval'] && $thisPlanData['interval_count'] === $otherPlanData['interval_count'];
+        return $thisPlanData['plan']['interval'] === $otherPlanData['plan']['interval'] && $thisPlanData['plan']['interval_count'] === $otherPlanData['plan']['interval_count'];
     }
 }
