@@ -1034,7 +1034,9 @@ class Gateway extends BaseGateway
             ]));
         }
 
-        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && empty($stripeInvoice['paid'])) {
+        $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
+
+        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
