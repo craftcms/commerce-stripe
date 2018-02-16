@@ -100,7 +100,7 @@ This setting affect all Stripe gateways on your Commerce installation.
 
 When subscribing, you can pass a `trialDays` parameter. The first full billing cycle will start once the number of trial days lapse. Default value is `0`.
 
-### Options when cancelling a subscription.
+### Options when cancelling a subscription.
 
 #### The `cancelImmediately` parameter
 
