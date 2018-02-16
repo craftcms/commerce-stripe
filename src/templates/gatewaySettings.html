@@ -1,8 +1,8 @@
 {% from "_includes/forms" import textField, lightswitchField %}
 
 {{ textField({
-    label: "API Key"|t('commerce'),
-    instructions: "Your Stripe API key."|t('commerce'),
+    label: "API Key"|t('commerce-stripe'),
+    instructions: "Your Stripe API key."|t('commerce-stripe'),
     id: 'apiKey',
     class: 'ltr',
     name: 'apiKey',
@@ -11,8 +11,8 @@
 }) }}
 
 {{ textField({
-    label: "Publishable API Key"|t('commerce'),
-    instructions: "Your publishable Stripe API key."|t('commerce'),
+    label: "Publishable API Key"|t('commerce-stripe'),
+    instructions: "Your publishable Stripe API key."|t('commerce-stripe'),
     id: 'publishableKey',
     class: 'ltr',
     name: 'publishableKey',
@@ -31,7 +31,7 @@
 }) }}
 
 {{ lightswitchField({
-    label: "Enforce 3D Secure"|t('commerce'),
+    label: "Enforce 3D Secure"|t('commerce-stripe'),
     instructions: "If card supports but does not require 3D Secure, this will ensure completing 3D Secure process",
     name: 'enforce3dSecure',
     on: gateway.enforce3dSecure,
@@ -39,7 +39,7 @@
 }) }}
 
 {{ lightswitchField({
-    label: "Send Stripe's receipt email?"|t('commerce'),
+    label: "Send Stripe's receipt email?"|t('commerce-stripe'),
     name: 'sendReceiptEmail',
     on: gateway.sendReceiptEmail,
     errors: gateway.getErrors('sendReceiptEmail'),

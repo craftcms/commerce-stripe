@@ -16,14 +16,14 @@
                 class: 'plan-select-'~gateway.id
             }) }}
 
-            <div class="btn stripe-refresh-plans">{{ "Refresh"|t('commerce') }}</div>
+            <div class="btn stripe-refresh-plans">{{ "Refresh"|t('commerce-stripe') }}</div>
             <div class="spinner hidden"></div>
         </div>
     {% endset %}
 
     {{ field({
         label: "Gateway plan"|t('app'),
-        instructions: "Which gateway subscription plan do you want to use?"|t('commerce'),
+        instructions: "Which gateway subscription plan do you want to use?"|t('commerce-stripe'),
         id: 'plan',
         errors: plan ? plan.getErrors('reference') : null,
     }, planInput) }}

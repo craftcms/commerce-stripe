@@ -322,7 +322,7 @@ class Gateway extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce', 'Stripe');
+        return Craft::t('commerce-stripe', 'Stripe');
     }
 
     /**
@@ -701,13 +701,13 @@ class Gateway extends BaseGateway
         } catch (CustomerException $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+            throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
         }
 
         $sources = $stripeCustomer->sources->all();
 
         if (\count($sources->data) === 0) {
-            throw new PaymentSourceException(Craft::t('commerce', 'No payment sources are saved to use for subscriptions.'));
+            throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
         try {
@@ -719,7 +719,7 @@ class Gateway extends BaseGateway
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
-            throw new SubscriptionException(Craft::t('commerce', 'Unable to subscribe at this time.'));
+            throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
         }
 
         return $this->_createSubscriptionResponse($subscription);
@@ -855,7 +855,7 @@ class Gateway extends BaseGateway
         $request = [
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             'currency' => $transaction->paymentCurrency,
-            'description' => Craft::t('commerce', 'Order').' #'.$transaction->orderId,
+            'description' => Craft::t('commerce-stripe', 'Order').' #'.$transaction->orderId,
         ];
 
         $event = new BuildGatewayRequestEvent([
