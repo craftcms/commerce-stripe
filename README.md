@@ -112,7 +112,7 @@ If this parameter is set to `true`, the subscription is canceled immediately. Ot
 
 If this parameter is set to true, the subscription switch will be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
 
-### The `billImmediately` parameter
+#### The `billImmediately` parameter
 
 If this parameter is set to true, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to true and switching to a cheaper plan) is applied to the next invoice.
 
