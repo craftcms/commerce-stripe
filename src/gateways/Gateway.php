@@ -681,10 +681,16 @@ class Gateway extends BaseGateway
      */
     public function refund(Transaction $transaction, $amount): RequestResponseInterface
     {
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+
+        if (!$currency) {
+            throw new NotSupportedException('The currency “'.$transaction->paymentCurrency.'” is not supported!');
+        }
+
         try {
             $request = [
                 'charge' => $transaction->reference,
-                'amount' => $amount
+                'amount' => $amount * (10 ** $currency->minorUnit),
             ];
             $refund = Refund::create($request);
 
