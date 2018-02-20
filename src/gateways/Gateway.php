@@ -679,10 +679,14 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function refund(Transaction $transaction, string $reference): RequestResponseInterface
+    public function refund(Transaction $transaction, $amount): RequestResponseInterface
     {
         try {
-            $refund = Refund::create(['charge' => $reference], ['idempotency_key' => 'refund_'.$reference]);
+            $request = [
+                'charge' => $transaction->reference,
+                'amount' => $amount
+            ];
+            $refund = Refund::create($request);
 
             return $this->_createPaymentResponseFromApiResource($refund);
         } catch (\Exception $exception) {
@@ -794,6 +798,14 @@ class Gateway extends BaseGateway
      * @inheritdoc
      */
     public function supportsRefund(): bool
+    {
+        return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function supportsPartialRefund(): bool
     {
         return true;
     }
@@ -916,7 +928,7 @@ class Gateway extends BaseGateway
             $source = Source::retrieve($paymentForm->token);
 
             // If this was a stored source and it required 3D secure, let's repeat the process.
-            if (!empty($source->card->three_d_secure)) {
+            if (!empty($source->card->three_d_secure) && $source->card->three_d_secure == 'required') {
                 $paymentForm->threeDSecure = true;
 
                 return $this->_buildRequestPaymentSource($transaction, $paymentForm, $request);
