@@ -3,7 +3,7 @@
 namespace craft\commerce\stripe\events;
 
 use craft\commerce\models\Transaction;
-use craft\events\CancelableEvent;
+use yii\base\Event;
 
 /**
  * Class BuildGatewayRequestEvent
@@ -11,7 +11,7 @@ use craft\events\CancelableEvent;
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since  1.0
  */
-class BuildGatewayRequestEvent extends CancelableEvent
+class BuildGatewayRequestEvent extends Event
 {
     // Properties
     // =========================================================================
