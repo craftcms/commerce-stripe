@@ -633,22 +633,22 @@ class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var Payment $form */
-        $requestData = $this->_buildRequestData($transaction);
-        $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
-
-        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
-            // This should only happen for 3D secure payments.
-            $response = $this->_createPaymentResponseFromApiResource($paymentSource);
-            $response->setRedirectUrl($paymentSource->redirect->url);
-
-            return $response;
-        }
-
-        $requestData['source'] = $paymentSource;
-        $requestData['customer'] = $form->customer;
-
         try {
+            /** @var Payment $form */
+            $requestData = $this->_buildRequestData($transaction);
+            $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
+
+            if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
+                // This should only happen for 3D secure payments.
+                $response = $this->_createPaymentResponseFromApiResource($paymentSource);
+                $response->setRedirectUrl($paymentSource->redirect->url);
+
+                return $response;
+            }
+
+            $requestData['source'] = $paymentSource;
+            $requestData['customer'] = $form->customer;
+
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
             return $this->_createPaymentResponseFromApiResource($charge);
