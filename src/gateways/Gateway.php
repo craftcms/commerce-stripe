@@ -679,7 +679,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function refund(Transaction $transaction, float $amount): RequestResponseInterface
+    public function refund(Transaction $transaction): RequestResponseInterface
     {
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
@@ -690,7 +690,7 @@ class Gateway extends BaseGateway
         try {
             $request = [
                 'charge' => $transaction->reference,
-                'amount' => $amount * (10 ** $currency->minorUnit),
+                'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             ];
             $refund = Refund::create($request);
 
