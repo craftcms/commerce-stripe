@@ -1,8 +1,8 @@
 <?php
 /**
- * @link      https://craftcms.com/
+ * @link https://craftcms.com/
  * @copyright Copyright (c) Pixel & Tonic, Inc.
- * @license   https://craftcms.com/license
+ * @license https://craftcms.com/license
  */
 
 namespace craft\commerce\stripe\migrations;
@@ -17,7 +17,7 @@ use craft\helpers\MigrationHelper;
  * Installation Migration
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  1.0
+ * @since 1.0
  */
 class Install extends Migration
 {

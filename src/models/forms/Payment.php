@@ -9,12 +9,11 @@ use craft\commerce\stripe\Plugin;
 /**
  * Stripe Payment form model.
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since     1.0
+ * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @since 1.0
  */
 class Payment extends CreditCardPaymentForm
 {
-
     /**
      * @var string $customer the Stripe customer token.
      */

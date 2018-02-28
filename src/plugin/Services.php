@@ -9,7 +9,7 @@ use craft\commerce\stripe\services\Invoices;
  * Trait Services
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  1.0
+ * @since 1.0
  */
 trait Services
 {

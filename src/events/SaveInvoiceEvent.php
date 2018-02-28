@@ -9,7 +9,7 @@ use yii\base\Event;
  * Class SaveInvoiceEvent
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  1.0
+ * @since 1.0
  */
 class SaveInvoiceEvent extends Event
 {

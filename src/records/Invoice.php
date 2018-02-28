@@ -9,13 +9,13 @@ use yii\db\ActiveQueryInterface;
 /**
  * Invoice record.
  *
- * @property int    $id
+ * @property int $id
  * @property string $reference
- * @property int    $subscriptionId
+ * @property int $subscriptionId
  * @property string $invoiceData
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  2.0
+ * @since 2.0
  */
 class Invoice extends ActiveRecord
 {

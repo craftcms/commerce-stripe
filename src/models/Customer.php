@@ -13,10 +13,10 @@ use craft\elements\User;
  * Stripe customer model
  *
  * @property GatewayInterface $gateway
- * @property User             $user
+ * @property User $user
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  2.0
+ * @since 2.0
  */
 class Customer extends Model
 {

@@ -14,7 +14,7 @@ use yii\base\Event;
  * Plugin represents the Stripe integration plugin.
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  1.0
+ * @since 1.0
  */
 class Plugin extends \craft\base\Plugin
 {

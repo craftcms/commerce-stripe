@@ -13,7 +13,7 @@ use yii\base\Exception;
  * Customer service.
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  2.0
+ * @since 2.0
  */
 class Customers extends Component
 {
@@ -24,7 +24,7 @@ class Customers extends Component
      * Returns a customer by gateway and user id.
      *
      * @param int $gatewayId The stripe gateway
-     * @param int $userId    The user id.
+     * @param int $userId The user id.
      *
      * @return Customer|null
      */

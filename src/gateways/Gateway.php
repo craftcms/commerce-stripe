@@ -64,8 +64,8 @@ use yii\base\NotSupportedException;
 /**
  * Stripe represents the Stripe gateway
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since     1.0
+ * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @since 1.0
  */
 class Gateway extends BaseGateway
 {
@@ -903,8 +903,8 @@ class Gateway extends BaseGateway
      * Build a payment source for request.
      *
      * @param Transaction $transaction the transaction to be used as base
-     * @param Payment     $paymentForm the payment form
-     * @param array       $request     the request data
+     * @param Payment $paymentForm the payment form
+     * @param array $request the request data
      *
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
@@ -993,7 +993,7 @@ class Gateway extends BaseGateway
     /**
      * Create a subscription payment model from invoice.
      *
-     * @param array    $data
+     * @param array $data
      * @param Currency $currency the currency used for payment
      *
      * @return SubscriptionPayment

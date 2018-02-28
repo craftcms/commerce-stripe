@@ -7,8 +7,8 @@ use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubs
 /**
  * Stripe cancel subscription form model.
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since     1.0
+ * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @since 1.0
  */
 class CancelSubscription extends BaseCancelSubscriptionForm
 {

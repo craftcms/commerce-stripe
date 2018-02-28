@@ -8,7 +8,7 @@ use yii\base\Event;
  * Class CreateInvoiceEvent
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since  1.0
+ * @since 1.0
  */
 class CreateInvoiceEvent extends Event
 {

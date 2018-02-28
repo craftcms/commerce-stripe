@@ -7,8 +7,8 @@ use craft\commerce\models\subscriptions\SwitchPlansForm;
 /**
  * Switch Plans form model.
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since     1.0
+ * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @since 1.0
  */
 class SwitchPlans extends SwitchPlansForm
 {

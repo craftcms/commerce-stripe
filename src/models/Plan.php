@@ -9,8 +9,8 @@ use craft\helpers\Json;
 /**
  * Stripe Payment form model.
  *
- * @author    Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since     1.0
+ * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
+ * @since 1.0
  */
 class Plan extends BasePlan
 {
