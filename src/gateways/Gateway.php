@@ -395,6 +395,7 @@ class Gateway extends BaseGateway
 
     /**
      * @inheritdoc
+     * @return Payment
      */
     public function getPaymentFormModel(): BasePaymentForm
     {
