@@ -29,7 +29,7 @@ class Customer extends Model
     // =========================================================================
 
     /**
-     * @var int Payment source ID
+     * @var int Customer ID
      */
     public $id;
 
@@ -91,7 +91,7 @@ class Customer extends Model
     }
 
     /**
-     * Returns the user element associated with this customer.
+     * Returns the gatewayassociated with this customer.
      *
      * @return GatewayInterface|null
      */
