@@ -15,6 +15,7 @@ use craft\commerce\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentException;
+use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\errors\TransactionException;
 use craft\commerce\models\Currency;
@@ -281,30 +282,34 @@ class Gateway extends BaseGateway
             $user->loginRequired();
         }
 
-        $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
+        try {
+            $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
 
-        $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
+            $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
-        $stripeCustomer->default_source = $stripeResponse->id;
-        $stripeCustomer->save();
+            $stripeCustomer->default_source = $stripeResponse->id;
+            $stripeCustomer->save();
 
-        switch ($stripeResponse->type) {
-            case 'card':
-                $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
-                break;
-            default:
-                $description = $stripeResponse->type;
+            switch ($stripeResponse->type) {
+                case 'card':
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
+                    break;
+                default:
+                    $description = $stripeResponse->type;
+            }
+
+            $paymentSource = new PaymentSource([
+                'userId' => $user->getId(),
+                'gatewayId' => $this->id,
+                'token' => $stripeResponse->id,
+                'response' => $stripeResponse->jsonSerialize(),
+                'description' => $description
+            ]);
+
+            return $paymentSource;
+        } catch (\Throwable $exception) {
+            throw new CommercePaymentSourceException($exception->getMessage());
         }
-
-        $paymentSource = new PaymentSource([
-            'userId' => $user->getId(),
-            'gatewayId' => $this->id,
-            'token' => $stripeResponse->id,
-            'response' => $stripeResponse->jsonSerialize(),
-            'description' => $description
-        ]);
-
-        return $paymentSource;
     }
 
     /**
