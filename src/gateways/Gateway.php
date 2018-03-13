@@ -992,8 +992,8 @@ class Gateway extends BaseGateway
             $body = $exception->getJsonBody();
             $data = $body;
             $data['id'] = null;
-            $data['message'] = $body['error']['message'];
-            $data['code'] = $body['error']['code'] ?? $body['error']['type'];
+            $data['message'] = $body['error']['message'] ?? $exception->getMessage();
+            $data['code'] = $body['error']['code'] ?? $body['error']['type'] ?? $exception->getStripeCode();
         } else {
             throw $exception;
         }
