@@ -1,6 +1,6 @@
 {
   "name": "craftcms/commerce-stripe",
-  "description": "Stripe integration for Craft Commerce",
+  "description": "Stripe payment gateway plugin for Craft Commerce 2",
   "version": "1.0.0",
   "type": "craft-plugin",
   "keywords": [
@@ -24,7 +24,7 @@
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
-    "craftcms/commerce": "*",
+    "craftcms/commerce": "2.0.0-alpha.5",
     "stripe/stripe-php": "^6.1"
   },
   "autoload": {
@@ -32,12 +32,6 @@
       "craft\\commerce\\stripe\\": "src/"
     }
   },
-  "repositories": [
-    {
-      "type": "composer",
-      "url": "https://asset-packagist.org"
-    }
-  ],
   "extra": {
     "name": "Stripe",
     "handle": "commerce-stripe",

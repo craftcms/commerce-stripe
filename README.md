@@ -5,7 +5,7 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 ## Requirements
 
-This plugin requires Craft Commerce 2.0.1-alpha.4 or later.
+This plugin requires Craft Commerce 2.0.1-alpha.5 or later.
 
 This plugin uses Stripe API version '2018-02-06'.
 
