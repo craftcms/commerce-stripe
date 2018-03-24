@@ -83,7 +83,7 @@ class Gateway extends BaseGateway
      *
      * Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
      *
-     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `transactionId`, `clientIp` and `transactionReference` metadata keys.
+     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `order_number`, `transaction_id`, `transaction_reference`, and `client_ip` metadata keys.
      *
      * ```php
      * use craft\commerce\models\Transaction;
@@ -895,9 +895,10 @@ class Gateway extends BaseGateway
         $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
         $metadata = [
-            'transactionId' => $transaction->id,
-            'clientIp' => Craft::$app->getRequest()->userIP,
-            'transactionReference' => $transaction->hash,
+            'order_number' => $transaction->getOrder()->number,
+            'transaction_id' => $transaction->id,
+            'transaction_reference' => $transaction->hash,
+            'client_ip' => Craft::$app->getRequest()->userIP,
         ];
 
         // Allow other plugins to add metadata, but do not allow tampering.
