@@ -33,7 +33,7 @@
     }
   },
   "extra": {
-    "name": "Stripe",
+    "name": "Stripe for Craft Commerce",
     "handle": "commerce-stripe",
     "changelogUrl": "https://raw.githubusercontent.com/craftcms/commerce-stripe/master/CHANGELOG.md",
     "downloadUrl": "https://github.com/craftcms/commerce-stripe/archive/master.zip"
