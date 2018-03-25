@@ -39,7 +39,6 @@ use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
-use craft\commerce\stripe\Plugin;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentResponse;
 use craft\commerce\stripe\responses\SubscriptionResponse;
@@ -1134,7 +1133,7 @@ class Gateway extends BaseGateway
 
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
-        if (Plugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
+        if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
