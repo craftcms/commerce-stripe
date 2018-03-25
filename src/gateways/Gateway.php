@@ -180,7 +180,7 @@ class Gateway extends BaseGateway
     {
         parent::init();
 
-        Stripe::setAppInfo('Stripe for Craft Commerce', '1.0', 'https://github.com/craftcms/commerce-stripe');
+        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiKey($this->apiKey);
         Stripe::setApiVersion(self::STRIPE_API_VERSION);
     }
