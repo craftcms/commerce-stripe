@@ -53,7 +53,7 @@ class Payment extends CreditCardPaymentForm
     {
         $this->token = $paymentSource->token;
 
-        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->userId);
+        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getUser());
         $this->customer = $customer->reference;
     }
 }

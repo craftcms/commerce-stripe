@@ -1282,29 +1282,10 @@ class Gateway extends BaseGateway
     {
         try {
             $customers = StripePlugin::getInstance()->getCustomers();
-            $customer = $customers->getCustomer($this->id, $user->id);
-
-            if (!$customer) {
-                $stripeCustomer = Customer::create([
-                    'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
-                    'email' => $user->email
-                ]);
-
-                $customerModel = new CustomerModel([
-                    'userId' => $user->id,
-                    'gatewayId' => $this->id,
-                    'reference' => $stripeCustomer->id,
-                    'response' => $stripeCustomer->jsonSerialize()
-                ]);
-
-                $customers->saveCustomer($customerModel);
-            } else {
-                $stripeCustomer = Customer::retrieve($customer->reference);
-            }
+            $customer = $customers->getCustomer($this->id, $user);
+            return Customer::retrieve($customer->reference);
         } catch (\Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
         }
-
-        return $stripeCustomer;
     }
 }

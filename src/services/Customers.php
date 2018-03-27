@@ -8,9 +8,12 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
+use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
+use craft\elements\User;
+use Stripe\Customer as StripeCustomer;
 use yii\base\Component;
 use yii\base\Exception;
 
@@ -26,20 +29,41 @@ class Customers extends Component
     // =========================================================================
 
     /**
-     * Returns a customer by gateway and user id.
+     * Returns a customer by gateway and user
      *
      * @param int $gatewayId The stripe gateway
-     * @param int $userId The user id.
+     * @param User $user The user
      *
-     * @return Customer|null
+     * @return Customer
+     * @throws CustomerException
      */
-    public function getCustomer(int $gatewayId, int $userId)
+    public function getCustomer(int $gatewayId, User $user): Customer
     {
         $result = $this->_createCustomerQuery()
-            ->where(['userId' => $userId, 'gatewayId' => $gatewayId])
+            ->where(['userId' => $user->id, 'gatewayId' => $gatewayId])
             ->one();
 
-        return $result ? new Customer($result) : null;
+        if ($result !== null) {
+            return new Customer($result);
+        }
+
+        $stripeCustomer = StripeCustomer::create([
+            'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
+            'email' => $user->email
+        ]);
+
+        $customer = new Customer([
+            'userId' => $user->id,
+            'gatewayId' => $gatewayId,
+            'reference' => $stripeCustomer->id,
+            'response' => $stripeCustomer->jsonSerialize()
+        ]);
+
+        if (!$this->saveCustomer($customer)) {
+            throw new CustomerException('Could not save customer: '.implode(', ', $customer->getErrorSummary(true)));
+        }
+
+        return $customer;
     }
 
     /**
