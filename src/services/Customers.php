@@ -47,6 +47,8 @@ class Customers extends Component
             return new Customer($result);
         }
 
+        $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById($gatewayId);
+        
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email
