@@ -8,6 +8,7 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
+use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
