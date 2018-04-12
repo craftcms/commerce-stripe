@@ -281,9 +281,10 @@ class Gateway extends BaseGateway
             $user->loginRequired();
         }
 
+        $sourceData->token = $this->_normalizePaymentToken((string) $sourceData->token);
+
         try {
             $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
-
             $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
             $stripeCustomer->default_source = $stripeResponse->id;
@@ -923,6 +924,7 @@ class Gateway extends BaseGateway
      */
     private function _buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request): Source
     {
+        // For 3D secure, make sure to set the redirect URL and the metadata flag, so we can catch it later.
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
 
@@ -943,9 +945,10 @@ class Gateway extends BaseGateway
         }
 
         if ($paymentForm->token) {
+            $paymentForm->token = $this->_normalizePaymentToken((string) $paymentForm->token);
             $source = Source::retrieve($paymentForm->token);
 
-            // If this was a stored source and it required 3D secure, let's repeat the process.
+            // If this required 3D secure, let's set the flag for it  and repeat
             if (!empty($source->card->three_d_secure) && $source->card->three_d_secure == 'required') {
                 $paymentForm->threeDSecure = true;
 
@@ -1288,5 +1291,28 @@ class Gateway extends BaseGateway
         } catch (\Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
         }
+    }
+
+    /**
+     * Normalize one-time payment token to a source token, that may or may not be multi-use.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function _normalizePaymentToken(string $token = ''): string {
+        if (StringHelper::substr($token, 0, 4) === 'tok_') {
+            try {
+                $tokenSource = Source::create([
+                    'type' => 'card',
+                    'token' => $token
+                ]);
+
+                return $tokenSource->id;
+            } catch (\Exception $exception) {
+                Craft::error('Unable to normalize payment token: '.$token .', because '.$exception->getMessage());
+            }
+        }
+
+        return $token;
     }
 }
