@@ -4,6 +4,7 @@ Changelog
 ## Unreleased
 
 - Added support for card tokens, not just payment sources. ([#9](https://github.com/craftcms/commerce-stripe/issues/9))
+- Allow creating payment source on behalf of users. ([#12](https://github.com/craftcms/commerce-stripe/issues/12))
 
 ## 1.0.1
 

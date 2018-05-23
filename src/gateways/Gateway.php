@@ -272,19 +272,13 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource(BasePaymentForm $sourceData): PaymentSource
+    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         /** @var Payment $sourceData */
-        $user = Craft::$app->getUser();
-
-        if ($user->getIsGuest()) {
-            $user->loginRequired();
-        }
-
         $sourceData->token = $this->_normalizePaymentToken((string) $sourceData->token);
 
         try {
-            $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
+            $stripeCustomer = $this->_getStripeCustomer($userId);
             $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
             $stripeCustomer->default_source = $stripeResponse->id;
@@ -299,7 +293,7 @@ class Gateway extends BaseGateway
             }
 
             $paymentSource = new PaymentSource([
-                'userId' => $user->getId(),
+                'userId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
                 'response' => $stripeResponse->jsonSerialize(),
@@ -1277,14 +1271,15 @@ class Gateway extends BaseGateway
     /**
      * Get the Stripe customer for a User.
      *
-     * @param User $user
+     * @param int $userId
      *
      * @return Customer
      * @throws CustomerException if wasn't able to create or retrieve Stripe Customer.
      */
-    private function _getStripeCustomer(User $user): Customer
+    private function _getStripeCustomer(int $userId): Customer
     {
         try {
+            $user = Craft::$app->getUsers()->getUserById($userId);
             $customers = StripePlugin::getInstance()->getCustomers();
             $customer = $customers->getCustomer($this->id, $user);
             return Customer::retrieve($customer->reference);
