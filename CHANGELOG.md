@@ -1,5 +1,9 @@
 Changelog
 =========
+## Unreleased
+
+### Added
+- Subscription Form model which supports coupon, prorate, and metadata [Subscription Arguments](https://stripe.com/docs/api#create_subscription) ([#14](https://github.com/craftcms/commerce-stripe/issues/14))  
 
 ## 1.0.2
 
