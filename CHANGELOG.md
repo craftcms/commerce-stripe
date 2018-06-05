@@ -1,6 +1,10 @@
 Changelog
 =========
 
+## 1.0.3
+
+- Fixed a PHP error that occurred when subscribing a user to a plan. ([#17](https://github.com/craftcms/commerce-stripe/issues/17))
+
 ## 1.0.2
 
 - Added support for card tokens, not just payment sources. ([#9](https://github.com/craftcms/commerce-stripe/issues/9))

@@ -33,7 +33,6 @@ use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
@@ -712,7 +711,7 @@ class Gateway extends BaseGateway
     public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
-            $stripeCustomer = $this->_getStripeCustomer($user);
+            $stripeCustomer = $this->_getStripeCustomer($user->id);
         } catch (CustomerException $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
