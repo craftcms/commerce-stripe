@@ -33,7 +33,6 @@ use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
