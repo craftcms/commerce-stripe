@@ -22,7 +22,8 @@ use craft\commerce\models\Currency;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
-use craft\commerce\models\subscriptions\SubscriptionForm;
+use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
+use craft\commerce\stripe\models\forms\SubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\models\Transaction;
@@ -448,7 +449,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSubscriptionFormModel(): SubscriptionForm
+    public function getSubscriptionFormModel(): BaseSubscriptionForm
     {
         return new SubscriptionForm();
     }
@@ -708,8 +709,9 @@ class Gateway extends BaseGateway
      * @inheritdoc
      * @throws SubscriptionException if there was a problem subscribing to the plan
      */
-    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
+    public function subscribe(User $user, BasePlan $plan, BaseSubscriptionForm $parameters): SubscriptionResponseInterface
     {
+        /** @var SubscriptionForm $parameters */
         try {
             $stripeCustomer = $this->_getStripeCustomer($user->id);
         } catch (CustomerException $exception) {
@@ -728,7 +730,10 @@ class Gateway extends BaseGateway
             $subscription = StripeSubscription::create([
                 'customer' => $stripeCustomer->id,
                 'items' => [['plan' => $plan->reference]],
-                'trial_period_days' => $parameters->trialDays
+                'trial_period_days' => $parameters->trialDays,
+                'coupon' => $parameters->coupon,
+                'prorate' => $parameters->prorate,
+                'metadata' => $parameters->metadata
             ]);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
