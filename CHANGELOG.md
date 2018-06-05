@@ -3,7 +3,7 @@ Changelog
 
 ## 1.0.3
 
-- Fixed PHP error when subscribing a user. ([#17](https://github.com/craftcms/commerce-stripe/issues/17))
+- Fixed a PHP error that occurred when subscribing a user to a plan. ([#17](https://github.com/craftcms/commerce-stripe/issues/17))
 
 ## 1.0.2
 
