@@ -711,7 +711,7 @@ class Gateway extends BaseGateway
     public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
-            $stripeCustomer = $this->_getStripeCustomer($user);
+            $stripeCustomer = $this->_getStripeCustomer($user->id);
         } catch (CustomerException $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
