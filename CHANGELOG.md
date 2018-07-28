@@ -1,5 +1,4 @@
-Changelog
-=========
+# Release Notes for Stripe for Craft Commerce
 
 ## 1.0.3
 

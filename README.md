@@ -1,5 +1,4 @@
-Stripe payment gateway for Craft Commerce
-=======================
+# Stripe for Craft Commerce
 
 This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcommerce.com/).
 
