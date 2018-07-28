@@ -33,7 +33,6 @@ use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\models\Customer as CustomerModel;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
@@ -82,7 +81,7 @@ class Gateway extends BaseGateway
      *
      * Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
      *
-     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `order_number`, `transaction_id`, `transaction_reference`, and `client_ip` metadata keys.
+     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `order_number`, `order_id`, `transaction_id`, `transaction_reference`, and `client_ip` metadata keys.
      *
      * ```php
      * use craft\commerce\models\Transaction;
@@ -272,18 +271,13 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource(BasePaymentForm $sourceData): PaymentSource
+    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         /** @var Payment $sourceData */
-        $user = Craft::$app->getUser();
-
-        if ($user->getIsGuest()) {
-            $user->loginRequired();
-        }
+        $sourceData->token = $this->_normalizePaymentToken((string) $sourceData->token);
 
         try {
-            $stripeCustomer = $this->_getStripeCustomer($user->getIdentity());
-
+            $stripeCustomer = $this->_getStripeCustomer($userId);
             $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
 
             $stripeCustomer->default_source = $stripeResponse->id;
@@ -298,7 +292,7 @@ class Gateway extends BaseGateway
             }
 
             $paymentSource = new PaymentSource([
-                'userId' => $user->getId(),
+                'userId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
                 'response' => $stripeResponse->jsonSerialize(),
@@ -717,7 +711,7 @@ class Gateway extends BaseGateway
     public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
-            $stripeCustomer = $this->_getStripeCustomer($user);
+            $stripeCustomer = $this->_getStripeCustomer($user->id);
         } catch (CustomerException $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
@@ -894,6 +888,7 @@ class Gateway extends BaseGateway
         $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
         $metadata = [
+            'order_id' => $transaction->getOrder()->id,
             'order_number' => $transaction->getOrder()->number,
             'transaction_id' => $transaction->id,
             'transaction_reference' => $transaction->hash,
@@ -922,6 +917,7 @@ class Gateway extends BaseGateway
      */
     private function _buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request): Source
     {
+        // For 3D secure, make sure to set the redirect URL and the metadata flag, so we can catch it later.
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
 
@@ -942,9 +938,10 @@ class Gateway extends BaseGateway
         }
 
         if ($paymentForm->token) {
+            $paymentForm->token = $this->_normalizePaymentToken((string) $paymentForm->token);
             $source = Source::retrieve($paymentForm->token);
 
-            // If this was a stored source and it required 3D secure, let's repeat the process.
+            // If this required 3D secure, let's set the flag for it  and repeat
             if (!empty($source->card->three_d_secure) && $source->card->three_d_secure == 'required') {
                 $paymentForm->threeDSecure = true;
 
@@ -1273,19 +1270,43 @@ class Gateway extends BaseGateway
     /**
      * Get the Stripe customer for a User.
      *
-     * @param User $user
+     * @param int $userId
      *
      * @return Customer
      * @throws CustomerException if wasn't able to create or retrieve Stripe Customer.
      */
-    private function _getStripeCustomer(User $user): Customer
+    private function _getStripeCustomer(int $userId): Customer
     {
         try {
+            $user = Craft::$app->getUsers()->getUserById($userId);
             $customers = StripePlugin::getInstance()->getCustomers();
             $customer = $customers->getCustomer($this->id, $user);
             return Customer::retrieve($customer->reference);
         } catch (\Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: '.$exception->getMessage());
         }
+    }
+
+    /**
+     * Normalize one-time payment token to a source token, that may or may not be multi-use.
+     *
+     * @param string $token
+     * @return string
+     */
+    private function _normalizePaymentToken(string $token = ''): string {
+        if (StringHelper::substr($token, 0, 4) === 'tok_') {
+            try {
+                $tokenSource = Source::create([
+                    'type' => 'card',
+                    'token' => $token
+                ]);
+
+                return $tokenSource->id;
+            } catch (\Exception $exception) {
+                Craft::error('Unable to normalize payment token: '.$token .', because '.$exception->getMessage());
+            }
+        }
+
+        return $token;
     }
 }

@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\stripe\gateways\Gateway;
 use craft\db\Migration;
 use craft\db\Query;
+use craft\helpers\Json;
 use craft\helpers\MigrationHelper;
 
 /**
@@ -91,7 +92,7 @@ class Install extends Migration
     private function _convertGateways()
     {
         $gateways = (new Query())
-            ->select(['id'])
+            ->select(['id', 'settings'])
             ->where(['type' => 'craft\\commerce\\gateways\\Stripe'])
             ->from(['{{%commerce_gateways}}'])
             ->all();
@@ -100,8 +101,20 @@ class Install extends Migration
 
         foreach ($gateways as $gateway) {
 
+            $settings = Json::decodeIfJson($gateway['settings']);
+
+            if ($settings && isset($settings['includeReceiptEmailInRequests'])) {
+                $settings['sendReceiptEmail'] = $settings['includeReceiptEmailInRequests'];
+                unset($settings['includeReceiptEmailInRequests']);
+            } else {
+                $settings = [];
+            }
+
+            $settings = Json::encode($settings);
+
             $values = [
                 'type' => Gateway::class,
+                'settings' => $settings
             ];
 
             $dbConnection->createCommand()

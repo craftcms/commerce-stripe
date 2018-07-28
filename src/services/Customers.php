@@ -8,6 +8,7 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
+use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
@@ -47,6 +48,8 @@ class Customers extends Component
             return new Customer($result);
         }
 
+        $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById($gatewayId);
+        
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email
