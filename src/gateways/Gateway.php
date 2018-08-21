@@ -142,7 +142,7 @@ class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-02-06';
+    const STRIPE_API_VERSION = '2018-07-27';
 
     // Properties
     // =========================================================================
@@ -508,24 +508,35 @@ class Gateway extends BaseGateway
         $plans = StripePlan::all();
         $output = [];
 
+        $planProductMap = [];
         $planList = [];
+
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
                 $plan = $plan->jsonSerialize();
-                $planList[$plan['product']] = $plan['id'];
+                $planProductMap[$plan['id']] = $plan['product'];
+                $planList[] = $plan;
             }
 
             /** @var Collection $products */
             $products = StripeProduct::all([
                 'limit' => 100,
-                'ids' => array_keys($planList)
+                'ids' => array_values($planProductMap)
             ]);
+
+            $productList = [];
 
             if (\count($products->data)) {
                 foreach ($products->data as $product) {
                     $product = $product->jsonSerialize();
-                    $output[] = ['name' => $product['name'], 'reference' => $planList[$product['id']]];
+                    $productList[$product['id']] = $product;
                 }
+            }
+
+            foreach ($planList as $plan) {
+                $productName = $productList[$plan['product']]['name'];
+                $planName = null !== $plan['nickname'] ? ' ('.$plan['nickname'].')' : '';
+                $output[] = ['name' => $productName.$planName, 'reference' => $plan['id']];
             }
         }
 
@@ -1174,7 +1185,7 @@ class Gateway extends BaseGateway
 
         // Find the relevant line item and update subscription end date
         foreach ($lineItems as $lineItem) {
-            if ($lineItem['id'] === $subscriptionReference) {
+            if (!empty($lineItem['subscription']) && $lineItem['subscription'] === $subscriptionReference) {
                 $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
                 Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($lineItem['period']['end']));
 
