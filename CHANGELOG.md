@@ -1,5 +1,8 @@
-Changelog
-=========
+# Release Notes for Stripe for Craft Commerce
+
+## Unreleased
+
+- Switch Stripe API version to '2018-07-27'.
 
 ## 1.0.3
 
