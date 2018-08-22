@@ -1074,8 +1074,7 @@ class Gateway extends BaseGateway
             return;
         }
 
-        $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
-        $childTransaction->type = $transaction->type;
+        $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null,     $transaction);
         $childTransaction->reference = $data['id'];
 
         try {
