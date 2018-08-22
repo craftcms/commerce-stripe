@@ -505,7 +505,9 @@ class Gateway extends BaseGateway
     public function getSubscriptionPlans(): array
     {
         /** @var Collection $plans */
-        $plans = StripePlan::all();
+        $plans = StripePlan::all([
+            'limit' => 100,
+        ]);
         $output = [];
 
         $planProductMap = [];
@@ -521,7 +523,7 @@ class Gateway extends BaseGateway
             /** @var Collection $products */
             $products = StripeProduct::all([
                 'limit' => 100,
-                'ids' => array_values($planProductMap)
+                'ids' => array_values($planProductMap),
             ]);
 
             $productList = [];

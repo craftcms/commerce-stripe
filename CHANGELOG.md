@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Switch Stripe API version to '2018-07-27'.
+- Stop limiting subscription plan listing to 10 subscription plans.
 
 ## 1.0.3
 
