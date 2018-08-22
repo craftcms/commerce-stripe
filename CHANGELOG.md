@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.0.4 - 2018-08-22
 
 - Switch Stripe API version to '2018-07-27'.
 - Stop limiting subscription plan listing to 10 subscription plans.
