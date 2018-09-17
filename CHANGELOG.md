@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.0.5 - 2018-09-17
 
 - Fixed a bug where it was sometimes impossible to pay with a card when using Stripe SDK 6.17.1 ([#22](https://github.com/craftcms/commerce-stripe/issues/22))
 
