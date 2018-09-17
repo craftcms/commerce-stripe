@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where it was sometimes impossible to pay with a card when using Stripe SDK 6.17.1 ([#22](https://github.com/craftcms/commerce-stripe/issues/22))
+
 ## 1.0.4 - 2018-08-22
 
 - Switch Stripe API version to '2018-07-27'.

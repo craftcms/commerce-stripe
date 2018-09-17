@@ -203,7 +203,10 @@ class Gateway extends BaseGateway
         }
 
         $requestData['source'] = $paymentSource;
-        $requestData['customer'] = $form->customer;
+
+        if ($form->customer) {
+            $requestData['customer'] = $form->customer;
+        }
 
         try {
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
@@ -664,7 +667,10 @@ class Gateway extends BaseGateway
             }
 
             $requestData['source'] = $paymentSource;
-            $requestData['customer'] = $form->customer;
+
+            if ($form->customer) {
+                $requestData['customer'] = $form->customer;
+            }
 
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
