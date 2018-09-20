@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Added the `craft\commerce\stripe\gateways\Gateway::EVENT_RECEIVE_3DS_PAYMENT` event that is fired after a successful 3D Secure transaction confirmation by webhook.
+
 ## 1.0.5 - 2018-09-17
 
 - Fixed a bug where it was sometimes impossible to pay with a card when using Stripe SDK 6.17.1 ([#22](https://github.com/craftcms/commerce-stripe/issues/22))
