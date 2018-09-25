@@ -767,12 +767,19 @@ class Gateway extends BaseGateway
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
+        $subscriptionParameters = [
+            'customer' => $stripeCustomer->id,
+            'items' => [['plan' => $plan->reference]],
+        ];
+
+        if ($parameters->trialDays !== null) {
+            $subscriptionParameters['trial_period_days'] = (int) $parameters->trialDays;
+        } else {
+            $subscriptionParameters['trial_from_plan'] = true;
+        }
+
         try {
-            $subscription = StripeSubscription::create([
-                'customer' => $stripeCustomer->id,
-                'items' => [['plan' => $plan->reference]],
-                'trial_period_days' => $parameters->trialDays
-            ]);
+            $subscription = StripeSubscription::create($subscriptionParameters);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 

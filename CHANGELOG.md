@@ -1,5 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+
+- Fixed a bug where it was impossible to avoid specifying trial days when subscribing.
+
 ## 1.0.6 - 2018-09-20
 
 - Added the `craft\commerce\stripe\gateways\Gateway::EVENT_RECEIVE_3DS_PAYMENT` event that is fired after a successful 3D Secure transaction confirmation by webhook.
