@@ -1,8 +1,23 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## Unreleased
+
+### Fixed
+
+- Fixed a bug where it was impossible to avoid specifying trial days when subscribing.
+
+## 1.0.6 - 2018-09-20
+
+- Added the `craft\commerce\stripe\gateways\Gateway::EVENT_RECEIVE_3DS_PAYMENT` event that is fired after a successful 3D Secure transaction confirmation by webhook.
+
+## 1.0.5 - 2018-09-17
+
+- Fixed a bug where it was sometimes impossible to pay with a card when using Stripe SDK 6.17.1 ([#22](https://github.com/craftcms/commerce-stripe/issues/22))
+
+## 1.0.4 - 2018-08-22
 
 - Switch Stripe API version to '2018-07-27'.
+- Stop limiting subscription plan listing to 10 subscription plans.
 
 ## 1.0.3
 

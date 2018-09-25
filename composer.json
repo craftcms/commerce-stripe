@@ -1,7 +1,7 @@
 {
   "name": "craftcms/commerce-stripe",
   "description": "Stripe payment gateway plugin for Craft Commerce 2",
-  "version": "1.0.3",
+  "version": "1.0.6",
   "type": "craft-plugin",
   "keywords": [
     "stripe",
@@ -24,6 +24,7 @@
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
+    "craftcms/cms": "^3.0.0",
     "craftcms/commerce": "^2.0.0-beta.5",
     "stripe/stripe-php": "^6.1"
   },
