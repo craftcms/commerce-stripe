@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Removed
+
+- Removed `craft\commerce\stripe\gateways\Gateway::getSubscriptionFormHtml()`.
+- Removed `templates\subscriptionForm.html`.
+
 ### Fixed
 
 - Fixed a bug where it was impossible to avoid specifying trial days when subscribing.

@@ -459,22 +459,6 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSubscriptionFormHtml(): string
-    {
-        $view = Craft::$app->getView();
-
-        $previousMode = $view->getTemplateMode();
-        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
-
-        $html = $view->renderTemplate('commerce-stripe/subscriptionForm');
-        $view->setTemplateMode($previousMode);
-
-        return $html;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function getSubscriptionFormModel(): SubscriptionForm
     {
         return new SubscriptionForm();
