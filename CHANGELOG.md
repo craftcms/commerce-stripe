@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.0.7 - 2018-09-26
 
 ### Removed
 
