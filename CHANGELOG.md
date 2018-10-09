@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Changed
+- Stripe gateway now throws an exception when failing to process a webhook.
+
 ## 1.0.7 - 2018-09-26
 
 ### Removed
