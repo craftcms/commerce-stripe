@@ -1078,7 +1078,7 @@ class Gateway extends BaseGateway
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
-        $limit = 20;
+        $limit = 5;
 
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
@@ -1192,12 +1192,20 @@ class Gateway extends BaseGateway
         }
 
         $subscriptionReference = $stripeInvoice['subscription'];
-        $subscription = Subscription::find()->reference($subscriptionReference)->one();
+
+        $counter = 0;
+        $limit = 5;
+
+        do {
+            // Handle cases when Stripe sends us a webhook so soon that we haven't processed the subscription that triggered the webhook
+            sleep(1);
+            $subscription = Subscription::find()->reference($subscriptionReference)->one();
+            $counter++;
+        } while (!$subscription && $counter < $limit);
+
 
         if (!$subscription) {
-            Craft::warning('Subscription with the reference “'.$subscriptionReference.'” not found when processing webhook '.$data['id'], 'stripe');
-
-            return;
+            throw new SubscriptionException('Subscription with the reference “'.$subscriptionReference.'” not found when processing webhook '.$data['id']);
         }
 
         $invoice = new Invoice();
