@@ -614,41 +614,37 @@ class Gateway extends BaseGateway
 
         $data = Json::decodeIfJson($rawData);
 
-        try {
-            if ($data) {
-                switch ($data['type']) {
-                    case 'plan.deleted':
-                    case 'plan.updated':
-                        $this->_handlePlanEvent($data);
-                        break;
-                    case 'invoice.payment_succeeded':
-                        $this->_handleInvoiceSucceededEvent($data);
-                        break;
-                    case 'invoice.created':
-                        $this->_handleInvoiceCreated($data);
-                        break;
-                    case 'customer.subscription.deleted':
-                        $this->_handleSubscriptionExpired($data);
-                        break;
-                    case 'customer.subscription.updated':
-                        $this->_handleSubscriptionUpdated($data);
-                        break;
-                    default:
-                        if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
-                            $this->_handle3DSecureFlowEvent($data);
-                        }
-                }
-
-                if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
-                    $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
-                        'webhookData' => $data
-                    ]));
-                }
-            } else {
-                Craft::warning('Could not decode JSON payload.', 'stripe');
+        if ($data) {
+            switch ($data['type']) {
+                case 'plan.deleted':
+                case 'plan.updated':
+                    $this->_handlePlanEvent($data);
+                    break;
+                case 'invoice.payment_succeeded':
+                    $this->_handleInvoiceSucceededEvent($data);
+                    break;
+                case 'invoice.created':
+                    $this->_handleInvoiceCreated($data);
+                    break;
+                case 'customer.subscription.deleted':
+                    $this->_handleSubscriptionExpired($data);
+                    break;
+                case 'customer.subscription.updated':
+                    $this->_handleSubscriptionUpdated($data);
+                    break;
+                default:
+                    if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
+                        $this->_handle3DSecureFlowEvent($data);
+                    }
             }
-        } catch (\Throwable $exception) {
-            Craft::error('Exception while processing webhook: '.$exception->getMessage(), 'stripe');
+
+            if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
+                $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
+                    'webhookData' => $data
+                ]));
+            }
+        } else {
+            Craft::warning('Could not decode JSON payload.', 'stripe');
         }
 
         $response->data = 'ok';
