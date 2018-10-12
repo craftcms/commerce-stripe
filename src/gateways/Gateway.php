@@ -568,7 +568,7 @@ class Gateway extends BaseGateway
 
         /** @var Plan $originalPlan */
         /** @var Plan $targetPlan */
-        $html = $view->renderTemplate('commerce-stripe/switchPlansForm', ['plansOnSameCycle' => $originalPlan->isOnSamePaymentCycleAs($targetPlan)]);
+        $html = $view->renderTemplate('commerce-stripe/switchPlansForm', ['targetPlan' => $targetPlan, 'plansOnSameCycle' => $originalPlan->isOnSamePaymentCycleAs($targetPlan)]);
 
         $view->setTemplateMode($previousMode);
 
