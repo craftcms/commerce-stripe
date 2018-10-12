@@ -358,14 +358,14 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getCancelSubscriptionFormHtml(): string
+    public function getCancelSubscriptionFormHtml(Subscription $subscription): string
     {
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
-        $html = $view->renderTemplate('commerce-stripe/cancelSubscriptionForm');
+        $html = $view->renderTemplate('commerce-stripe/cancelSubscriptionForm', ['subscription' => $subscription]);
         $view->setTemplateMode($previousMode);
 
         return $html;
