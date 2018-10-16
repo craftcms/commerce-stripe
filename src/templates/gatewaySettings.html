@@ -1,7 +1,7 @@
 {% from "_includes/forms" import textField, lightswitchField %}
 
 {{ textField({
-    label: "API Key"|t('commerce-stripe'),
+    label: "Secret API Key"|t('commerce-stripe'),
     instructions: "Your Stripe API key."|t('commerce-stripe'),
     id: 'apiKey',
     class: 'ltr',
@@ -21,7 +21,7 @@
 }) }}
 
 {{ textField({
-    label: "Signing secret"|t("commerce"),
+    label: "Webhook signing secret"|t("commerce"),
     instructions: "Your webhook endpoint signing secret."|t("commerce"),
     id: 'signingSecret',
     name: 'signingSecret',
