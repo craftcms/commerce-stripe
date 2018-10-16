@@ -8,6 +8,7 @@
 
 ### Changed
 - Stripe gateway now throws an exception when failing to process a webhook.
+- Stripe plugin now requires Craft Commerce `2.0.0-beta.12`.
 
 ## 1.0.7 - 2018-09-26
 
