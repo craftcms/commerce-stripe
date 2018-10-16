@@ -30,7 +30,7 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
-use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
@@ -162,6 +162,25 @@ class Gateway extends BaseGateway
      * ```
      */
     const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
+
+    /**
+     * @event SubscriptionRequestEvent The event that is triggered when a subscription request is being built.
+     *
+     * Plugins get a chance to tweak subscription parameters when subscribing.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\SubscriptionRequestEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
+     *     $e->parameters['someKey'] = 'some value';
+     *     unset($e->parameters['dontNeedThisKey']);
+     * });
+     * ```
+     */
+    const EVENT_BEFORE_SUBSCRIBE = 'beforeSubscribe';
+
 
     /**
      * string The Stripe API version to use.
@@ -758,8 +777,14 @@ class Gateway extends BaseGateway
             $subscriptionParameters['trial_from_plan'] = true;
         }
 
+        $event = new SubscriptionRequestEvent([
+            'parameters' => $subscriptionParameters
+        ]);
+
+        $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
+
         try {
-            $subscription = StripeSubscription::create($subscriptionParameters);
+            $subscription = StripeSubscription::create($event->parameters);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Added
+
+- Added the `craft\commerce\stripe\gateways\Gateway::EVENT_BEFORE_SUBSCRIBE` event that is fired before subscribing a customer to a subscription plan. ([#31](https://github.com/craftcms/commerce-stripe/issues/31))
+
 ### Changed
 - Stripe gateway now throws an exception when failing to process a webhook.
 
