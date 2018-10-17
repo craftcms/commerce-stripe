@@ -185,7 +185,7 @@ class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-07-27';
+    const STRIPE_API_VERSION = '2018-09-24';
 
     // Properties
     // =========================================================================
@@ -266,9 +266,16 @@ class Gateway extends BaseGateway
     public function cancelSubscription(Subscription $subscription, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
+            /** @var StripeSubscription $stripeSubscription */
             $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+
             /** @var CancelSubscription $parameters */
-            $response = $stripeSubscription->cancel(['at_period_end' => !$parameters->cancelImmediately]);
+            if ($parameters->cancelImmediately) {
+                $response = $stripeSubscription->cancel();
+            } else {
+                $stripeSubscription->cancel_at_period_end = true;
+                $response = $stripeSubscription->save();
+            }
 
             return $this->_createSubscriptionResponse($response);
         } catch (\Throwable $exception) {
@@ -718,6 +725,8 @@ class Gateway extends BaseGateway
                 'plan' => $plan->reference,
             ]
         ];
+
+        $stripeSubscription->cancel_at_period_end = false;
 
         return $this->_createSubscriptionResponse($stripeSubscription->save());
     }
