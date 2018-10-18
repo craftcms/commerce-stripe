@@ -1103,8 +1103,6 @@ class Gateway extends BaseGateway
      * Handle a 3D Secure related event.
      *
      * @param array $data
-     *
-     * @return void
      * @throws TransactionException if unable to save transaction
      */
     private function _handle3DSecureFlowEvent(array $data)
@@ -1211,8 +1209,6 @@ class Gateway extends BaseGateway
      * Handle a successful invoice payment event.
      *
      * @param array $data
-     *
-     * @return void
      * @throws \Throwable if something went wrong when processing the invoice
      */
     private function _handleInvoiceSucceededEvent(array $data)
@@ -1266,8 +1262,6 @@ class Gateway extends BaseGateway
      * Handle Plan events
      *
      * @param array $data
-     *
-     * @return void
      * @throws \yii\base\InvalidConfigException If plan not
      */
     private function _handlePlanEvent(array $data)

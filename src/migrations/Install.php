@@ -86,8 +86,6 @@ class Install extends Migration
 
     /**
      * Converts any old school Stripe gateways to this one
-     *
-     * @return void
      */
     private function _convertGateways()
     {
