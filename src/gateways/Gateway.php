@@ -358,7 +358,7 @@ class Gateway extends BaseGateway
     public function getNextPaymentAmount(Subscription $subscription): string
     {
         $data = Json::decode($subscription->subscriptionData);
-        $currencyCode = StringHelper::toUpperCase($data['plan']['currency']);
+        $currencyCode = strtoupper($data['plan']['currency']);
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
@@ -465,7 +465,7 @@ class Gateway extends BaseGateway
         foreach ($invoices as $invoice) {
             $data = $invoice->invoiceData;
 
-            $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(StringHelper::toUpperCase($data['currency']));
+            $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($data['currency']));
 
             if (!$currency) {
                 Craft::warning('Unsupported currency - '.$data['currency'], 'stripe');
@@ -1170,7 +1170,7 @@ class Gateway extends BaseGateway
 
         $lineItems = $stripeInvoice['lines']['data'];
 
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(StringHelper::toUpperCase($invoice->invoiceData['currency']));
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->invoiceData['currency']));
 
         // Find the relevant line item and update subscription end date
         foreach ($lineItems as $lineItem) {
