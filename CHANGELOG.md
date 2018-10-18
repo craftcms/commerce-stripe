@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.0.8 - 2018-10-18
 
 ### Added
 - Added `craft\commerce\stripe\gateways\Gateway::EVENT_BEFORE_SUBSCRIBE`, which is triggered before subscribing a customer to a subscription plan. ([#31](https://github.com/craftcms/commerce-stripe/issues/31))
