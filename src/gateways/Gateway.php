@@ -32,6 +32,7 @@ use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
+use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Payment;
@@ -140,9 +141,32 @@ class Gateway extends BaseGateway
     const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
     /**
+     * @event Receive3dsPaymentEvent The event that is triggered when a successful 3ds payment is received.
+     *
+     * Plugins get a chance to do something whenever a successful 3D Secure payment is received.
+     *
+     * ```php
+     * use craft\commerce\Plugin as Commerce;
+     * use craft\commerce\stripe\events\Receive3dsPaymentEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
+     *     $order = $e->transaction->getOrder();
+     *     $orderStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
+     *     if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
+     *         $order->orderStatusId = $paidStatus->id;
+     *         Craft::$app->getElements()->saveElement($order);
+     *     }
+     * });
+     * ```
+     */
+    const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
+
+    /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-02-06';
+    const STRIPE_API_VERSION = '2018-07-27';
 
     // Properties
     // =========================================================================
@@ -203,7 +227,10 @@ class Gateway extends BaseGateway
         }
 
         $requestData['source'] = $paymentSource;
-        $requestData['customer'] = $form->customer;
+
+        if ($form->customer) {
+            $requestData['customer'] = $form->customer;
+        }
 
         try {
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
@@ -432,22 +459,6 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSubscriptionFormHtml(): string
-    {
-        $view = Craft::$app->getView();
-
-        $previousMode = $view->getTemplateMode();
-        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
-
-        $html = $view->renderTemplate('commerce-stripe/subscriptionForm');
-        $view->setTemplateMode($previousMode);
-
-        return $html;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function getSubscriptionFormModel(): SubscriptionForm
     {
         return new SubscriptionForm();
@@ -505,27 +516,40 @@ class Gateway extends BaseGateway
     public function getSubscriptionPlans(): array
     {
         /** @var Collection $plans */
-        $plans = StripePlan::all();
+        $plans = StripePlan::all([
+            'limit' => 100,
+        ]);
         $output = [];
 
+        $planProductMap = [];
         $planList = [];
+
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
                 $plan = $plan->jsonSerialize();
-                $planList[$plan['product']] = $plan['id'];
+                $planProductMap[$plan['id']] = $plan['product'];
+                $planList[] = $plan;
             }
 
             /** @var Collection $products */
             $products = StripeProduct::all([
                 'limit' => 100,
-                'ids' => array_keys($planList)
+                'ids' => array_values($planProductMap),
             ]);
+
+            $productList = [];
 
             if (\count($products->data)) {
                 foreach ($products->data as $product) {
                     $product = $product->jsonSerialize();
-                    $output[] = ['name' => $product['name'], 'reference' => $planList[$product['id']]];
+                    $productList[$product['id']] = $product;
                 }
+            }
+
+            foreach ($planList as $plan) {
+                $productName = $productList[$plan['product']]['name'];
+                $planName = null !== $plan['nickname'] ? ' ('.$plan['nickname'].')' : '';
+                $output[] = ['name' => $productName.$planName, 'reference' => $plan['id']];
             }
         }
 
@@ -651,7 +675,10 @@ class Gateway extends BaseGateway
             }
 
             $requestData['source'] = $paymentSource;
-            $requestData['customer'] = $form->customer;
+
+            if ($form->customer) {
+                $requestData['customer'] = $form->customer;
+            }
 
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
@@ -724,12 +751,19 @@ class Gateway extends BaseGateway
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
+        $subscriptionParameters = [
+            'customer' => $stripeCustomer->id,
+            'items' => [['plan' => $plan->reference]],
+        ];
+
+        if ($parameters->trialDays !== null) {
+            $subscriptionParameters['trial_period_days'] = (int) $parameters->trialDays;
+        } else {
+            $subscriptionParameters['trial_from_plan'] = true;
+        }
+
         try {
-            $subscription = StripeSubscription::create([
-                'customer' => $stripeCustomer->id,
-                'items' => [['plan' => $plan->reference]],
-                'trial_period_days' => $parameters->trialDays
-            ]);
+            $subscription = StripeSubscription::create($subscriptionParameters);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
@@ -1064,7 +1098,6 @@ class Gateway extends BaseGateway
         }
 
         $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
-        $childTransaction->type = $transaction->type;
         $childTransaction->reference = $data['id'];
 
         try {
@@ -1106,6 +1139,15 @@ class Gateway extends BaseGateway
             }
 
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
+
+            if ($childTransaction->status === TransactionRecord::STATUS_SUCCESS) {
+                if ($this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)) {
+                    $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
+                        'transaction' => $childTransaction
+                    ]));
+                }
+
+            }
         } catch (\Exception $exception) {
             Craft::error('Could not process webhook '.$data['id'].': '.$exception->getMessage(), 'stripe');
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
@@ -1174,7 +1216,7 @@ class Gateway extends BaseGateway
 
         // Find the relevant line item and update subscription end date
         foreach ($lineItems as $lineItem) {
-            if ($lineItem['id'] === $subscriptionReference) {
+            if (!empty($lineItem['subscription']) && $lineItem['subscription'] === $subscriptionReference) {
                 $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
                 Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($lineItem['period']['end']));
 
