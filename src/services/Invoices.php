@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
-use craft\commerce\stripe\events\PayInvoiceEvent;
 use craft\commerce\stripe\events\SaveInvoiceEvent;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\records\Invoice as InvoiceRecord;
@@ -53,10 +52,9 @@ class Invoices extends Component
      * Returns a customer by gateway and user id.
      *
      * @param int $subscriptionId The subscription id.
-     *
      * @return Invoice[]
      */
-    public function getSubscriptionInvoices(int $subscriptionId)
+    public function getSubscriptionInvoices(int $subscriptionId): array
     {
         $results = $this->_createInvoiceQuery()
             ->where(['subscriptionId' => $subscriptionId])
@@ -77,11 +75,10 @@ class Invoices extends Component
      * Save an invoice.
      *
      * @param Invoice $invoice The invoice being saved.
-     *
      * @return bool Whether the invoice was saved successfully
      * @throws Exception if invoice not found by id.
      */
-    public function saveInvoice(Invoice $invoice)
+    public function saveInvoice(Invoice $invoice): bool
     {
         if ($invoice->id) {
             $record = InvoiceRecord::findOne($invoice->id);

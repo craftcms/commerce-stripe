@@ -30,6 +30,7 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
+use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
@@ -175,7 +176,7 @@ class Gateway extends BaseGateway
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
      *     $e->parameters['someKey'] = 'some value';
-     *     unset($e->parameters['dontNeedThisKey']);
+     *     unset($e->parameters['unneededKey']);
      * });
      * ```
      */
@@ -289,6 +290,7 @@ class Gateway extends BaseGateway
     public function capture(Transaction $transaction, string $reference): RequestResponseInterface
     {
         try {
+            /** @var Charge $charge */
             $charge = Charge::retrieve($reference);
             $charge->capture([], ['idempotency_key' => $reference]);
 
@@ -313,6 +315,7 @@ class Gateway extends BaseGateway
     public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
         $sourceId = Craft::$app->getRequest()->getParam('source');
+        /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
 
         $response = $this->_createPaymentResponseFromApiResource($paymentSource);
@@ -364,6 +367,7 @@ class Gateway extends BaseGateway
     public function deletePaymentSource($token): bool
     {
         try {
+            /** @var Source $source */
             $source = Source::retrieve($token);
             $source->detach();
         } catch (\Throwable $throwable) {
@@ -533,7 +537,7 @@ class Gateway extends BaseGateway
         $product = StripeProduct::retrieve($plan['product']);
         $product = $product->jsonSerialize();
 
-        return Json::encode(['plan' => $plan, 'product' => $product]);
+        return Json::encode(compact('plan', 'product'));
     }
 
     /**
@@ -552,6 +556,7 @@ class Gateway extends BaseGateway
 
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
+                /** @var StripePlan $plan */
                 $plan = $plan->jsonSerialize();
                 $planProductMap[$plan['id']] = $plan['product'];
                 $planList[] = $plan;
@@ -567,6 +572,7 @@ class Gateway extends BaseGateway
 
             if (\count($products->data)) {
                 foreach ($products->data as $product) {
+                    /** @var StripeProduct $product */
                     $product = $product->jsonSerialize();
                     $productList[$product['id']] = $product;
                 }
@@ -619,7 +625,7 @@ class Gateway extends BaseGateway
         $response = Craft::$app->getResponse();
 
         $secret = $this->signingSecret;
-        $stripeSignature = $_SERVER["HTTP_STRIPE_SIGNATURE"] ?? '';
+        $stripeSignature = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
@@ -718,6 +724,7 @@ class Gateway extends BaseGateway
         /** @var Plan $plan */
         $plan = $subscription->getPlan();
 
+        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
         $stripeSubscription->items = [
             [
@@ -898,6 +905,7 @@ class Gateway extends BaseGateway
     public function switchSubscriptionPlan(Subscription $subscription, BasePlan $plan, SwitchPlansForm $parameters): SubscriptionResponseInterface
     {
         /** @var SwitchPlans $parameters */
+        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
         $stripeSubscription->items = [
             [
@@ -1003,6 +1011,7 @@ class Gateway extends BaseGateway
 
         if ($paymentForm->token) {
             $paymentForm->token = $this->_normalizePaymentToken((string)$paymentForm->token);
+            /** @var Source $source */
             $source = Source::retrieve($paymentForm->token);
 
             // If this required 3D secure, let's set the flag for it  and repeat
@@ -1168,12 +1177,13 @@ class Gateway extends BaseGateway
 
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
 
-            if ($childTransaction->status === TransactionRecord::STATUS_SUCCESS) {
-                if ($this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)) {
-                    $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
-                        'transaction' => $childTransaction
-                    ]));
-                }
+            if (
+                ($childTransaction->status === TransactionRecord::STATUS_SUCCESS) &&
+                $this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)
+            ) {
+                $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
+                    'transaction' => $childTransaction
+                ]));
             }
         } catch (\Exception $exception) {
             Craft::error('Could not process webhook ' . $data['id'] . ': ' . $exception->getMessage(), 'stripe');
@@ -1200,6 +1210,7 @@ class Gateway extends BaseGateway
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
+            /** @var StripeInvoice $invoice */
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
@@ -1370,6 +1381,7 @@ class Gateway extends BaseGateway
     {
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
+                /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
                     'token' => $token
