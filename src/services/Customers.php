@@ -49,7 +49,7 @@ class Customers extends Component
         }
 
         $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById($gatewayId);
-        
+
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email
@@ -63,7 +63,7 @@ class Customers extends Component
         ]);
 
         if (!$this->saveCustomer($customer)) {
-            throw new CustomerException('Could not save customer: '.implode(', ', $customer->getErrorSummary(true)));
+            throw new CustomerException('Could not save customer: ' . implode(', ', $customer->getErrorSummary(true)));
         }
 
         return $customer;

@@ -7,7 +7,6 @@
 
 namespace craft\commerce\stripe\events;
 
-use craft\commerce\models\Transaction;
 use yii\base\Event;
 
 /**
