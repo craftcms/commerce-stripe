@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
-use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
@@ -48,8 +47,7 @@ class Customers extends Component
             return new Customer($result);
         }
 
-        $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById($gatewayId);
-
+        /** @var StripeCustomer $stripeCustomer */
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email
@@ -73,11 +71,10 @@ class Customers extends Component
      * Save a customer
      *
      * @param Customer $customer The customer being saved.
-     *
      * @return bool Whether the payment source was saved successfully
      * @throws Exception if payment source not found by id.
      */
-    public function saveCustomer(Customer $customer)
+    public function saveCustomer(Customer $customer): bool
     {
         if ($customer->id) {
             $record = CustomerRecord::findOne($customer->id);

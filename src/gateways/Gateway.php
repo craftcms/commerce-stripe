@@ -34,6 +34,7 @@ use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
+use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\models\forms\SwitchPlans;
@@ -164,9 +165,28 @@ class Gateway extends BaseGateway
     const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
 
     /**
+     * @event SubscriptionRequestEvent The event that is triggered when a subscription request is being built.
+     *
+     * Plugins get a chance to tweak subscription parameters when subscribing.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\SubscriptionRequestEvent;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
+     *     $e->parameters['someKey'] = 'some value';
+     *     unset($e->parameters['unneededKey']);
+     * });
+     * ```
+     */
+    const EVENT_BEFORE_SUBSCRIBE = 'beforeSubscribe';
+
+
+    /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-07-27';
+    const STRIPE_API_VERSION = '2018-09-24';
 
     // Properties
     // =========================================================================
@@ -247,9 +267,16 @@ class Gateway extends BaseGateway
     public function cancelSubscription(Subscription $subscription, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
     {
         try {
+            /** @var StripeSubscription $stripeSubscription */
             $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+
             /** @var CancelSubscription $parameters */
-            $response = $stripeSubscription->cancel(['at_period_end' => !$parameters->cancelImmediately]);
+            if ($parameters->cancelImmediately) {
+                $response = $stripeSubscription->cancel();
+            } else {
+                $stripeSubscription->cancel_at_period_end = true;
+                $response = $stripeSubscription->save();
+            }
 
             return $this->_createSubscriptionResponse($response);
         } catch (\Throwable $exception) {
@@ -263,6 +290,7 @@ class Gateway extends BaseGateway
     public function capture(Transaction $transaction, string $reference): RequestResponseInterface
     {
         try {
+            /** @var Charge $charge */
             $charge = Charge::retrieve($reference);
             $charge->capture([], ['idempotency_key' => $reference]);
 
@@ -287,6 +315,7 @@ class Gateway extends BaseGateway
     public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
         $sourceId = Craft::$app->getRequest()->getParam('source');
+        /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
 
         $response = $this->_createPaymentResponseFromApiResource($paymentSource);
@@ -338,6 +367,7 @@ class Gateway extends BaseGateway
     public function deletePaymentSource($token): bool
     {
         try {
+            /** @var Source $source */
             $source = Source::retrieve($token);
             $source->detach();
         } catch (\Throwable $throwable) {
@@ -358,14 +388,14 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getCancelSubscriptionFormHtml(): string
+    public function getCancelSubscriptionFormHtml(Subscription $subscription): string
     {
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
-        $html = $view->renderTemplate('commerce-stripe/cancelSubscriptionForm');
+        $html = $view->renderTemplate('commerce-stripe/cancelSubscriptionForm', ['subscription' => $subscription]);
         $view->setTemplateMode($previousMode);
 
         return $html;
@@ -507,7 +537,7 @@ class Gateway extends BaseGateway
         $product = StripeProduct::retrieve($plan['product']);
         $product = $product->jsonSerialize();
 
-        return Json::encode(['plan' => $plan, 'product' => $product]);
+        return Json::encode(compact('plan', 'product'));
     }
 
     /**
@@ -526,6 +556,7 @@ class Gateway extends BaseGateway
 
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
+                /** @var StripePlan $plan */
                 $plan = $plan->jsonSerialize();
                 $planProductMap[$plan['id']] = $plan['product'];
                 $planList[] = $plan;
@@ -541,6 +572,7 @@ class Gateway extends BaseGateway
 
             if (\count($products->data)) {
                 foreach ($products->data as $product) {
+                    /** @var StripeProduct $product */
                     $product = $product->jsonSerialize();
                     $productList[$product['id']] = $product;
                 }
@@ -568,7 +600,7 @@ class Gateway extends BaseGateway
 
         /** @var Plan $originalPlan */
         /** @var Plan $targetPlan */
-        $html = $view->renderTemplate('commerce-stripe/switchPlansForm', ['plansOnSameCycle' => $originalPlan->isOnSamePaymentCycleAs($targetPlan)]);
+        $html = $view->renderTemplate('commerce-stripe/switchPlansForm', ['targetPlan' => $targetPlan, 'plansOnSameCycle' => $originalPlan->isOnSamePaymentCycleAs($targetPlan)]);
 
         $view->setTemplateMode($previousMode);
 
@@ -593,7 +625,7 @@ class Gateway extends BaseGateway
         $response = Craft::$app->getResponse();
 
         $secret = $this->signingSecret;
-        $stripeSignature = $_SERVER["HTTP_STRIPE_SIGNATURE"] ?? '';
+        $stripeSignature = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
@@ -614,41 +646,37 @@ class Gateway extends BaseGateway
 
         $data = Json::decodeIfJson($rawData);
 
-        try {
-            if ($data) {
-                switch ($data['type']) {
-                    case 'plan.deleted':
-                    case 'plan.updated':
-                        $this->_handlePlanEvent($data);
-                        break;
-                    case 'invoice.payment_succeeded':
-                        $this->_handleInvoiceSucceededEvent($data);
-                        break;
-                    case 'invoice.created':
-                        $this->_handleInvoiceCreated($data);
-                        break;
-                    case 'customer.subscription.deleted':
-                        $this->_handleSubscriptionExpired($data);
-                        break;
-                    case 'customer.subscription.updated':
-                        $this->_handleSubscriptionUpdated($data);
-                        break;
-                    default:
-                        if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
-                            $this->_handle3DSecureFlowEvent($data);
-                        }
-                }
-
-                if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
-                    $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
-                        'webhookData' => $data
-                    ]));
-                }
-            } else {
-                Craft::warning('Could not decode JSON payload.', 'stripe');
+        if ($data) {
+            switch ($data['type']) {
+                case 'plan.deleted':
+                case 'plan.updated':
+                    $this->_handlePlanEvent($data);
+                    break;
+                case 'invoice.payment_succeeded':
+                    $this->_handleInvoiceSucceededEvent($data);
+                    break;
+                case 'invoice.created':
+                    $this->_handleInvoiceCreated($data);
+                    break;
+                case 'customer.subscription.deleted':
+                    $this->_handleSubscriptionExpired($data);
+                    break;
+                case 'customer.subscription.updated':
+                    $this->_handleSubscriptionUpdated($data);
+                    break;
+                default:
+                    if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
+                        $this->_handle3DSecureFlowEvent($data);
+                    }
             }
-        } catch (\Throwable $exception) {
-            Craft::error('Exception while processing webhook: ' . $exception->getMessage(), 'stripe');
+
+            if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
+                $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
+                    'webhookData' => $data
+                ]));
+            }
+        } else {
+            Craft::warning('Could not decode JSON payload.', 'stripe');
         }
 
         $response->data = 'ok';
@@ -696,6 +724,7 @@ class Gateway extends BaseGateway
         /** @var Plan $plan */
         $plan = $subscription->getPlan();
 
+        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
         $stripeSubscription->items = [
             [
@@ -703,6 +732,8 @@ class Gateway extends BaseGateway
                 'plan' => $plan->reference,
             ]
         ];
+
+        $stripeSubscription->cancel_at_period_end = false;
 
         return $this->_createSubscriptionResponse($stripeSubscription->save());
     }
@@ -762,8 +793,14 @@ class Gateway extends BaseGateway
             $subscriptionParameters['trial_from_plan'] = true;
         }
 
+        $event = new SubscriptionRequestEvent([
+            'parameters' => $subscriptionParameters
+        ]);
+
+        $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
+
         try {
-            $subscription = StripeSubscription::create($subscriptionParameters);
+            $subscription = StripeSubscription::create($event->parameters);
         } catch (\Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
@@ -868,6 +905,7 @@ class Gateway extends BaseGateway
     public function switchSubscriptionPlan(Subscription $subscription, BasePlan $plan, SwitchPlansForm $parameters): SubscriptionResponseInterface
     {
         /** @var SwitchPlans $parameters */
+        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
         $stripeSubscription->items = [
             [
@@ -973,6 +1011,7 @@ class Gateway extends BaseGateway
 
         if ($paymentForm->token) {
             $paymentForm->token = $this->_normalizePaymentToken((string)$paymentForm->token);
+            /** @var Source $source */
             $source = Source::retrieve($paymentForm->token);
 
             // If this required 3D secure, let's set the flag for it  and repeat
@@ -1073,8 +1112,6 @@ class Gateway extends BaseGateway
      * Handle a 3D Secure related event.
      *
      * @param array $data
-     *
-     * @return void
      * @throws TransactionException if unable to save transaction
      */
     private function _handle3DSecureFlowEvent(array $data)
@@ -1082,7 +1119,7 @@ class Gateway extends BaseGateway
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
-        $limit = 20;
+        $limit = 5;
 
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
@@ -1140,12 +1177,13 @@ class Gateway extends BaseGateway
 
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
 
-            if ($childTransaction->status === TransactionRecord::STATUS_SUCCESS) {
-                if ($this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)) {
-                    $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
-                        'transaction' => $childTransaction
-                    ]));
-                }
+            if (
+                ($childTransaction->status === TransactionRecord::STATUS_SUCCESS) &&
+                $this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)
+            ) {
+                $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
+                    'transaction' => $childTransaction
+                ]));
             }
         } catch (\Exception $exception) {
             Craft::error('Could not process webhook ' . $data['id'] . ': ' . $exception->getMessage(), 'stripe');
@@ -1172,6 +1210,7 @@ class Gateway extends BaseGateway
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
+            /** @var StripeInvoice $invoice */
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
@@ -1181,8 +1220,6 @@ class Gateway extends BaseGateway
      * Handle a successful invoice payment event.
      *
      * @param array $data
-     *
-     * @return void
      * @throws \Throwable if something went wrong when processing the invoice
      */
     private function _handleInvoiceSucceededEvent(array $data)
@@ -1195,12 +1232,20 @@ class Gateway extends BaseGateway
         }
 
         $subscriptionReference = $stripeInvoice['subscription'];
-        $subscription = Subscription::find()->reference($subscriptionReference)->one();
+
+        $counter = 0;
+        $limit = 5;
+
+        do {
+            // Handle cases when Stripe sends us a webhook so soon that we haven't processed the subscription that triggered the webhook
+            sleep(1);
+            $subscription = Subscription::find()->reference($subscriptionReference)->one();
+            $counter++;
+        } while (!$subscription && $counter < $limit);
+
 
         if (!$subscription) {
-            Craft::warning('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id'], 'stripe');
-
-            return;
+            throw new SubscriptionException('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id']);
         }
 
         $invoice = new Invoice();
@@ -1228,8 +1273,6 @@ class Gateway extends BaseGateway
      * Handle Plan events
      *
      * @param array $data
-     *
-     * @return void
      * @throws \yii\base\InvalidConfigException If plan not
      */
     private function _handlePlanEvent(array $data)
@@ -1338,6 +1381,7 @@ class Gateway extends BaseGateway
     {
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
+                /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
                     'token' => $token

@@ -1,6 +1,16 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 1.0.7 - 2018-09-26
+## 1.0.8 - 2018-10-18
+
+### Added
+- Added `craft\commerce\stripe\gateways\Gateway::EVENT_BEFORE_SUBSCRIBE`, which is triggered before subscribing a customer to a subscription plan. ([#31](https://github.com/craftcms/commerce-stripe/issues/31))
+
+### Changed
+- Stripe for Craft Commerce now requires Commerce 2.0.0-beta.12 or later.
+- Switched to Stripe API version 2018-09-24.
+- An exception is now thrown if webhook processing fails.
+
+## 1.0.7 - 2018-09-26
 
 ### Removed
 - Removed `craft\commerce\stripe\gateways\Gateway::getSubscriptionFormHtml()`.

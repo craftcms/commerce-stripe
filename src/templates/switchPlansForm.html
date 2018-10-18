@@ -5,8 +5,8 @@
         label: 'Prorate'|t,
         name: 'prorate',
         options: [
-            {'label': 'Prorate the switch cost'|t('commerce-stripe'), value: '1'|hash},
-            {'label': 'Do not prorate the switch cost'|t('commerce-stripe'), value: '0'|hash}
+            {'label': 'Prorate the switch cost'|t('commerce-stripe'), value: (targetPlan.uid ~ ':1')|hash},
+            {'label': 'Do not prorate the switch cost'|t('commerce-stripe'), value: (targetPlan.uid ~ ':0')|hash}
         ]
     }) }}
 
@@ -15,8 +15,8 @@
             label: 'Billing'|t,
             name: 'billImmediately',
             options: [
-                {'label': 'Create an invoice immediately'|t('commerce-stripe'), value: '1'|hash},
-                {'label': 'Add to next invoice'|t('commerce-stripe'), value: '0'|hash}
+                {'label': 'Create an invoice immediately'|t('commerce-stripe'), value: (targetPlan.uid ~ ':1')|hash},
+                {'label': 'Add to next invoice'|t('commerce-stripe'), value: (targetPlan.uid ~ ':0')|hash}
             ]
         }) }}
     {% else %}

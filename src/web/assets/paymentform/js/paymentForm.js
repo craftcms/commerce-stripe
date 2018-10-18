@@ -71,7 +71,7 @@ function initStripe() {
 
                 orderEmail = $('input[name=orderEmail]').val();
 
-                // Tokenize the credit card detauls and create a payment source
+                // Tokenize the credit card details and create a payment source
                 stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);

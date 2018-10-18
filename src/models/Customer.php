@@ -91,7 +91,7 @@ class Customer extends Model
     }
 
     /**
-     * Returns the gatewayassociated with this customer.
+     * Returns the gateway associated with this customer.
      *
      * @return GatewayInterface|null
      */
