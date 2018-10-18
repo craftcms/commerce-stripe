@@ -87,7 +87,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
     /**
      * @inheritdoc
      */
-    public function isScheduledForCancelation(): bool
+    public function isScheduledForCancellation(): bool
     {
         return (bool)$this->data['cancel_at_period_end'];
     }
