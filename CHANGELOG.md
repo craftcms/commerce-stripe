@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed an error that would occur when calling `craft\commerce\stripe\services\Customers::getCustomer()`.
+
 ## 1.0.8 - 2018-10-18
 
 ### Added

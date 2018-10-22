@@ -8,12 +8,16 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
+use craft\commerce\Plugin as Commerce;
+use craft\commerce\stripe\gateways\Gateway;
+use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
 use craft\elements\User;
 use Stripe\Customer as StripeCustomer;
+use Stripe\Stripe;
 use yii\base\Component;
 use yii\base\Exception;
 
@@ -46,6 +50,10 @@ class Customers extends Component
         if ($result !== null) {
             return new Customer($result);
         }
+
+        Stripe::setApiKey(Commerce::getInstance()->getGateways()->getGatewayById($gatewayId)->apiKey);
+        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
+        Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
 
         /** @var StripeCustomer $stripeCustomer */
         $stripeCustomer = StripeCustomer::create([
