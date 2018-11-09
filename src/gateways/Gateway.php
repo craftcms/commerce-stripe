@@ -1353,7 +1353,7 @@ class Gateway extends BaseGateway
      * @param Transaction $transaction the transaction on which this request is based
      * @param BasePaymentForm $form payment form parameters
      * @param bool $capture whether funds should be captured immediately, defaults to true.
-     * 
+     *
      * @return RequestResponseInterface
      * @throws NotSupportedException if unrecognized currency specified for transaction
      * @throws PaymentException if unexpected payment information provided.
