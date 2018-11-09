@@ -233,32 +233,7 @@ class Gateway extends BaseGateway
      */
     public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        /** @var Payment $form */
-        $requestData = $this->_buildRequestData($transaction);
-        $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
-        $requestData['capture'] = false;
-
-        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
-            // This should only happen for 3D secure payments.
-            $response = $this->_createPaymentResponseFromApiResource($paymentSource);
-            $response->setRedirectUrl($paymentSource->redirect->url);
-
-            return $response;
-        }
-
-        $requestData['source'] = $paymentSource;
-
-        if ($form->customer) {
-            $requestData['customer'] = $form->customer;
-        }
-
-        try {
-            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
-
-            return $this->_createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
-            return $this->_createPaymentResponseFromError($exception);
-        }
+        return $this->_authorizeOrPurchase($transaction, $form, false);
     }
 
     /**
@@ -689,31 +664,7 @@ class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        try {
-            /** @var Payment $form */
-            $requestData = $this->_buildRequestData($transaction);
-            $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
-
-            if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
-                // This should only happen for 3D secure payments.
-                $response = $this->_createPaymentResponseFromApiResource($paymentSource);
-                $response->setRedirectUrl($paymentSource->redirect->url);
-
-                return $response;
-            }
-
-            $requestData['source'] = $paymentSource;
-
-            if ($form->customer) {
-                $requestData['customer'] = $form->customer;
-            }
-
-            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
-
-            return $this->_createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
-            return $this->_createPaymentResponseFromError($exception);
-        }
+        return $this->_authorizeOrPurchase($transaction, $form);
     }
 
     /**
@@ -1394,5 +1345,48 @@ class Gateway extends BaseGateway
         }
 
         return $token;
+    }
+
+    /**
+     * Make an authorize or purchase request to Stripe
+     *
+     * @param Transaction $transaction the transaction on which this request is based
+     * @param BasePaymentForm $form payment form parameters
+     * @param bool $capture whether funds should be captured immediately, defaults to true.
+     * 
+     * @return RequestResponseInterface
+     * @throws NotSupportedException if unrecognized currency specified for transaction
+     * @throws PaymentException if unexpected payment information provided.
+     * @throws \Exception if reasons
+     */
+    private function _authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
+    {
+        /** @var Payment $form */
+        $requestData = $this->_buildRequestData($transaction);
+        $paymentSource = $this->_buildRequestPaymentSource($transaction, $form, $requestData);
+
+        if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
+            // This should only happen for 3D secure payments.
+            $response = $this->_createPaymentResponseFromApiResource($paymentSource);
+            $response->setRedirectUrl($paymentSource->redirect->url);
+
+            return $response;
+        }
+
+        $requestData['source'] = $paymentSource;
+
+        if ($form->customer) {
+            $requestData['customer'] = $form->customer;
+        }
+
+        $requestData['capture'] = $capture;
+
+        try {
+            $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
+
+            return $this->_createPaymentResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->_createPaymentResponseFromError($exception);
+        }
     }
 }
