@@ -4,6 +4,7 @@
 
 ### Fixed
 - Fixed an error that would occur when calling `craft\commerce\stripe\services\Customers::getCustomer()`.
+- Fixed an error that could occur when switching subscription plans. ([#34](https://github.com/craftcms/commerce-stripe/issues/34))
 
 ## 1.0.8 - 2018-10-18
 

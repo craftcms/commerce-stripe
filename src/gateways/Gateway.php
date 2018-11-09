@@ -868,7 +868,8 @@ class Gateway extends BaseGateway
 
         $response = $this->_createSubscriptionResponse($stripeSubscription->save());
 
-        if ($parameters->billImmediately) {
+        // Bill immediately only for non-trials
+        if (!$subscription->getIsOnTrial() && $parameters->billImmediately) {
             StripeInvoice::create([
                 'customer' => $stripeSubscription->customer,
                 'subscription' => $stripeSubscription->id
