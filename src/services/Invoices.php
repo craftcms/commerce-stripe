@@ -37,6 +37,24 @@ class Invoices extends Component
      * use craft\commerce\stripe\services\Invoices;
      * use yii\base\Event;
      *
+     * Event::on(Invoices::class, Invoices::EVENT_BEFORE_SAVE_INVOICE, function(SaveInvoiceEvent $e) {
+     *     $stripeInvoiceId = $e->invoice->invoiceId;
+     *     // Do something with the data...
+     * });
+     * ```
+     */
+    const EVENT_BEFORE_SAVE_INVOICE = 'beforeSaveInvoice';
+
+    /**
+     * @event SaveInvoiceEvent The event that is triggered when an invoice is saved.
+     *
+     * Plugins can get notified whenever a new invoice for a subscription is being saved.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\SaveInvoiceEvent;
+     * use craft\commerce\stripe\services\Invoices;
+     * use yii\base\Event;
+     *
      * Event::on(Invoices::class, Invoices::EVENT_SAVE_INVOICE, function(SaveInvoiceEvent $e) {
      *     $stripeInvoiceId = $e->invoice->invoiceId;
      *     // Do something with the data...
@@ -99,6 +117,15 @@ class Invoices extends Component
         $record->invoiceData = $invoice->invoiceData;
 
         if ($invoice->validate()) {
+            $event = new SaveInvoiceEvent(['invoice' => $invoice]);
+
+            // Fire a 'beforeSaveInvoice' event.
+            $this->trigger(self::EVENT_BEFORE_SAVE_INVOICE, $event);
+
+            if (!$event->isValid) {
+                return false;
+            }
+
             $record->save(false);
             $invoice->id = $record->id;
 
