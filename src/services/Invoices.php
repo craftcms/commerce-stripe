@@ -29,6 +29,7 @@ class Invoices extends Component
 
     /**
      * @event SaveInvoiceEvent The event that is triggered when an invoice is saved.
+     * You may set [[SaveInvoiceEvent::isValid]] to `false` to prevent the invoice from being saved
      *
      * Plugins can get notified whenever a new invoice for a subscription is being saved.
      *
