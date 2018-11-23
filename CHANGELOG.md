@@ -7,7 +7,7 @@
 - Fixed an error that could occur when switching subscription plans. ([#34](https://github.com/craftcms/commerce-stripe/issues/34))
 
 ### Added
-- Added a `craft\commerce\stripe\services\Invoices` now fires the cancelable `beforeSaveInvoice` event.
+- `craft\commerce\stripe\services\Invoices` now fires the cancelable `beforeSaveInvoice` event.
 
 ## 1.0.8 - 2018-10-18
 
