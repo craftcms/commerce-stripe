@@ -2,12 +2,12 @@
 
 ## Unreleased
 
-### Fixed
-- Fixed an error that would occur when calling `craft\commerce\stripe\services\Customers::getCustomer()`.
-- Fixed an error that could occur when switching subscription plans. ([#34](https://github.com/craftcms/commerce-stripe/issues/34))
-
 ### Added
-- `craft\commerce\stripe\services\Invoices` now fires the cancelable `beforeSaveInvoice` event.
+- `craft\commerce\stripe\services\Invoices` now fires a cancelable `beforeSaveInvoice` event.
+
+### Fixed
+- Fixed an error that occurred when calling `craft\commerce\stripe\services\Customers::getCustomer()`.
+- Fixed an error that could occur when switching subscription plans. ([#34](https://github.com/craftcms/commerce-stripe/issues/34))
 
 ## 1.0.8 - 2018-10-18
 
