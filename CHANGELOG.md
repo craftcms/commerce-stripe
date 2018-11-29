@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.0.9 - 2018-11-28
 
 ### Added
 - `craft\commerce\stripe\services\Invoices` now fires a cancelable `beforeSaveInvoice` event.
