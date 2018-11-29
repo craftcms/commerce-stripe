@@ -1,5 +1,14 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 1.0.9 - 2018-11-28
+
+### Added
+- `craft\commerce\stripe\services\Invoices` now fires a cancelable `beforeSaveInvoice` event.
+
+### Fixed
+- Fixed an error that occurred when calling `craft\commerce\stripe\services\Customers::getCustomer()`.
+- Fixed an error that could occur when switching subscription plans. ([#34](https://github.com/craftcms/commerce-stripe/issues/34))
+
 ## 1.0.8 - 2018-10-18
 
 ### Added
