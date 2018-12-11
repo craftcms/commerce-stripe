@@ -1,6 +1,6 @@
 {
   "name": "craftcms/commerce-stripe",
-  "description": "Stripe payment gateway plugin for Craft Commerce 2",
+  "description": "Stripe integration for Craft Commerce 2",
   "version": "1.0.9",
   "type": "craft-plugin",
   "keywords": [
@@ -35,8 +35,6 @@
   },
   "extra": {
     "name": "Stripe for Craft Commerce",
-    "handle": "commerce-stripe",
-    "changelogUrl": "https://raw.githubusercontent.com/craftcms/commerce-stripe/master/CHANGELOG.md",
-    "downloadUrl": "https://github.com/craftcms/commerce-stripe/archive/master.zip"
+    "handle": "commerce-stripe"
   }
 }
