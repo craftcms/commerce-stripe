@@ -1,6 +1,6 @@
 # Stripe for Craft Commerce
 
-This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcommerce.com/).
+This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce).
 
 ## Requirements
 
