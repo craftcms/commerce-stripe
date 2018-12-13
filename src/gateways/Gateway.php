@@ -1064,14 +1064,14 @@ class Gateway extends BaseGateway
      * Handle a 3D Secure related event.
      *
      * @param array $data
-     * @throws TransactionException if unable to save transaction
+     * @throws TransactionException if reasons
      */
     private function _handle3DSecureFlowEvent(array $data)
     {
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
-        $limit = 5;
+        $limit = 15;
 
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
@@ -1081,9 +1081,9 @@ class Gateway extends BaseGateway
         } while (!$transaction && $counter < $limit);
 
         if (!$transaction) {
-            Craft::warning('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id'], 'stripe');
+            Craft::error('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id'], 'stripe');
 
-            return;
+            throw new TransactionException('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id']);
         }
 
         $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);

@@ -1,5 +1,7 @@
 # Release Notes for Stripe for Craft Commerce
 
+### Changed
+- Better handling for various edge cases when handling webhooks for 3DS transactions.
 ## 1.0.9 - 2018-11-28
 
 ### Added
