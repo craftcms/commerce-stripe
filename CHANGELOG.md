@@ -2,6 +2,8 @@
 
 ### Changed
 - Better handling for various edge cases when handling webhooks for 3DS transactions.
+- Switched to Stripe API version 2018-11-08.
+
 ## 1.0.9 - 2018-11-28
 
 ### Added

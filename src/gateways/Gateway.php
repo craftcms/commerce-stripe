@@ -186,7 +186,7 @@ class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-09-24';
+    const STRIPE_API_VERSION = '2018-11-08';
 
     // Properties
     // =========================================================================
@@ -1039,7 +1039,6 @@ class Gateway extends BaseGateway
             'paymentDate' => $data['date'],
             'paymentReference' => $data['charge'],
             'paid' => $data['paid'],
-            'forgiven' => $data['forgiven'],
             'response' => Json::encode($data)
         ]);
 
