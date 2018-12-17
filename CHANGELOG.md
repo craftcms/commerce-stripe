@@ -2,6 +2,7 @@
 
 ### Fixed
 - Better handling for various edge cases when handling webhooks for async 3DS transactions.
+- Fixed an issue where sometimes it was impossible to change a subscription's plan. ([#46](https://github.com/craftcms/commerce-stripe/issues/46))
 
 ### Changed
 - Switched to Stripe API version 2018-11-08.

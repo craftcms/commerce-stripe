@@ -1289,8 +1289,8 @@ class Gateway extends BaseGateway
             $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
             $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
 
-            $planHandle = $data['data']['object']['plan']['id'];
-            $plan = Commerce::getInstance()->getPlans()->getPlanByHandle($planHandle);
+            $planReference = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
 
             if ($plan) {
                 $subscription->planId = $plan->id;
