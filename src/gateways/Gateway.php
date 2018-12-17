@@ -186,7 +186,7 @@ class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2018-09-24';
+    const STRIPE_API_VERSION = '2018-11-08';
 
     // Properties
     // =========================================================================
@@ -1039,7 +1039,6 @@ class Gateway extends BaseGateway
             'paymentDate' => $data['date'],
             'paymentReference' => $data['charge'],
             'paid' => $data['paid'],
-            'forgiven' => $data['forgiven'],
             'response' => Json::encode($data)
         ]);
 
@@ -1064,14 +1063,14 @@ class Gateway extends BaseGateway
      * Handle a 3D Secure related event.
      *
      * @param array $data
-     * @throws TransactionException if unable to save transaction
+     * @throws TransactionException if reasons
      */
     private function _handle3DSecureFlowEvent(array $data)
     {
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
-        $limit = 5;
+        $limit = 15;
 
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
@@ -1081,9 +1080,9 @@ class Gateway extends BaseGateway
         } while (!$transaction && $counter < $limit);
 
         if (!$transaction) {
-            Craft::warning('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id'], 'stripe');
+            Craft::error('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id'], 'stripe');
 
-            return;
+            throw new TransactionException('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id']);
         }
 
         $childTransaction = Commerce::getInstance()->getTransactions()->createTransaction(null, $transaction);
@@ -1290,8 +1289,8 @@ class Gateway extends BaseGateway
             $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
             $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
 
-            $planHandle = $data['data']['object']['plan']['id'];
-            $plan = Commerce::getInstance()->getPlans()->getPlanByHandle($planHandle);
+            $planReference = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
 
             if ($plan) {
                 $subscription->planId = $plan->id;

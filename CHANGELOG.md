@@ -1,5 +1,14 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 1.0.10 - 2018-12-17
+
+### Changed
+- Switched to Stripe API version 2018-11-08.
+- Improved handling of asynchronous 3D Secure transaction webhooks for some edge cases.
+
+### Fixed
+- Fixed an error that could occur when changing a subscription’s plan. ([#46](https://github.com/craftcms/commerce-stripe/issues/46))
+
 ## 1.0.9 - 2018-11-28
 
 ### Added

@@ -1,4 +1,6 @@
-# Stripe for Craft Commerce
+<p align="center"><img src="./src/icon.svg" width="100" height="100" alt="Stripe for Craft Commerce icon"></p>
+
+<h1 align="center">Stripe for Craft Commerce</h1>
 
 This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce).
 
@@ -6,7 +8,7 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 This plugin requires Craft Commerce 2.0.0-alpha.5 or later.
 
-This plugin uses Stripe API version '2018-07-27'.
+This plugin uses Stripe API version '2018-11-08'.
 
 ## Installation
 
