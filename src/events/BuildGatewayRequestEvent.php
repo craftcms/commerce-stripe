@@ -30,4 +30,9 @@ class BuildGatewayRequestEvent extends Event
      * @var Transaction The transaction being used as the base for request
      */
     public $transaction;
+
+    /**
+     * @var Request The request being used
+     */
+    public $request;
 }
