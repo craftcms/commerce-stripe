@@ -4,10 +4,12 @@
 
 ### Added
 - Stripe gateway settings can now be set to env variables.
+- `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request` property that allows modifying the payment request.
 
 ### Changed
 - Stripe for Commerce now requires Craft 3.1.5 or later.
 - Stripe for Commerce now requires Craft Commerce 2.0.0 or later.
+- Deprecated the `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata` property. Use the new `$request` property instead.
 
 ## 1.0.10 - 2018-12-17
 

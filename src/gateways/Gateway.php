@@ -915,7 +915,6 @@ class Gateway extends BaseGateway
             'metadata' => $metadata
         ];
 
-
         $event = new BuildGatewayRequestEvent([
             'transaction' => $transaction,
             'metadata' => $metadata,
