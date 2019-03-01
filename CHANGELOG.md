@@ -1,5 +1,14 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Added
+- Stripe gateway settings can now be set to env variables.
+
+### Changed
+- Stripe for Commerce now requires Craft 3.1.5 or later.
+- Stripe for Commerce now requires Craft Commerce 2.0.0 or later.
+
 ## 1.0.10 - 2018-12-17
 
 ### Changed

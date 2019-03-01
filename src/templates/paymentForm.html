@@ -1,5 +1,5 @@
 <div class="stripe-form"
-     data-publishablekey="{{ gateway.publishableKey ?? '' }}"
+     data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"
      data-enforce3dsecure="{{ gateway.enforce3dSecure ?? '' }}">
     {% include 'commerce/_components/gateways/_creditCardFields' %}
     <div class="card-errors" role="alert"></div>
