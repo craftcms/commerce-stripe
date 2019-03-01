@@ -900,19 +900,6 @@ class Gateway extends BaseGateway
             throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
         }
 
-        $request = [
-            'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
-            'currency' => $transaction->paymentCurrency,
-            'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
-        ];
-
-        $event = new BuildGatewayRequestEvent([
-            'transaction' => $transaction,
-            'metadata' => []
-        ]);
-
-        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
-
         $metadata = [
             'order_id' => $transaction->getOrder()->id,
             'order_number' => $transaction->getOrder()->number,
@@ -921,7 +908,23 @@ class Gateway extends BaseGateway
             'client_ip' => Craft::$app->getRequest()->userIP,
         ];
 
-        // Allow other plugins to add metadata, but do not allow tampering.
+        $request = [
+            'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+            'currency' => $transaction->paymentCurrency,
+            'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
+            'metadata' => $metadata
+        ];
+
+
+        $event = new BuildGatewayRequestEvent([
+            'transaction' => $transaction,
+            'metadata' => $metadata,
+            'request' => $request
+        ]);
+
+        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
+
+        $request = array_merge($event->request, $request);
         $request['metadata'] = array_merge($event->metadata, $metadata);
 
         if ($this->sendReceiptEmail) {
