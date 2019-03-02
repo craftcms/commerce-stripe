@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.1.0 - 2019-03-02
 
 ### Added
 - The Publishable API Key and Webhook Signing Secret settings can now be set to environment variables.

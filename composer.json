@@ -1,7 +1,7 @@
 {
   "name": "craftcms/commerce-stripe",
   "description": "Stripe integration for Craft Commerce 2",
-  "version": "1.0.10",
+  "version": "1.1.0",
   "type": "craft-plugin",
   "keywords": [
     "stripe",
