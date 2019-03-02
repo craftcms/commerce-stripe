@@ -905,8 +905,12 @@ class Gateway extends BaseGateway
             'order_number' => $transaction->getOrder()->number,
             'transaction_id' => $transaction->id,
             'transaction_reference' => $transaction->hash,
-            'client_ip' => Craft::$app->getRequest()->userIP,
         ];
+
+        $appRequest = Craft::$app->getRequest();
+        if (!$appRequest->getIsConsoleRequest()) {
+            $metadata['client_ip'] = $appRequest->getUserIP();
+        }
 
         $request = [
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),

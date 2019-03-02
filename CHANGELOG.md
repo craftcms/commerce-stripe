@@ -11,6 +11,9 @@
 - Stripe for Commerce now requires Craft Commerce 2.0.0 or later.
 - Deprecated the `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata` property. Use the new `$request` property instead.
 
+### Fixed
+- Fixed an error that occurred when paying for an order on a console request.
+
 ## 1.0.10 - 2018-12-17
 
 ### Changed
