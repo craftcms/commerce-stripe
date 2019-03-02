@@ -3,13 +3,15 @@
 ## Unreleased
 
 ### Added
-- Stripe gateway settings can now be set to env variables.
-- `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request` property that allows modifying the payment request.
+- The Publishable API Key and Webhook Signing Secret settings can now be set to environment variables.
+- Added `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request`.
 
 ### Changed
-- Stripe for Commerce now requires Craft 3.1.5 or later.
-- Stripe for Commerce now requires Craft Commerce 2.0.0 or later.
-- Deprecated the `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata` property. Use the new `$request` property instead.
+- Stripe for Craft Commerce now requires Craft CMS 3.1.5 or later.
+- Stripe for Craft Commerce now requires Craft Commerce 2.0.0 or later.
+
+### Deprecated
+- Deprecated `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. The new `$request` property should be used instead.
 
 ### Fixed
 - Fixed an error that occurred when paying for an order on a console request.
