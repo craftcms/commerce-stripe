@@ -1,31 +1,34 @@
-{% from "_includes/forms" import textField, lightswitchField %}
+{% from "_includes/forms" import textField, lightswitchField, autosuggestField %}
 
-{{ textField({
+{{ autosuggestField({
     label: "Secret API Key"|t('commerce-stripe'),
     instructions: "Your Stripe API key."|t('commerce-stripe'),
     id: 'apiKey',
     class: 'ltr',
     name: 'apiKey',
+    suggestEnvVars: true,
     value: gateway.apiKey,
     errors: gateway.getErrors('apiKey')
 }) }}
 
-{{ textField({
+{{ autosuggestField({
     label: "Publishable API Key"|t('commerce-stripe'),
     instructions: "Your publishable Stripe API key."|t('commerce-stripe'),
     id: 'publishableKey',
     class: 'ltr',
     name: 'publishableKey',
+    suggestEnvVars: true,
     value: gateway.publishableKey,
     errors: gateway.getErrors('publishableKey')
 }) }}
 
-{{ textField({
-    label: "Webhook signing secret"|t("commerce"),
+{{ autosuggestField({
+    label: "Webhook Signing Secret"|t("commerce"),
     instructions: "Your webhook endpoint signing secret."|t("commerce"),
     id: 'signingSecret',
     name: 'signingSecret',
     class: 'ltr',
+    suggestEnvVars: true,
     value: gateway.signingSecret,
     errors: gateway.getErrors('signingSecret')
 }) }}

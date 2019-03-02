@@ -23,6 +23,7 @@ class BuildGatewayRequestEvent extends Event
 
     /**
      * @var array The metadata of the gateway request
+     * @deprecated in 1.1 Use [[request]] instead.
      */
     public $metadata;
 
@@ -30,4 +31,9 @@ class BuildGatewayRequestEvent extends Event
      * @var Transaction The transaction being used as the base for request
      */
     public $transaction;
+
+    /**
+     * @var array The request being used
+     */
+    public $request;
 }

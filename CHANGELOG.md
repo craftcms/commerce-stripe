@@ -1,5 +1,21 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 1.1.0 - 2019-03-02
+
+### Added
+- The Publishable API Key and Webhook Signing Secret settings can now be set to environment variables.
+- Added `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request`.
+
+### Changed
+- Stripe for Craft Commerce now requires Craft CMS 3.1.5 or later.
+- Stripe for Craft Commerce now requires Craft Commerce 2.0.0 or later.
+
+### Deprecated
+- Deprecated `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. The new `$request` property should be used instead.
+
+### Fixed
+- Fixed an error that occurred when paying for an order on a console request.
+
 ## 1.0.10 - 2018-12-17
 
 ### Changed

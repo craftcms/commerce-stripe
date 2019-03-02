@@ -224,8 +224,10 @@ class Gateway extends BaseGateway
         parent::init();
 
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey($this->apiKey);
+        Stripe::setApiKey(Craft::parseEnv($this->apiKey));
         Stripe::setApiVersion(self::STRIPE_API_VERSION);
+
+        $this->signingSecret = Craft::parseEnv($this->signingSecret);
     }
 
     /**
@@ -898,28 +900,34 @@ class Gateway extends BaseGateway
             throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
         }
 
-        $request = [
-            'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
-            'currency' => $transaction->paymentCurrency,
-            'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
-        ];
-
-        $event = new BuildGatewayRequestEvent([
-            'transaction' => $transaction,
-            'metadata' => []
-        ]);
-
-        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
-
         $metadata = [
             'order_id' => $transaction->getOrder()->id,
             'order_number' => $transaction->getOrder()->number,
             'transaction_id' => $transaction->id,
             'transaction_reference' => $transaction->hash,
-            'client_ip' => Craft::$app->getRequest()->userIP,
         ];
 
-        // Allow other plugins to add metadata, but do not allow tampering.
+        $appRequest = Craft::$app->getRequest();
+        if (!$appRequest->getIsConsoleRequest()) {
+            $metadata['client_ip'] = $appRequest->getUserIP();
+        }
+
+        $request = [
+            'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+            'currency' => $transaction->paymentCurrency,
+            'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
+            'metadata' => $metadata
+        ];
+
+        $event = new BuildGatewayRequestEvent([
+            'transaction' => $transaction,
+            'metadata' => $metadata,
+            'request' => $request
+        ]);
+
+        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
+
+        $request = array_merge($event->request, $request);
         $request['metadata'] = array_merge($event->metadata, $metadata);
 
         if ($this->sendReceiptEmail) {
