@@ -3,7 +3,7 @@
 ## 1.1.0 - 2019-03-02
 
 ### Added
-- The Publishable API Key and Webhook Signing Secret settings can now be set to environment variables.
+- The Secret API Key, Publishable API Key, and Webhook Signing Secret settings can now be set to environment variables.
 - Added `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request`.
 
 ### Changed
