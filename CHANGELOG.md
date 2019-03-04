@@ -2,11 +2,11 @@
 
 ## 1.1.0 - 2019-03-02
 
-### Added
+### Added
 - The Publishable API Key and Webhook Signing Secret settings can now be set to environment variables.
 - Added `craft\commerce\stripe\events\BuildGatewayRequestEvent::$request`.
 
-### Changed
+### Changed
 - Stripe for Craft Commerce now requires Craft CMS 3.1.5 or later.
 - Stripe for Craft Commerce now requires Craft Commerce 2.0.0 or later.
 
@@ -22,7 +22,7 @@
 - Switched to Stripe API version 2018-11-08.
 - Improved handling of asynchronous 3D Secure transaction webhooks for some edge cases.
 
-### Fixed
+### Fixed
 - Fixed an error that could occur when changing a subscription’s plan. ([#46](https://github.com/craftcms/commerce-stripe/issues/46))
 
 ## 1.0.9 - 2018-11-28
