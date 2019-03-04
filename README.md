@@ -37,7 +37,7 @@ composer require craftcms/commerce-stripe
 
 To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe”.
 
-> **Tip:** The Publishable API Key and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
+> **Tip:** The Secret API Key, Publishable API Key, and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
 
 ## Payment security enforcement
 
