@@ -20,7 +20,7 @@
     "email": "support@craftcms.com",
     "issues": "https://github.com/craftcms/commerce-stripe/issues?state=open",
     "source": "https://github.com/craftcms/commerce-stripe",
-    "docs": "https://github.com/craftcms/commerce-stripe/blob/develop/README.md",
+    "docs": "https://github.com/craftcms/commerce-stripe/blob/master/README.md",
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
@@ -36,6 +36,6 @@
   "extra": {
     "name": "Stripe for Craft Commerce",
     "handle": "commerce-stripe",
-    "documentationUrl": "https://github.com/craftcms/commerce-stripe/blob/develop/README.md"
+    "documentationUrl": "https://github.com/craftcms/commerce-stripe/blob/master/README.md"
   }
 }
