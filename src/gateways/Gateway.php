@@ -502,6 +502,53 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function refreshPaymentHistory(Subscription $subscription)
+    {
+        // Update the subscription period.
+        $reference = $subscription->reference;
+        $stripeSubscription = StripeSubscription::retrieve($reference);
+        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription['current_period_end']);
+        Craft::$app->getElements()->saveElement($subscription);
+
+        $invoices = [];
+        $after = false;
+
+        // Fetch _all_ the invoices
+        do {
+            $params = [
+                'subscription' => $reference,
+                'limit' => 50
+            ];
+
+            // If we're paging, set the parameter
+            if ($after) {
+                $params['starting_after'] = $after;
+            }
+
+            $list = StripeInvoice::all($params);
+
+            if (isset($list['data'])) {
+                $data = $list['data'];
+                $last = end($data);
+                $after = $last['id'];
+
+                // Merge the invoices together in a huge list
+                $invoices = array_merge($invoices, $data);
+            }
+        } while ($list['has_more']);
+
+        // Save the invoices.
+        if (!empty($invoices)) {
+            foreach ($invoices as $invoice) {
+                $this->_saveSubscriptionInvoice($invoice->jsonSerialize(), $subscription);
+            }
+        }
+    }
+
+
+    /**
+     * @inheritdoc
+     */
     public function getSubscriptionPlanByReference(string $reference): string
     {
         if (empty($reference)) {
@@ -1207,25 +1254,13 @@ class Gateway extends BaseGateway
             throw new SubscriptionException('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id']);
         }
 
-        $invoice = new Invoice();
-        $invoice->subscriptionId = $subscription->id;
-        $invoice->reference = $stripeInvoice['id'];
-        $invoice->invoiceData = $stripeInvoice;
-        StripePlugin::getInstance()->getInvoices()->saveInvoice($invoice);
+        $invoice = $this->_saveSubscriptionInvoice($stripeInvoice, $subscription);
 
-        $lineItems = $stripeInvoice['lines']['data'];
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($stripeInvoice['currency']));
+        $stripeSubscription = StripeSubscription::retrieve($subscriptionReference);
+        $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
 
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->invoiceData['currency']));
-
-        // Find the relevant line item and update subscription end date
-        foreach ($lineItems as $lineItem) {
-            if (!empty($lineItem['subscription']) && $lineItem['subscription'] === $subscriptionReference) {
-                $payment = $this->_createSubscriptionPayment($invoice->invoiceData, $currency);
-                Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($lineItem['period']['end']));
-
-                return;
-            }
-        }
+        Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($stripeSubscription['current_period_end']));
     }
 
     /**
@@ -1396,5 +1431,24 @@ class Gateway extends BaseGateway
         } catch (\Exception $exception) {
             return $this->_createPaymentResponseFromError($exception);
         }
+    }
+
+    /**
+     * Save a subscription invoice.
+     *
+     * @param $stripeInvoice
+     * @param $subscription
+     * @return Invoice
+     */
+    private function _saveSubscriptionInvoice(array $stripeInvoice, Subscription $subscription): Invoice
+    {
+        $invoiceService = StripePlugin::getInstance()->getInvoices();
+        $invoice = $invoiceService->getInvoiceByReference($stripeInvoice['id']) ?: new Invoice();
+        $invoice->subscriptionId = $subscription->id;
+        $invoice->reference = $stripeInvoice['id'];
+        $invoice->invoiceData = $stripeInvoice;
+        $invoiceService->saveInvoice($invoice);
+
+        return $invoice;
     }
 }

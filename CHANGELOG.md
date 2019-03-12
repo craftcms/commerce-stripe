@@ -4,6 +4,8 @@
 
 ### Added
 - Added the `craft\commerce\stripe\services\Invoices::getInvoiceByReference()` method to get an invoice by its reference.
+- Added the `craft\commerce\stripe\gateways\Gateway::refreshPaymentHistory()` method.
+
 ## 1.1.0 - 2019-03-02
 
 ### Added
