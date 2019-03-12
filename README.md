@@ -6,7 +6,7 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 ## Requirements
 
-This plugin requires Craft 3.1.5 and Craft Commerce 2.0.0 or later.
+This plugin requires Craft 3.1.5 and Craft Commerce 2.1.2 or later.
 
 This plugin uses Stripe API version '2018-11-08'.
 
@@ -37,7 +37,7 @@ composer require craftcms/commerce-stripe
 
 To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe”.
 
-> **Tip:** The Publishable API Key and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
+> **Tip:** The Secret API Key, Publishable API Key, and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
 
 ## Payment security enforcement
 

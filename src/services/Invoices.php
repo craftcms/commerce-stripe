@@ -91,6 +91,25 @@ class Invoices extends Component
     }
 
     /**
+     * Get an invoice from the database by the invoice reference number. Returns null if not found.
+     *
+     * @param string $reference
+     * @return Invoice|null
+     */
+    public function getInvoiceByReference(string $reference)
+    {
+        $invoiceRow = $this->_createInvoiceQuery()
+            ->where(['reference' => $reference])
+            ->one();
+
+        if ($invoiceRow) {
+            return new Invoice($invoiceRow);
+        }
+
+        return null;
+    }
+
+    /**
      * Save an invoice.
      *
      * @param Invoice $invoice The invoice being saved.
