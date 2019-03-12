@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Added
+- Added the `craft\commerce\stripe\services\Invoices::getInvoiceByReference()` method to get an invoice by its reference.
 ## 1.1.0 - 2019-03-02
 
 ### Added
