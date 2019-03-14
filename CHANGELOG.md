@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Changed
+- Swapped the order of the Publishable API Key and Secret API Key in the gateway settings page. ([#52](https://github.com/craftcms/commerce-stripe/issues/52))
+
 ## 1.2.0 - 2019-03-12
 
 ### Added
