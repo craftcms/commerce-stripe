@@ -411,11 +411,15 @@ class Gateway extends BaseGateway
     {
         $defaults = [
             'gateway' => $this,
-            'paymentForm' => $this->getPaymentFormModel()
+            'paymentForm' => $this->getPaymentFormModel(),
         ];
 
         $params = array_merge($defaults, $params);
 
+        // If there's no order passed, add the current cart if we're not messing around in backend.
+        if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
+            $params['order'] = Commerce::getInstance()->getCarts()->getCart();
+        }
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
