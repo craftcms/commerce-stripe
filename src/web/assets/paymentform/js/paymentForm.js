@@ -63,16 +63,25 @@ function initStripe() {
                 $form.data('processing', true);
 
                 // Compose card holder info
-                var cardHolderName, orderEmail;
+                var cardHolderName, orderEmail, ownerAddress;
 
                 if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0) {
                     cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
                 }
 
+                if ($('.stripe-address', $form).length > 0) {
+                    ownerAddress = {
+                        'line1': $('input[name=stripe-line1]', $form).val(),
+                        'city': $('input[name=stripe-city]', $form).val(),
+                        'postal_code': $('input[name=stripe-postal-code]', $form).val(),
+                        'country': $('input[name=stripe-country]', $form).val(),
+                    };
+                }
+
                 orderEmail = $('input[name=orderEmail]').val();
 
                 // Tokenize the credit card details and create a payment source
-                stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail}}).then(function(result) {
+                stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail, address: ownerAddress}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
                         $form.data('processing', false);

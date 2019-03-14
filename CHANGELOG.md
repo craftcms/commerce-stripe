@@ -4,6 +4,7 @@
 
 ### Changed
 - Swapped the order of the Publishable API Key and Secret API Key in the gateway settings page. ([#52](https://github.com/craftcms/commerce-stripe/issues/52))
+- The billing address information (if available) is provided to Stripe on payment. ([#43](https://github.com/craftcms/commerce-stripe/issues/43))
 
 ## 1.2.0 - 2019-03-12
 
