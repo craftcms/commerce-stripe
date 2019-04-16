@@ -3,13 +3,10 @@
 ## Unreleased
 
 ### Added
-- The billing address information (if available) is provided to Stripe on payment. ([#43](https://github.com/craftcms/commerce-stripe/issues/43))
-
-### Changed
-- Swapped the order of the Publishable API Key and Secret API Key in the gateway settings page. ([#52](https://github.com/craftcms/commerce-stripe/issues/52))
+- Billing address information is now provided to Stripe on payment, if available. ([#43](https://github.com/craftcms/commerce-stripe/issues/43))
 
 ### Fixed
-- Fixed an error where it was not possible to fetch customer data if Secret API Key was set using an environment variable ([#54](https://github.com/craftcms/commerce-stripe/issues/54)) .
+- Fixed a bug where it was not possible to fetch customer data if the Secret API Key was set to an environment variable ([#54](https://github.com/craftcms/commerce-stripe/issues/54)) .
 
 ## 1.2.0 - 2019-03-12
 
