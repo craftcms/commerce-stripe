@@ -51,7 +51,7 @@ class Customers extends Component
             return new Customer($result);
         }
 
-        Stripe::setApiKey(Commerce::getInstance()->getGateways()->getGatewayById($gatewayId)->apiKey);
+        Stripe::setApiKey(Craft::parseEnv(Commerce::getInstance()->getGateways()->getGatewayById($gatewayId)->apiKey));
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
 
