@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.2.1 - 2019-04-16
 
 ### Added
 - Billing address information is now provided to Stripe on payment, if available. ([#43](https://github.com/craftcms/commerce-stripe/issues/43))
