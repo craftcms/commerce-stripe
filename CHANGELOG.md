@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+### Unreleased
+
+### Changed
+- `Stripe` gateway is now called `Stripe Charge`.
+
 ## 1.2.1 - 2019-04-16
 
 ### Added
