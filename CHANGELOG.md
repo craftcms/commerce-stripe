@@ -3,6 +3,7 @@
 ### Unreleased
 
 ### Changed
+- Switched to Stripe API version 2019-03-14.
 - `Stripe` gateway is now called `Stripe Charge`.
 
 ## 1.2.1 - 2019-04-16
