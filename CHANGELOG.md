@@ -7,7 +7,7 @@
 
 ### Changed
 - Stripe for Craft Commerce now requires Craft Commerce 2.1.4 or later.
-`
+
 ## 1.2.1 - 2019-04-16
 
 ### Added
