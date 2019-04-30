@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 1.2.2 - 2019-04-30
 
 ### Added
 - Added support for `craft\commerce\base\SubscriptionResponseInterface::isInactive()`.
