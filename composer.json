@@ -25,7 +25,7 @@
   },
   "require": {
     "craftcms/cms": "^3.1.5",
-    "craftcms/commerce": "^2.1.2",
+    "craftcms/commerce": "^2.1.4",
     "stripe/stripe-php": "^6.1"
   },
   "autoload": {
