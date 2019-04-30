@@ -25,7 +25,6 @@ use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\models\forms\Payment;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentResponse;
-use craft\commerce\stripe\web\assets\paymentform\PaymentFormAsset;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
@@ -124,34 +123,6 @@ abstract class Gateway extends BaseGateway
      * string The Stripe API version to use.
      */
     const STRIPE_API_VERSION = '2019-03-14';
-
-    // Properties
-    // =========================================================================
-
-    /**
-     * @var string
-     */
-    public $publishableKey;
-
-    /**
-     * @var string
-     */
-    public $apiKey;
-
-    /**
-     * @var bool
-     */
-    public $sendReceiptEmail;
-
-    /**
-     * @var bool
-     */
-    public $enforce3dSecure;
-
-    /**
-     * @var string
-     */
-    public $signingSecret;
 
     // Public Methods
     // =========================================================================
@@ -266,36 +237,6 @@ abstract class Gateway extends BaseGateway
         }
 
         return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function getPaymentFormHtml(array $params)
-    {
-        $defaults = [
-            'gateway' => $this,
-            'paymentForm' => $this->getPaymentFormModel(),
-        ];
-
-        $params = array_merge($defaults, $params);
-
-        // If there's no order passed, add the current cart if we're not messing around in backend.
-        if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
-            $params['order'] = Commerce::getInstance()->getCarts()->getCart();
-        }
-        $view = Craft::$app->getView();
-
-        $previousMode = $view->getTemplateMode();
-        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
-
-        $view->registerJsFile('https://js.stripe.com/v3/');
-        $view->registerAssetBundle(PaymentFormAsset::class);
-
-        $html = $view->renderTemplate('commerce-stripe/paymentForm', $params);
-        $view->setTemplateMode($previousMode);
-
-        return $html;
     }
 
     /**

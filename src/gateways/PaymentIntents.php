@@ -10,16 +10,16 @@ namespace craft\commerce\stripe\gateways;
 use Craft;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
-use craft\commerce\stripe\web\assets\chargeform\ChargeFormAsset;
+use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\web\View;
 
 /**
- * This class represents the Stripe Charge gateway
+ * This class represents the Stripe Payment Intents gateway
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since 1.0
- */
-class Gateway extends BaseGateway
+ * @since 2.0
+ **/
+class PaymentIntents extends BaseGateway
 {
     // Properties
     // =========================================================================
@@ -57,7 +57,7 @@ class Gateway extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce-stripe', 'Stripe Charge');
+        return Craft::t('commerce-stripe', 'Stripe Payment Intents');
     }
 
     /**
@@ -82,9 +82,9 @@ class Gateway extends BaseGateway
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
         $view->registerJsFile('https://js.stripe.com/v3/');
-        $view->registerAssetBundle(ChargeFormAsset::class);
+        $view->registerAssetBundle(IntentsFormAsset::class);
 
-        $html = $view->renderTemplate('commerce-stripe/paymentForms/chargeForm', $params);
+        $html = $view->renderTemplate('commerce-stripe/paymentForms/intentsForm', $params);
         $view->setTemplateMode($previousMode);
 
         return $html;

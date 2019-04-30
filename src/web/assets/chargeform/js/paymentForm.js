@@ -3,7 +3,7 @@ function initStripe() {
     if (typeof Stripe === "undefined") {
         setTimeout(initStripe, 200);
     } else {
-        $('.stripe-form').each(function() {
+        $('.stripe-charge-form').each(function() {
             $container = $(this);
 
             function updateErrorMessage(event) {
@@ -75,6 +75,7 @@ function initStripe() {
                         'city': $('input[name=stripe-city]', $form).val(),
                         'postal_code': $('input[name=stripe-postal-code]', $form).val(),
                         'country': $('input[name=stripe-country]', $form).val(),
+                        'state': $('input[name=stripe-state]', $form).val(),
                     };
                 }
 

@@ -1,4 +1,4 @@
-<div class="stripe-form"
+<div class="stripe-payment-intents-form"
      data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"
      data-enforce3dsecure="{{ gateway.enforce3dSecure ?? '' }}">
     {% include 'commerce/_components/gateways/_creditCardFields' %}
@@ -9,6 +9,7 @@
             <input type="hidden" name="stripe-postal-code" value="{{ order.billingAddress.zipCode }}" />
             <input type="hidden" name="stripe-city" value="{{ order.billingAddress.city }}" />
             <input type="hidden" name="stripe-country" value="{{ order.billingAddress.country }}" />
+            <input type="hidden" name="stripe-state" value="{{ order.billingAddress.state }}" />
         </div>
     {% endif %}
 </div>
