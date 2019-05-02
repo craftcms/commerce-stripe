@@ -22,7 +22,6 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
-use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\SwitchPlans;
@@ -33,7 +32,6 @@ use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\elements\User;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
-use craft\web\Response as WebResponse;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Collection;
@@ -41,7 +39,6 @@ use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
 use Stripe\Subscription as StripeSubscription;
-use Stripe\Webhook;
 
 /**
  * This class represents the abstract Stripe base gateway
