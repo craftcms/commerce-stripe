@@ -22,7 +22,7 @@ use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSource
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
-use craft\commerce\stripe\models\forms\Payment;
+use craft\commerce\stripe\models\forms\payment\Charge as PaymentForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentResponse;
 use craft\helpers\Json;
@@ -490,7 +490,7 @@ abstract class Gateway extends BaseGateway
      * @return Source
      * @throws PaymentException if unexpected payment information encountered
      */
-    protected function buildRequestPaymentSource(Transaction $transaction, Payment $paymentForm, array $request): Source
+    protected function buildRequestPaymentSource(Transaction $transaction, PaymentForm $paymentForm, array $request): Source
     {
         // For 3D secure, make sure to set the redirect URL and the metadata flag, so we can catch it later.
         if ($paymentForm->threeDSecure) {
@@ -717,7 +717,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
-        /** @var Payment $form */
+        /** @var PaymentForm $form */
         $requestData = $this->buildRequestData($transaction);
         $paymentSource = $this->buildRequestPaymentSource($transaction, $form, $requestData);
 
