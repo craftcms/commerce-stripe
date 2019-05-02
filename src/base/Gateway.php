@@ -753,8 +753,6 @@ abstract class Gateway extends BaseGateway
      * @throws TransactionException
      */
     protected function handleWebhook(array $data) {
-        if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
-            $this->handle3DSecureFlowEvent($data);
-        }
+        // Do nothing
     }
 }

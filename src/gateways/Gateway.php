@@ -89,4 +89,15 @@ class Gateway extends BaseGateway
 
         return $html;
     }
+
+    /**
+     * @inheritdoc
+     */
+    protected function handleWebhook(array $data) {
+        if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
+            $this->handle3DSecureFlowEvent($data);
+        }
+
+        parent::handleWebhook($data);
+    }
 }
