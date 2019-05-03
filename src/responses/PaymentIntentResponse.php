@@ -40,7 +40,7 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isProcessing(): bool
     {
-        return array_key_exists('status', $this->data) && $this->data['status'] === 'requires_action';
+        return false;
     }
 
     /**
@@ -72,7 +72,7 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function getRedirectUrl(): string
     {
-        return $this->data['next_action']['redirect_to_url'] ?? '';
+        return $this->data['next_action']['redirect_to_url']['url'] ?? '';
     }
 
     /**

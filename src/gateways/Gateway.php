@@ -272,6 +272,20 @@ class Gateway extends BaseGateway
         return new ChargeResponse($data);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function completePurchase(Transaction $transaction): RequestResponseInterface
+    {
+        $sourceId = Craft::$app->getRequest()->getParam('source');
+        /** @var Source $paymentSource */
+        $paymentSource = Source::retrieve($sourceId);
+
+        $response = $this->createPaymentResponseFromApiResource($paymentSource);
+        $response->setProcessing(true);
+
+        return $response;
+    }
 
     // Protected methods
     // =========================================================================

@@ -153,21 +153,6 @@ abstract class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function completePurchase(Transaction $transaction): RequestResponseInterface
-    {
-        $sourceId = Craft::$app->getRequest()->getParam('source');
-        /** @var Source $paymentSource */
-        $paymentSource = Source::retrieve($sourceId);
-
-        $response = $this->createPaymentResponseFromApiResource($paymentSource);
-        $response->setProcessing(true);
-
-        return $response;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         /** @var Payment $sourceData */

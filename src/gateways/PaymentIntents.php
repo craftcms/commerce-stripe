@@ -18,6 +18,7 @@ use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
+use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Charge;
@@ -127,6 +128,43 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
+    public function getResponseModel($data): RequestResponseInterface
+    {
+        return new PaymentIntentResponse($data);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function completePurchase(Transaction $transaction): RequestResponseInterface
+    {
+        $paymentIntentId = Craft::$app->getRequest()->getParam('payment_intent');
+        /** @var PaymentIntent $paymentIntent */
+        $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentId);
+
+        // Update the intent with the latest.
+        $stripePlugin = StripePlugin::getInstance();
+        $paymentIntentsService = $stripePlugin->getPaymentIntents();
+        $customer = $stripePlugin->getCustomers()->getCustomerByReference($stripePaymentIntent->customer);
+        $paymentIntent = $paymentIntentsService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+        $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+        $paymentIntentsService->savePaymentIntent($paymentIntent);
+
+        $intentData = $stripePaymentIntent->jsonSerialize();
+
+        if (!empty($intentData['payment_method'])) {
+            $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
+        }
+
+        return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
+    }
+
+    // Protected methods
+    // =========================================================================
+
+    /**
+     * @inheritdoc
+     */
     protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
         /** @var PaymentForm $form */
@@ -154,7 +192,8 @@ class PaymentIntents extends BaseGateway
             if ($paymentIntent) {
                 $stripePaymentIntent = PaymentIntent::update($paymentIntent->reference, $requestData, ['idempotency_key' => $transaction->hash]);
             } else {
-                $requestData['confirmation_method'] = $capture ? 'automatic' : 'manual';
+                $requestData['capture_method'] = $capture ? 'automatic' : 'manual';
+                $requestData['confirmation_method'] = 'manual';
                 $requestData['confirm'] = false;
 
                 $stripePaymentIntent = PaymentIntent::create($requestData, ['idempotency_key' => $transaction->hash]);
@@ -171,7 +210,7 @@ class PaymentIntents extends BaseGateway
             $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
             $paymentIntentService->savePaymentIntent($paymentIntent);
 
-            $stripePaymentIntent->confirm();
+            $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
 
             return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
         } catch (\Exception $exception) {
@@ -180,12 +219,14 @@ class PaymentIntents extends BaseGateway
     }
 
     /**
-     * @inheritdoc
+     * Confirm a payment intent and set the return URL.
+     *
+     * @param PaymentIntent $stripePaymentIntent
      */
-    public function getResponseModel($data): RequestResponseInterface
+    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
     {
-        return new PaymentIntentResponse($data);
+        $stripePaymentIntent->confirm([
+            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
+        ]);
     }
-
-
 }
