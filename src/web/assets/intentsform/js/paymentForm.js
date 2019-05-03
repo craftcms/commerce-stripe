@@ -81,18 +81,13 @@ function initStripe() {
                 orderEmail = $('input[name=orderEmail]').val();
 
                 // Tokenize the credit card details and create a payment source
-                stripe.createSource(card, {owner: {name: cardHolderName, email: orderEmail, address: ownerAddress}}).then(function(result) {
+                stripe.createPaymentMethod('card', card, {billing_details: {name: cardHolderName, email: orderEmail, address: ownerAddress}}).then(function(result) {
                     if (result.error) {
                         updateErrorMessage(result);
                         $form.data('processing', false);
                     } else {
-                        // Signal to backend that 3D secure payment is required if card or gateway options demands so.
-                        if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure'))) {
-                            $form.append($('<input type="hidden" name="threeDSecure"/>').val(1));
-                        }
-
                         // Add the payment source token to the form.
-                        $form.append($('<input type="hidden" name="stripeToken"/>').val(result.source.id));
+                        $form.append($('<input type="hidden" name="paymentMethodId"/>').val(result.paymentMethod.id));
                         $form.get(0).submit();
                     }
                 });

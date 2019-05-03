@@ -8,10 +8,22 @@
 namespace craft\commerce\stripe\gateways;
 
 use Craft;
+use craft\commerce\base\RequestResponseInterface;
+use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
+use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
+use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
+use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\web\View;
+use Stripe\ApiResource;
+use Stripe\Charge;
+use Stripe\PaymentIntent;
+use Stripe\Source;
+use yii\base\NotSupportedException;
 
 /**
  * This class represents the Stripe Payment Intents gateway
@@ -89,4 +101,91 @@ class PaymentIntents extends BaseGateway
 
         return $html;
     }
+
+    public function capture(Transaction $transaction, string $reference): RequestResponseInterface
+    {
+        try {
+            /** @var PaymentIntent $intent */
+            $intent = PaymentIntent::retrieve($reference);
+            $intent->capture([], ['idempotency_key' => $reference]);
+
+            return $this->createPaymentResponseFromApiResource($intent);
+        } catch (\Exception $exception) {
+            return $this->createPaymentResponseFromError($exception);
+        }
+
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getPaymentFormModel(): BasePaymentForm
+    {
+        return new PaymentForm();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
+    {
+        /** @var PaymentForm $form */
+        $requestData = $this->buildRequestData($transaction);
+        $paymentMethodId = $form->paymentMethodId;
+
+        $stripePlugin = StripePlugin::getInstance();
+        if ($form->customer) {
+            $requestData['customer'] = $form->customer;
+        } else if ($user = $transaction->getOrder()->getUser()) {
+            $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
+            $requestData['customer'] = $customer->reference;
+        }
+
+        if (!$customer) {
+            $customer = $stripePlugin->getCustomers()->getCustomerByReference($requestData['customer']);
+        }
+
+
+        $requestData['payment_method'] = $paymentMethodId;
+        try {
+            $paymentIntentService = $stripePlugin->getPaymentIntents();
+            $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+
+            if ($paymentIntent) {
+                $stripePaymentIntent = PaymentIntent::update($paymentIntent->reference, $requestData, ['idempotency_key' => $transaction->hash]);
+            } else {
+                $requestData['confirmation_method'] = $capture ? 'automatic' : 'manual';
+                $requestData['confirm'] = false;
+
+                $stripePaymentIntent = PaymentIntent::create($requestData, ['idempotency_key' => $transaction->hash]);
+
+                $paymentIntent = new PaymentIntentModel([
+                    'orderId' => $transaction->orderId,
+                    'customerId' => $customer->id,
+                    'gatewayId' => $this->id,
+                    'reference' => $stripePaymentIntent->id,
+                ]);
+            }
+
+            // Save data before confirming.
+            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+            $paymentIntentService->savePaymentIntent($paymentIntent);
+
+            $stripePaymentIntent->confirm();
+
+            return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
+        } catch (\Exception $exception) {
+            return $this->createPaymentResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getResponseModel($data): RequestResponseInterface
+    {
+        return new PaymentIntentResponse($data);
+    }
+
+
 }

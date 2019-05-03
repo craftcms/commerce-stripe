@@ -9,6 +9,7 @@ namespace craft\commerce\stripe\plugin;
 
 use craft\commerce\stripe\services\Customers;
 use craft\commerce\stripe\services\Invoices;
+use craft\commerce\stripe\services\PaymentIntents;
 
 /**
  * Trait Services
@@ -41,6 +42,16 @@ trait Services
         return $this->get('invoices');
     }
 
+    /**
+     * Returns the payment intents service
+     *
+     * @return PaymentIntents The payment intents service
+     */
+    public function getPaymentIntents(): PaymentIntents
+    {
+        return $this->get('paymentIntents');
+    }
+
     // Private Methods
     // =========================================================================
 
@@ -52,6 +63,7 @@ trait Services
         $this->setComponents([
             'customers' => Customers::class,
             'invoices' => Invoices::class,
+            'paymentIntents' => PaymentIntents::class,
         ]);
     }
 }

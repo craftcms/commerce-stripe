@@ -447,6 +447,7 @@ abstract class Gateway extends BaseGateway
             'request' => $request
         ]);
 
+        // TODO provide context
         $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
         $request = array_merge($event->request, $request);
