@@ -21,7 +21,7 @@ use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSource
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\commerce\stripe\responses\PaymentResponse;
+use craft\commerce\stripe\responses\ChargeResponse;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\Response as WebResponse;
@@ -144,22 +144,6 @@ abstract class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function capture(Transaction $transaction, string $reference): RequestResponseInterface
-    {
-        try {
-            /** @var Charge $charge */
-            $charge = Charge::retrieve($reference);
-            $charge->capture([], ['idempotency_key' => $reference]);
-
-            return $this->createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
-            return $this->createPaymentResponseFromError($exception);
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function completeAuthorize(Transaction $transaction): RequestResponseInterface
     {
         // It's exactly the same thing,
@@ -232,15 +216,6 @@ abstract class Gateway extends BaseGateway
         }
 
         return true;
-    }
-
-    /**
-     * @inheritdoc
-     * @return Payment
-     */
-    public function getPaymentFormModel(): BasePaymentForm
-    {
-        return new Payment();
     }
 
     /**
@@ -419,6 +394,15 @@ abstract class Gateway extends BaseGateway
         return true;
     }
 
+    /**
+     * Returns response model wrapping the passed data.
+     *
+     * @param mixed $data
+     *
+     * @return RequestResponseInterface
+     */
+    abstract public function getResponseModel($data): RequestResponseInterface;
+
     // Protected methods
     // =========================================================================
 
@@ -480,13 +464,13 @@ abstract class Gateway extends BaseGateway
      *
      * @param ApiResource $resource
      *
-     * @return PaymentResponse
+     * @return RequestResponseInterface
      */
-    protected function createPaymentResponseFromApiResource(ApiResource $resource): PaymentResponse
+    protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
         $data = $resource->jsonSerialize();
 
-        return new PaymentResponse($data);
+        return $this->getResponseModel($data);
     }
 
     /**
@@ -494,10 +478,10 @@ abstract class Gateway extends BaseGateway
      *
      * @param \Exception $exception
      *
-     * @return PaymentResponse
+     * @return RequestResponseInterface
      * @throws \Exception if not a Stripe exception
      */
-    protected function createPaymentResponseFromError(\Exception $exception): PaymentResponse
+    protected function createPaymentResponseFromError(\Exception $exception): RequestResponseInterface
     {
         if ($exception instanceof CardError) {
             $body = $exception->getJsonBody();
@@ -516,7 +500,7 @@ abstract class Gateway extends BaseGateway
             throw $exception;
         }
 
-        return new PaymentResponse($data);
+        return $this->getResponseModel($data);
     }
 
     /**
@@ -584,7 +568,8 @@ abstract class Gateway extends BaseGateway
      * @param array $data
      * @throws TransactionException
      */
-    protected function handleWebhook(array $data) {
+    protected function handleWebhook(array $data)
+    {
         // Do nothing
     }
 }

@@ -18,12 +18,15 @@ use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\models\forms\payment\Charge as PaymentForm;
+use craft\commerce\stripe\responses\ChargeResponse;
 use craft\commerce\stripe\web\assets\chargeform\ChargeFormAsset;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Charge;
+use Stripe\Error\Base;
+use Stripe\Error\Card as CardError;
 use Stripe\Source;
 use yii\base\NotSupportedException;
 
@@ -236,6 +239,42 @@ class Gateway extends BaseGateway
             return $this->createPaymentResponseFromError($exception);
         }
     }
+
+    /**
+     * @inheritdoc
+     */
+    public function getPaymentFormModel(): BasePaymentForm
+    {
+        return new PaymentForm();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function capture(Transaction $transaction, string $reference): RequestResponseInterface
+    {
+        try {
+            /** @var Charge $charge */
+            $charge = Charge::retrieve($reference);
+            $charge->capture([], ['idempotency_key' => $reference]);
+
+            return $this->createPaymentResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->createPaymentResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getResponseModel($data): RequestResponseInterface
+    {
+        return new ChargeResponse($data);
+    }
+
+
+    // Protected methods
+    // =========================================================================
 
     /**
      * Build a payment source for request.
