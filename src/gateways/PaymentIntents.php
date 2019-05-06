@@ -20,10 +20,7 @@ use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\helpers\UrlHelper;
 use craft\web\View;
-use Stripe\ApiResource;
-use Stripe\Charge;
 use Stripe\PaymentIntent;
-use Stripe\Source;
 use yii\base\NotSupportedException;
 
 /**
@@ -51,11 +48,6 @@ class PaymentIntents extends BaseGateway
      * @var bool
      */
     public $sendReceiptEmail;
-
-    /**
-     * @var bool
-     */
-    public $enforce3dSecure;
 
     /**
      * @var string
@@ -157,6 +149,14 @@ class PaymentIntents extends BaseGateway
         }
 
         return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsHtml()
+    {
+        return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/intentsSettings', ['gateway' => $this]);
     }
 
     // Protected methods

@@ -107,6 +107,13 @@ class Gateway extends BaseGateway
         return $html;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function getSettingsHtml()
+    {
+        return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/chargeSettings', ['gateway' => $this]);
+    }
 
     // Protected methods
     // =========================================================================

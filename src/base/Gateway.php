@@ -206,14 +206,6 @@ abstract class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
-    {
-        return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings', ['gateway' => $this]);
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function processWebHook(): WebResponse
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
