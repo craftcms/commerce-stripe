@@ -32,7 +32,7 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isSuccessful(): bool
     {
-        return array_key_exists('status', $this->data) && $this->data['status'] === 'succeeded';
+        return array_key_exists('status', $this->data) && in_array($this->data['status'], ['succeeded', 'requires_capture'], true);
     }
 
     /**
