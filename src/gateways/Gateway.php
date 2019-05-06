@@ -25,8 +25,7 @@ use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Charge;
-use Stripe\Error\Base;
-use Stripe\Error\Card as CardError;
+use Stripe\Refund;
 use Stripe\Source;
 use yii\base\NotSupportedException;
 
@@ -266,6 +265,30 @@ class Gateway extends BaseGateway
             $charge->capture([], ['idempotency_key' => $reference]);
 
             return $this->createPaymentResponseFromApiResource($charge);
+        } catch (\Exception $exception) {
+            return $this->createPaymentResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function refund(Transaction $transaction): RequestResponseInterface
+    {
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+
+        if (!$currency) {
+            throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
+        }
+
+        try {
+            $request = [
+                'charge' => $transaction->reference,
+                'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+            ];
+            $refund = Refund::create($request);
+
+            return $this->createPaymentResponseFromApiResource($refund);
         } catch (\Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }

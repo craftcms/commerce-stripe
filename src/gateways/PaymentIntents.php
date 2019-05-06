@@ -21,6 +21,7 @@ use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\PaymentIntent;
+use Stripe\Refund;
 use yii\base\NotSupportedException;
 
 /**
@@ -130,15 +131,14 @@ class PaymentIntents extends BaseGateway
      */
     public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
-        $paymentIntentId = Craft::$app->getRequest()->getParam('payment_intent');
+        $paymentIntentReference = Craft::$app->getRequest()->getParam('payment_intent');
         /** @var PaymentIntent $paymentIntent */
-        $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentId);
+        $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentReference);
 
         // Update the intent with the latest.
-        $stripePlugin = StripePlugin::getInstance();
-        $paymentIntentsService = $stripePlugin->getPaymentIntents();
-        $customer = $stripePlugin->getCustomers()->getCustomerByReference($stripePaymentIntent->customer);
-        $paymentIntent = $paymentIntentsService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+        $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
+
+        $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($paymentIntentReference);
         $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
         $paymentIntentsService->savePaymentIntent($paymentIntent);
 
@@ -157,6 +157,39 @@ class PaymentIntents extends BaseGateway
     public function getSettingsHtml()
     {
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/intentsSettings', ['gateway' => $this]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function refund(Transaction $transaction): RequestResponseInterface
+    {
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+
+        if (!$currency) {
+            throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
+        }
+
+        $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
+        $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
+
+        $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($transaction->reference);
+
+        try {
+            $refund = Refund::create([
+                'charge' => $stripePaymentIntent->charges->data[0]->id,
+                'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+            ]);
+
+            // Fetch the new intent data
+            $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
+            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+            $paymentIntentsService->savePaymentIntent($paymentIntent);
+
+            return $this->createPaymentResponseFromApiResource($refund);
+        } catch (\Exception $exception) {
+            return $this->createPaymentResponseFromError($exception);
+        }
     }
 
     // Protected methods

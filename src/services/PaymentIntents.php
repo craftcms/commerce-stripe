@@ -27,7 +27,7 @@ class PaymentIntents extends Component
     // =========================================================================
 
     /**
-     * Returns a customer by gateway and user
+     * Returns a payment intent by gateway, order id and stripe plugin customer id
      *
      * @param int $gatewayId The stripe gateway
      *
@@ -44,6 +44,25 @@ class PaymentIntents extends Component
         }
 
        return null;
+    }
+
+    /**
+     * Returns a payment intent by its reference
+     *
+     * @param string $reference
+     *
+     * @return PaymentIntent|null
+     */
+    public function getPaymentIntentByReference(string $reference) {
+        $result = $this->_createIntentQuery()
+            ->where(['reference' => $reference])
+            ->one();
+
+        if ($result !== null) {
+            return new PaymentIntent($result);
+        }
+
+        return null;
     }
 
     /**

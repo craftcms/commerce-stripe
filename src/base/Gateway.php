@@ -21,16 +21,13 @@ use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSource
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\commerce\stripe\responses\ChargeResponse;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
-use Stripe\Charge;
 use Stripe\Customer;
 use Stripe\Error\Base;
 use Stripe\Error\Card as CardError;
-use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -256,30 +253,6 @@ abstract class Gateway extends BaseGateway
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
         return $this->authorizeOrPurchase($transaction, $form);
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function refund(Transaction $transaction): RequestResponseInterface
-    {
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
-
-        if (!$currency) {
-            throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
-        }
-
-        try {
-            $request = [
-                'charge' => $transaction->reference,
-                'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
-            ];
-            $refund = Refund::create($request);
-
-            return $this->createPaymentResponseFromApiResource($refund);
-        } catch (\Exception $exception) {
-            return $this->createPaymentResponseFromError($exception);
-        }
     }
 
     /**
