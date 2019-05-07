@@ -627,7 +627,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleWebhook(array $data)
     {
-        switch ($data) {
+        switch ($data['type']) {
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);
