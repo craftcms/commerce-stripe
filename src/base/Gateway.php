@@ -13,11 +13,9 @@ use craft\commerce\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\TransactionException;
 use craft\commerce\models\payments\BasePaymentForm;
-use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\errors\CustomerException;
-use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
@@ -327,7 +325,7 @@ abstract class Gateway extends BaseGateway
      * @return array
      * @throws NotSupportedException
      */
-    protected function buildRequestData(Transaction $transaction): array
+    protected function buildRequestData(Transaction $transaction, $context = 'charge'): array
     {
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
@@ -431,7 +429,16 @@ abstract class Gateway extends BaseGateway
             $user = Craft::$app->getUsers()->getUserById($userId);
             $customers = StripePlugin::getInstance()->getCustomers();
             $customer = $customers->getCustomer($this->id, $user);
-            return Customer::retrieve($customer->reference);
+            $stripeCustomer = Customer::retrieve($customer->reference);
+
+            if ($stripeCustomer->deleted) {
+                // Okay, retry one time.
+                $customers->deleteCustomerById($customer->id);
+                $customer = $customers->getCustomer($this->id, $user);
+                $stripeCustomer = Customer::retrieve($customer->reference);
+            }
+
+            return $stripeCustomer;
         } catch (\Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: ' . $exception->getMessage());
         }

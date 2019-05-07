@@ -6,6 +6,9 @@
 - Switched to Stripe API version 2019-03-14.
 - `Stripe` gateway is now called `Stripe Charge`.
 
+### Fixed
+- Fixed a bug where it was not possible to save a payment source if the customer had been deleted on Stripe. ([#35](https://github.com/craftcms/commerce-stripe/issues/35)) .
+
 ## 1.2.2 - 2019-04-30
 
 ### Added
