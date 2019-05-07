@@ -150,43 +150,6 @@ abstract class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
-    {
-        /** @var Payment $sourceData */
-        $sourceData->token = $this->normalizePaymentToken((string)$sourceData->token);
-
-        try {
-            $stripeCustomer = $this->getStripeCustomer($userId);
-            $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
-
-            $stripeCustomer->default_source = $stripeResponse->id;
-            $stripeCustomer->save();
-
-            switch ($stripeResponse->type) {
-                case 'card':
-                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
-                    break;
-                default:
-                    $description = $stripeResponse->type;
-            }
-
-            $paymentSource = new PaymentSource([
-                'userId' => $userId,
-                'gatewayId' => $this->id,
-                'token' => $stripeResponse->id,
-                'response' => $stripeResponse->jsonSerialize(),
-                'description' => $description
-            ]);
-
-            return $paymentSource;
-        } catch (\Throwable $exception) {
-            throw new CommercePaymentSourceException($exception->getMessage());
-        }
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function deletePaymentSource($token): bool
     {
         try {

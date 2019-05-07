@@ -12,10 +12,12 @@ use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\TransactionException;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
+use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\models\forms\payment\Charge as PaymentForm;
 use craft\commerce\stripe\responses\ChargeResponse;
@@ -112,6 +114,43 @@ class Gateway extends BaseGateway
     public function getSettingsHtml()
     {
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/chargeSettings', ['gateway' => $this]);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
+    {
+        /** @var Payment $sourceData */
+        $sourceData->token = $this->normalizePaymentToken((string)$sourceData->token);
+
+        try {
+            $stripeCustomer = $this->getStripeCustomer($userId);
+            $stripeResponse = $stripeCustomer->sources->create(['source' => $sourceData->token]);
+
+            $stripeCustomer->default_source = $stripeResponse->id;
+            $stripeCustomer->save();
+
+            switch ($stripeResponse->type) {
+                case 'card':
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
+                    break;
+                default:
+                    $description = $stripeResponse->type;
+            }
+
+            $paymentSource = new PaymentSource([
+                'userId' => $userId,
+                'gatewayId' => $this->id,
+                'token' => $stripeResponse->id,
+                'response' => $stripeResponse->jsonSerialize(),
+                'description' => $description
+            ]);
+
+            return $paymentSource;
+        } catch (\Throwable $exception) {
+            throw new CommercePaymentSourceException($exception->getMessage());
+        }
     }
 
     // Protected methods

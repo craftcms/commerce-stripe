@@ -10,9 +10,11 @@ namespace craft\commerce\stripe\gateways;
 use Craft;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\models\payments\BasePaymentForm;
+use craft\commerce\models\PaymentSource;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
+use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
 use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
 use craft\commerce\stripe\Plugin as StripePlugin;
@@ -21,6 +23,7 @@ use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\PaymentIntent;
+use Stripe\PaymentMethod;
 use Stripe\Refund;
 use yii\base\NotSupportedException;
 
@@ -200,6 +203,40 @@ class PaymentIntents extends BaseGateway
             return $this->createPaymentResponseFromApiResource($refund);
         } catch (\Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
+    {
+        /** @var PaymentForm $sourceData */
+
+        try {
+            $stripeCustomer = $this->getStripeCustomer($userId);
+            $paymentMethod = PaymentMethod::retrieve($sourceData->paymentMethodId);
+            $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+
+            switch ($stripeResponse->type) {
+                case 'card':
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
+                    break;
+                default:
+                    $description = $stripeResponse->type;
+            }
+
+            $paymentSource = new PaymentSource([
+                'userId' => $userId,
+                'gatewayId' => $this->id,
+                'token' => $stripeResponse->id,
+                'response' => $stripeResponse->jsonSerialize(),
+                'description' => $description
+            ]);
+
+            return $paymentSource;
+        } catch (\Throwable $exception) {
+            throw new CommercePaymentSourceException($exception->getMessage());
         }
     }
 
