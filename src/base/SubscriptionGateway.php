@@ -19,17 +19,13 @@ use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\errors\CustomerException;
-use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
-use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\SubscriptionResponse;
-use craft\elements\User;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\web\View;
@@ -374,54 +370,6 @@ abstract class SubscriptionGateway extends Gateway
         $stripeSubscription->cancel_at_period_end = false;
 
         return $this->createSubscriptionResponse($stripeSubscription->save());
-    }
-
-    /**
-     * @inheritdoc
-     * @throws SubscriptionException if there was a problem subscribing to the plan
-     */
-    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
-    {
-        try {
-            $stripeCustomer = $this->getStripeCustomer($user->id);
-        } catch (CustomerException $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
-        }
-
-        $sources = $stripeCustomer->sources->all();
-
-        if (\count($sources->data) === 0) {
-            throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
-        }
-
-        $subscriptionParameters = [
-            'customer' => $stripeCustomer->id,
-            'items' => [['plan' => $plan->reference]],
-        ];
-
-        if ($parameters->trialDays !== null) {
-            $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
-        } else {
-            $subscriptionParameters['trial_from_plan'] = true;
-        }
-
-        $event = new SubscriptionRequestEvent([
-            'parameters' => $subscriptionParameters
-        ]);
-
-        $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
-
-        try {
-            $subscription = StripeSubscription::create($event->parameters);
-        } catch (\Throwable $exception) {
-            Craft::warning($exception->getMessage(), 'stripe');
-
-            throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
-        }
-
-        return $this->createSubscriptionResponse($subscription);
     }
 
     /**

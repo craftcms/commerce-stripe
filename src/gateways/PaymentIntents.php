@@ -8,23 +8,32 @@
 namespace craft\commerce\stripe\gateways;
 
 use Craft;
+use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
+use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
+use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
+use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
+use craft\commerce\stripe\errors\PaymentSourceException;
+use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
 use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
+use craft\elements\User;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\Refund;
+use Stripe\Subscription as StripeSubscription;
 use yii\base\NotSupportedException;
 
 /**
@@ -239,6 +248,48 @@ class PaymentIntents extends BaseGateway
             throw new CommercePaymentSourceException($exception->getMessage());
         }
     }
+
+    /**
+     * @inheritdoc
+     * @throws SubscriptionException if there was a problem subscribing to the plan
+     */
+    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
+    {
+        $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
+        $paymentMethods = PaymentMethod::all(['customer' => $customer->reference, 'type' => 'card']);
+
+        if (\count($paymentMethods->data) === 0) {
+            throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
+        }
+
+        $subscriptionParameters = [
+            'customer' => $customer->reference,
+            'items' => [['plan' => $plan->reference]],
+        ];
+
+        if ($parameters->trialDays !== null) {
+            $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
+        } else {
+            $subscriptionParameters['trial_from_plan'] = true;
+        }
+
+        $event = new SubscriptionRequestEvent([
+            'parameters' => $subscriptionParameters
+        ]);
+
+        $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
+
+        try {
+            $subscription = StripeSubscription::create($event->parameters);
+        } catch (\Throwable $exception) {
+            Craft::warning($exception->getMessage(), 'stripe');
+
+            throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
+        }
+
+        return $this->createSubscriptionResponse($subscription);
+    }
+
 
     // Protected methods
     // =========================================================================
