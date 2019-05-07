@@ -44,7 +44,7 @@ class PaymentIntent extends CreditCardPaymentForm
      */
     public function populateFromPaymentSource(PaymentSource $paymentSource)
     {
-        $this->token = $paymentSource->token;
+        $this->paymentMethodId = $paymentSource->token;
 
         $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getUser());
         $this->customer = $customer->reference;

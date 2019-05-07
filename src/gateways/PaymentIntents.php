@@ -255,15 +255,11 @@ class PaymentIntents extends BaseGateway
         $stripePlugin = StripePlugin::getInstance();
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
+            $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
         } else if ($user = $transaction->getOrder()->getUser()) {
             $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
             $requestData['customer'] = $customer->reference;
         }
-
-        if (!$customer) {
-            $customer = $stripePlugin->getCustomers()->getCustomerByReference($requestData['customer']);
-        }
-
 
         $requestData['payment_method'] = $paymentMethodId;
         try {
