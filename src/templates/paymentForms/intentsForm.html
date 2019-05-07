@@ -1,6 +1,5 @@
 <div class="stripe-payment-intents-form"
-     data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"
-     data-enforce3dsecure="{{ gateway.enforce3dSecure ?? '' }}">
+     data-publishablekey="{{ parseEnv(gateway.publishableKey) }}">
     {% include 'commerce/_components/gateways/_creditCardFields' %}
     <div class="card-errors" role="alert"></div>
     {% if order is defined and order.billingAddress is defined and order.billingAddress is not null %}
