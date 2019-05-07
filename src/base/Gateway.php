@@ -192,7 +192,11 @@ abstract class Gateway extends BaseGateway
         $data = Json::decodeIfJson($rawData);
 
         if ($data) {
-            $this->handleWebhook($data);
+            try {
+                $this->handleWebhook($data);
+            } catch (\Throwable $exception) {
+                Craft::$app->getErrorHandler()->logException($exception);
+            }
 
             if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
                 $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
