@@ -36,6 +36,7 @@ use yii\base\NotSupportedException;
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
+ * @deprecated in 2.0. Use Payment Intents gateway instead.
  */
 class Gateway extends BaseGateway
 {
@@ -75,7 +76,7 @@ class Gateway extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce-stripe', 'Stripe Charge');
+        return Craft::t('commerce-stripe', 'Stripe Charge (deprecated)');
     }
 
     /**
