@@ -2,13 +2,13 @@
      data-publishablekey="{{ parseEnv(gateway.publishableKey) }}">
     {% include 'commerce/_components/gateways/_creditCardFields' %}
     <div class="card-errors" role="alert"></div>
-    {% if order is defined and order.billingAddress is defined and order.billingAddress is not null %}
+    {% if billingAddress is defined %}
         <div class="stripe-address hidden">
-            <input type="hidden" name="stripe-line1" value="{{ order.billingAddress.address1 }}" />
-            <input type="hidden" name="stripe-postal-code" value="{{ order.billingAddress.zipCode }}" />
-            <input type="hidden" name="stripe-city" value="{{ order.billingAddress.city }}" />
-            <input type="hidden" name="stripe-country" value="{{ order.billingAddress.country }}" />
-            <input type="hidden" name="stripe-state" value="{{ order.billingAddress.state }}" />
+            <input type="hidden" name="stripe-line1" value="{{ billingAddress.address1 }}" />
+            <input type="hidden" name="stripe-postal-code" value="{{ billingAddress.zipCode }}" />
+            <input type="hidden" name="stripe-city" value="{{ billingAddress.city }}" />
+            <input type="hidden" name="stripe-country" value="{{ billingAddress.country }}" />
+            <input type="hidden" name="stripe-state" value="{{ billingAddress.state }}" />
         </div>
     {% endif %}
 </div>

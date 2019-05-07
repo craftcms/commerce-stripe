@@ -80,8 +80,19 @@ class PaymentIntents extends BaseGateway
 
         // If there's no order passed, add the current cart if we're not messing around in backend.
         if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
-            $params['order'] = Commerce::getInstance()->getCarts()->getCart();
+            $billingAddress = Commerce::getInstance()->getCarts()->getCart()->getBillingAddress();
+
+            if (!$billingAddress) {
+                $billingAddress = Commerce::getInstance()->getCustomers()->getCustomer()->getPrimaryBillingAddress();
+            }
+        } else {
+            $billingAddress = $params['order']->getBillingAddress();
         }
+
+        if ($billingAddress) {
+            $params['billingAddress'] = $billingAddress;
+        }
+
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
