@@ -22,7 +22,6 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\CustomerException;
-use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
@@ -170,7 +169,7 @@ class Gateway extends BaseGateway
 
             return $paymentSource;
         } catch (\Throwable $exception) {
-            throw new CommercePaymentSourceException($exception->getMessage());
+            throw new PaymentSourceException($exception->getMessage());
         }
     }
 
@@ -423,6 +422,22 @@ class Gateway extends BaseGateway
         $response->setProcessing(true);
 
         return $response;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function deletePaymentSource($token): bool
+    {
+        try {
+            /** @var Source $source */
+            $source = Source::retrieve($token);
+            $source->detach();
+        } catch (\Throwable $throwable) {
+            // Assume deleted.
+        }
+
+        return true;
     }
 
     // Protected methods

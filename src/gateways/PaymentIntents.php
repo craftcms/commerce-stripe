@@ -18,8 +18,6 @@ use craft\commerce\models\subscriptions\SubscriptionForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
-use craft\commerce\stripe\errors\CustomerException;
-use craft\commerce\stripe\errors\PaymentSourceException as CommercePaymentSourceException;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
@@ -28,6 +26,7 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\PaymentIntent;
@@ -221,7 +220,6 @@ class PaymentIntents extends BaseGateway
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         /** @var PaymentForm $sourceData */
-
         try {
             $stripeCustomer = $this->getStripeCustomer($userId);
             $paymentMethod = PaymentMethod::retrieve($sourceData->paymentMethodId);
@@ -229,7 +227,7 @@ class PaymentIntents extends BaseGateway
 
             switch ($stripeResponse->type) {
                 case 'card':
-                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($stripeResponse->card->brand), 'last4' => $stripeResponse->card->last4]);
                     break;
                 default:
                     $description = $stripeResponse->type;
@@ -245,7 +243,7 @@ class PaymentIntents extends BaseGateway
 
             return $paymentSource;
         } catch (\Throwable $exception) {
-            throw new CommercePaymentSourceException($exception->getMessage());
+            throw new PaymentSourceException($exception->getMessage());
         }
     }
 
@@ -290,6 +288,21 @@ class PaymentIntents extends BaseGateway
         return $this->createSubscriptionResponse($subscription);
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function deletePaymentSource($token): bool
+    {
+        try {
+            /** @var PaymentMethod $paymentMethod */
+            $paymentMethod = PaymentMethod::retrieve($token);
+            $paymentMethod->detach();
+        } catch (\Throwable $throwable) {
+            // Assume deleted.
+        }
+
+        return true;
+    }
 
     // Protected methods
     // =========================================================================

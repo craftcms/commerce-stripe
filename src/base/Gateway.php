@@ -148,22 +148,6 @@ abstract class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function deletePaymentSource($token): bool
-    {
-        try {
-            /** @var Source $source */
-            $source = Source::retrieve($token);
-            $source->detach();
-        } catch (\Throwable $throwable) {
-            // Assume deleted.
-        }
-
-        return true;
-    }
-
-    /**
-     * @inheritdoc
-     */
     public function processWebHook(): WebResponse
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
