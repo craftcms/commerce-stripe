@@ -52,12 +52,13 @@ abstract class Gateway extends BaseGateway
      * ```php
      * use craft\commerce\models\Transaction;
      * use craft\commerce\stripe\events\BuildGatewayRequestEvent;
-     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use craft\commerce\stripe\base\Gateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
      *     if ($e->transaction->type === 'refund') {
      *         $e->metadata['someKey'] = 'some value';
+     *         $e->request['someKey'] = 'some value';
      *     }
      * });
      * ```
@@ -72,7 +73,7 @@ abstract class Gateway extends BaseGateway
      *
      * ```php
      * use craft\commerce\stripe\events\ReceiveWebhookEvent;
-     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use craft\commerce\stripe\base\Gateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_WEBHOOK, function(ReceiveWebhookEvent $e) {
