@@ -59,7 +59,7 @@ class Gateway extends BaseGateway
      * ```php
      * use craft\commerce\Plugin as Commerce;
      * use craft\commerce\stripe\events\Receive3dsPaymentEvent;
-     * use craft\commerce\stripe\base\Gateway as StripeGateway;
+     * use use craft\commerce\stripe\gateways\Gateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
