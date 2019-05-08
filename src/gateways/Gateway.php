@@ -48,6 +48,32 @@ use yii\base\NotSupportedException;
  */
 class Gateway extends BaseGateway
 {
+    // Events
+    // =========================================================================
+
+    /**
+     * @event Receive3dsPaymentEvent The event that is triggered when a successful 3ds payment is received.
+     *
+     * Plugins get a chance to do something whenever a successful 3D Secure payment is received.
+     *
+     * ```php
+     * use craft\commerce\Plugin as Commerce;
+     * use craft\commerce\stripe\events\Receive3dsPaymentEvent;
+     * use craft\commerce\stripe\base\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
+     *     $order = $e->transaction->getOrder();
+     *     $orderStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
+     *     if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
+     *         $order->orderStatusId = $paidStatus->id;
+     *         Craft::$app->getElements()->saveElement($order);
+     *     }
+     * });
+     * ```
+     */
+    const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
+
     // Properties
     // =========================================================================
 
