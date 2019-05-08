@@ -54,7 +54,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * ```php
      * use craft\commerce\stripe\events\CreateInvoiceEvent;
-     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
@@ -73,7 +73,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * ```php
      * use craft\commerce\stripe\events\SubscriptionRequestEvent;
-     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
