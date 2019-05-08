@@ -552,7 +552,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripeSubscription = $data['data']['object'];
 
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->anyStatus()->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “' . $stripeSubscription['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');

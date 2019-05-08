@@ -8,6 +8,7 @@
 
 ### Fixed
 - Fixed a bug where it was not possible to save a payment source if the customer had been deleted on Stripe. ([#35](https://github.com/craftcms/commerce-stripe/issues/35)) .
+- Fixed a bug where event handlers for expired subscription would not be called if the subscription was canceled immediately. ([#47](https://github.com/craftcms/commerce-stripe/issues/47)) .
 
 ## 1.2.2 - 2019-04-30
 
