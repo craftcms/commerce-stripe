@@ -419,7 +419,7 @@ abstract class Gateway extends BaseGateway
             $customer = $customers->getCustomer($this->id, $user);
             $stripeCustomer = Customer::retrieve($customer->reference);
 
-            if ($stripeCustomer->deleted) {
+            if (!empty($stripeCustomer->deleted)) {
                 // Okay, retry one time.
                 $customers->deleteCustomerById($customer->id);
                 $customer = $customers->getCustomer($this->id, $user);
