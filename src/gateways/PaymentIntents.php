@@ -29,6 +29,7 @@ use craft\elements\User;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Stripe\Customer;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\Refund;
@@ -224,6 +225,10 @@ class PaymentIntents extends BaseGateway
             $stripeCustomer = $this->getStripeCustomer($userId);
             $paymentMethod = PaymentMethod::retrieve($sourceData->paymentMethodId);
             $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+
+            // Set as default.
+            $stripeCustomer->invoice_settings['default_payment_method'] = $paymentMethod->id;
+            $stripeCustomer->save();
 
             switch ($stripeResponse->type) {
                 case 'card':
