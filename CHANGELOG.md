@@ -2,13 +2,32 @@
 
 ### Unreleased
 
+### Added
+- Added `Stripe Payment Intents` gateway which is 3D secure 2.0 compatible.
+- Added `craft\commerce\stripe\base\Gateway`.
+- Added `craft\commerce\stripe\base\SubscriptionGateway`.
+- Added `craft\commerce\stripe\gateways\PaymentIntents`.
+- Added `craft\commerce\stripe\models\PaymentIntent`.
+- Added `craft\commerce\stripe\models\forms\PaymentIntent`.
+- Added `craft\commerce\stripe\records\PaymentIntent`.
+- Added `craft\commerce\stripe\responses\PaymentIntentResponse`.
+- Added `craft\commerce\stripe\services\Customers::getCustomerById()`.
+- Added `craft\commerce\stripe\services\PaymentIntents`.
+
 ### Changed
 - Switched to Stripe API version 2019-03-14.
 - `Stripe` gateway is now called `Stripe Charge`.
+- Moved `craft\commerce\stripe\models\forms\Payment` to `craft\commerce\stripe\models\forms\Charge`.
+- Moved `craft\commerce\stripe\responses\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
+- Moved `craft\commerce\stripe\web\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
 
 ### Fixed
 - Fixed a bug where it was not possible to save a payment source if the customer had been deleted on Stripe. ([#35](https://github.com/craftcms/commerce-stripe/issues/35)) .
 - Fixed a bug where event handlers for expired subscription would not be called if the subscription was canceled immediately. ([#47](https://github.com/craftcms/commerce-stripe/issues/47)) .
+
+### Deprecated
+- Deprecated `craft\commerce\stripe\events\Receive3dsPayment`.
+- Depreacted `craft\commerce\stripe\gateways\Gateway`
 
 ## 1.2.2 - 2019-04-30
 
