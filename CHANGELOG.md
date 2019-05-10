@@ -3,7 +3,7 @@
 ### Unreleased
 
 ### Added
-- Added `Stripe Payment Intents` gateway which is 3D secure 2.0 compatible.
+- Added the Stripe Payment Intents gateway, which is compatible with [3D Secure 2](https://stripe.com/guides/3d-secure-2).
 - Added `craft\commerce\stripe\base\Gateway`.
 - Added `craft\commerce\stripe\base\SubscriptionGateway`.
 - Added `craft\commerce\stripe\gateways\PaymentIntents`.
@@ -16,18 +16,18 @@
 
 ### Changed
 - Switched to Stripe API version 2019-03-14.
-- `Stripe` gateway is now called `Stripe Charge`.
-- Moved `craft\commerce\stripe\models\forms\Payment` to `craft\commerce\stripe\models\forms\Charge`.
-- Moved `craft\commerce\stripe\responses\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
-- Moved `craft\commerce\stripe\web\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
-
-### Fixed
-- Fixed a bug where it was not possible to save a payment source if the customer had been deleted on Stripe. ([#35](https://github.com/craftcms/commerce-stripe/issues/35)) .
-- Fixed a bug where event handlers for expired subscription would not be called if the subscription was canceled immediately. ([#47](https://github.com/craftcms/commerce-stripe/issues/47)) .
+- Renamed the Stripe gateway to “Stripe Charge”.
+- Renamed `craft\commerce\stripe\models\forms\Payment` to `craft\commerce\stripe\models\forms\Charge`.
+- Renamed `craft\commerce\stripe\responses\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
+- Renamed `craft\commerce\stripe\web\PaymentResponse` to `craft\commerce\stripe\responses\ChargeResponse`.
 
 ### Deprecated
 - Deprecated `craft\commerce\stripe\events\Receive3dsPayment`.
-- Depreacted `craft\commerce\stripe\gateways\Gateway`
+- Deprecated `craft\commerce\stripe\gateways\Gateway`.
+
+### Fixed
+- Fixed a bug where it was not possible to save a payment source if the customer had been deleted on Stripe. ([#35](https://github.com/craftcms/commerce-stripe/issues/35)).
+- Fixed a bug where the `craft\commerce\services\Subscriptions::EVENT_AFTER_EXPIRE_SUBSCRIPTION` event wouldn’t be triggered for subscriptions that were canceled immediately. ([#47](https://github.com/craftcms/commerce-stripe/issues/47)).
 
 ## 1.2.2 - 2019-04-30
 
