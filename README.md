@@ -2,7 +2,7 @@
 
 <h1 align="center">Stripe for Craft Commerce</h1>
 
-This plugin provides [Stripe](https://stripe.com/) integrations for [Craft Commerce](https://craftcms.com/commerce) by adding gateways that support Charge and Payment Intents APIs.
+This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce), with support for [Payment Intents](https://stripe.com/docs/payments/payment-intents) as well as traditional charges.
 
 ## Requirements
 
@@ -33,23 +33,15 @@ composer require craftcms/commerce-stripe
 ./craft install/plugin commerce-stripe
 ```
 
-## Changes in v2
+## Changes in 2.0
 
-### Gateways
-This plugin now provides two gateways: “Stripe Charge” and “Stripe Payment Intents”. “Stripe Charge” seemlessly replaces the existing “Stripe” gateway and is deprecated, as the API used for that gateway will decline all charges in EU as new regulations come into effect on September 14th, 2019.
-
-### 3D secure flow
-When using the “Stripe Charge”, 3D secure authentication is performed in an asynchronous manner, meaning extra logic needs to be worked in the order completion page to determine whether the order is succesfully paid. When using the “Stripe Payment Intents” gateway, all 3D secure payments are handled synchronously, reducing the complexity of your templates.
-
-Furthermore, “Stripe Payment Intents” ustilizes 3D Secure 2.0 protocol, allowing Stripe to dynamically decide whether the extra authentication is needed or not, based on the requirements by the issuing bank as well as your [Radar rules]([https://stripe.com/docs/radar/rules#built-in-rules]).
+The old “Stripe” gateway has been renamed to “Stripe Charge”, and is now deprecated. A new “Stripe Payment Intents” gateway has been added which uses Stripe’s new [Payment Intents API](https://stripe.com/docs/payments/payment-intents), and utilizes [3D Secure 2](https://stripe.com/guides/3d-secure-2), which is easier to implement than the old 3D Secure standard and delivers a better customer experience. **Stripe will begin declining all EU charges using its old charge API on September 14, 2019,** so switching to the new Payment Intents gateway is highly recommended. (See Stripe’s [Strong Customer Authentication](https://stripe.com/guides/strong-customer-authentication) guide for more info.)
 
 ## Setup
 
-To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe Charge” or “Stripe Payment Intents.”
-
-:warning: Please note that the Stripe Charge gateway is deprecated and is provided only for backwards compatibility. It is **strongly** recommended to switch all the Stripe Charge gateways to be Stripe Payment Intent gateways as soon as possible. See [Stripe's SCA guide]([https://stripe.com/guides/strong-customer-authentication]) for more information.
-
-> **Tip:** The Secret API Key, Publishable API Key, and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
+To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
+ 
+ > Note: A “Stripe Charge” gateway is also available, but it is deprecated. (See [Changes in 2.0](#changes-in-2-0).)
 
 ## Payment security enforcement
 
@@ -63,7 +55,7 @@ Set up a webhook endpoint in your Stripe dashboard API settings. The URL for thi
 
 It is recommended to emit all possible events, but the required events are:
 
-#### For 3D secure payments if using Stripe Charge gateway
+#### For 3D secure payments (if using Stripe Charge gateway)
 
  * `source.cancelled`
  * `source.chargeable`
