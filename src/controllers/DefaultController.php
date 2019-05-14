@@ -9,7 +9,7 @@ namespace craft\commerce\stripe\controllers;
 
 use Craft;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\gateways\Gateway;
+use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\web\Controller as BaseController;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
@@ -46,7 +46,7 @@ class DefaultController extends BaseController
             $gatewayId = $request->getRequiredBodyParam('gatewayId');
             $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
 
-            if (!$gateway || !$gateway instanceof Gateway) {
+            if (!$gateway || !$gateway instanceof SubscriptionGateway) {
                 throw new BadRequestHttpException('That is not a valid gateway id.');
             }
 

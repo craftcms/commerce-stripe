@@ -2,13 +2,13 @@
 
 <h1 align="center">Stripe for Craft Commerce</h1>
 
-This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce).
+This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce), with support for [Payment Intents](https://stripe.com/docs/payments/payment-intents) as well as traditional charges.
 
 ## Requirements
 
 This plugin requires Craft 3.1.5 and Craft Commerce 2.1.4 or later.
 
-This plugin uses Stripe API version '2018-11-08'.
+This plugin uses Stripe API version '2019-03-14'.
 
 ## Installation
 
@@ -33,25 +33,19 @@ composer require craftcms/commerce-stripe
 ./craft install/plugin commerce-stripe
 ```
 
+## Changes in 2.0
+
+The old “Stripe” gateway has been renamed to “Stripe Charge”, and is now deprecated. A new “Stripe Payment Intents” gateway has been added which uses Stripe’s new [Payment Intents API](https://stripe.com/docs/payments/payment-intents), and utilizes [3D Secure 2](https://stripe.com/guides/3d-secure-2), which is easier to implement than the old 3D Secure standard and delivers a better customer experience. **Stripe will begin declining all EU charges using its old charge API on September 14, 2019,** so switching to the new Payment Intents gateway is highly recommended. (See Stripe’s [Strong Customer Authentication](https://stripe.com/guides/strong-customer-authentication) guide for more info.)
+
 ## Setup
 
-To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe”.
-
-> **Tip:** The Secret API Key, Publishable API Key, and Webhook Signing Secret settings can be set to environment variables. See [Environmental Configuration](https://docs.craftcms.com/v3/config/environments.html) in the Craft docs to learn more about that.
+To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
+ 
+ > Note: A “Stripe Charge” gateway is also available, but it is deprecated. (See [Changes in 2.0](#changes-in-2-0).)
 
 ## Payment security enforcement
 
-This plugin does not allow submitting credit card details directly to Stripe gateway. Instead, you must tokenize the card before submitting the payment form. See [here](src/web/assets/paymentform/js/paymentForm.js) for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
-
-## 3D secure payments
-
-To allow 3D Secure payments, you must perform some additional steps.
-
-### Forcing a 3D secure payment.
-
-For some cards 3D secure payments are not supported, for some they are mandatory while for some cards they are optional. Setting this setting to true for a gateway will force the 3D secure payment flow for cards which optionally support it.
-
-Cards that do not support 3d secure payment will be unaffected by this setting.
+This plugin does not allow submitting credit card details directly. Instead, you must create a payment method before submitting the payment form. See [here](src/web/assets/intentsform/js/paymentForm.js) for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
 
 ## Webhooks
 
@@ -61,7 +55,7 @@ Set up a webhook endpoint in your Stripe dashboard API settings. The URL for thi
 
 It is recommended to emit all possible events, but the required events are:
 
-#### For 3D secure payments
+#### For 3D secure payments (if using Stripe Charge gateway)
 
  * `source.cancelled`
  * `source.chargeable`
@@ -84,12 +78,6 @@ However, it is strongly recommended to enable the following events as well to en
 ### Configure the gateway
 
 When the endpoint has been set up, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the appropriate field.
-
-### Disabling CSRF for webhooks.
-
-You must disable CSRF protection for the incoming requests, assuming it is enabled for the site (default for Craft since 3.0).
-
-A clean example for how to go about this can be found [here](https://craftcms.stackexchange.com/a/20301/258).
 
 ## Configuration settings
 
@@ -129,3 +117,97 @@ If this parameter is set to true, the subscription switch will be [prorated](htt
 If this parameter is set to true, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to true and switching to a cheaper plan) is applied to the next invoice.
 
 Please note, that the subscription switch will be billed immediately regardless of this parameter if the billing periods differ.
+
+## Events
+The plugin provides several events that allow you to modify the behaviour of your integration.
+
+
+### Payment request related events
+
+#### The `buildGatewayRequest` event
+Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+
+Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `order_number`, `order_id`, `transaction_id`, `transaction_reference`, and `client_ip` metadata keys. 
+
+```php
+use craft\commerce\models\Transaction;
+use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\base\Gateway as StripeGateway;
+use yii\base\Event;
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
+  if ($e->transaction->type === 'refund') {
+    $e->metadata['someKey'] = 'some value';
+    $e->request['someKey] = 'some value';
+  }
+});
+```
+
+#### The `receiveWebhook` event
+Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless the Gateway has done something with the webhook or not.
+
+```php
+use craft\commerce\stripe\events\ReceiveWebhookEvent;
+use craft\commerce\stripe\base\Gateway as StripeGateway;
+use yii\base\Event;
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_WEBHOOK, function(ReceiveWebhookEvent $e) {
+  if ($e->webhookData['type'] == 'charge.dispute.created') {
+    if ($e->webhookData['data']['object']['amount'] > 1000000) {
+      // Be concerned that a USD 10,000 charge is being disputed.
+    }
+  }
+});
+```
+
+### Subscription events
+
+#### The `createInvoice` event
+Plugins get a chance to do something when an invoice is created on the Stripe gateway.
+```php
+use craft\commerce\stripe\events\CreateInvoiceEvent;
+use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
+use yii\base\Event;
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
+    if ($e->invoiceData['billing'] === 'send_invoice') {
+        // Forward this invoice to the accounting dpt.
+    }
+});
+```
+
+#### The `beforeSubscribe` event
+Plugins get a chance to tweak subscription parameters when subscribing.
+
+```php
+use craft\commerce\stripe\events\SubscriptionRequestEvent;
+use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
+use yii\base\Event;
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
+    $e->parameters['someKey'] = 'some value';
+    unset($e->parameters['unneededKey']);
+});
+```
+
+### Deprecated events
+The following events are deprecated as they are associated with the deprecated Stripe Charge gateway.
+
+#### The `receive3dsPayment` event
+Plugins get a chance to do something whenever a successful 3D Secure payment is received.
+
+```php
+use craft\commerce\Plugin as Commerce;
+use craft\commerce\stripe\events\Receive3dsPaymentEvent;
+use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+use yii\base\Event;
+
+Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
+    $order = $e->transaction->getOrder();
+    $orderStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
+    if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
+        $order->orderStatusId = $paidStatus->id;
+        Craft::$app->getElements()->saveElement($order);
+    }
+});
+```

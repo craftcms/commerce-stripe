@@ -76,6 +76,44 @@ class Customers extends Component
     }
 
     /**
+     * Return a customer by its id.
+     *
+     * @param int $id
+     *
+     * @return Customer|null
+     */
+    public function getCustomerById(int $id) {
+        $customerRow = $this->_createCustomerQuery()
+            ->where(['id' => $id])
+            ->one();
+
+        if ($customerRow) {
+            return new Customer($customerRow);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return a customer by its reference.
+     *
+     * @param string $reference
+     *
+     * @return Customer|null
+     */
+    public function getCustomerByReference(string $reference) {
+        $customerRow = $this->_createCustomerQuery()
+            ->where(['reference' => $reference])
+            ->one();
+
+        if ($customerRow) {
+            return new Customer($customerRow);
+        }
+
+        return null;
+    }
+
+    /**
      * Save a customer
      *
      * @param Customer $customer The customer being saved.

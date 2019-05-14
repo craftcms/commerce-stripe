@@ -5,14 +5,14 @@
  * @license MIT
  */
 
-namespace craft\commerce\stripe\web\assets\paymentform;
+namespace craft\commerce\stripe\web\assets\intentsform;
 
 use craft\web\AssetBundle;
 
 /**
  * Asset bundle for the Payment Form
  */
-class PaymentFormAsset extends AssetBundle
+class IntentsFormAsset extends AssetBundle
 {
     /**
      * @inheritdoc

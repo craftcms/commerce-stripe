@@ -5,19 +5,19 @@
  * @license MIT
  */
 
-namespace craft\commerce\stripe\models\forms;
+namespace craft\commerce\stripe\models\forms\payment;
 
 use craft\commerce\models\payments\CreditCardPaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\stripe\Plugin;
 
 /**
- * Stripe Payment form model.
+ * Charge Payment form model.
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since 1.0
+ * @since 2.0
  */
-class Payment extends CreditCardPaymentForm
+class Charge extends CreditCardPaymentForm
 {
     /**
      * @var string $customer the Stripe customer token.
