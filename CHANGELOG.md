@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-### 2.0.0 - 2019-05-14
+## 2.0.0 - 2019-05-14
 
 ### Added
 - Added the Stripe Payment Intents gateway, which is compatible with [3D Secure 2](https://stripe.com/guides/3d-secure-2).
