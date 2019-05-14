@@ -15,6 +15,7 @@ use yii\base\Event;
  *
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
+ * @deprecated since 2.0
  */
 class Receive3dsPaymentEvent extends Event
 {

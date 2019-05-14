@@ -10,7 +10,7 @@ namespace craft\commerce\stripe\responses;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
 
-class PaymentResponse implements RequestResponseInterface
+class ChargeResponse implements RequestResponseInterface
 {
     /**
      * @var
@@ -28,20 +28,29 @@ class PaymentResponse implements RequestResponseInterface
     private $_processing = false;
 
     /**
-     * Response constructor.
+     * Construct the response
      *
      * @param $data
      */
-    public function __construct($data)
-    {
+    public function __construct($data) {
         $this->data = $data;
     }
 
+    /**
+     * Set the redirect URL.
+     *
+     * @param string $url
+     */
     public function setRedirectUrl(string $url)
     {
         $this->_redirect = $url;
     }
 
+    /**
+     * Set processing status.
+     *
+     * @param bool $status
+     */
     public function setProcessing(bool $status)
     {
         $this->_processing = $status;
