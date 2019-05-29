@@ -321,7 +321,11 @@ class PaymentIntents extends BaseGateway
         $requestData = $this->buildRequestData($transaction);
         $paymentMethodId = $form->paymentMethodId;
 
+        $customer = null;
+        $paymentIntent = null;
+
         $stripePlugin = StripePlugin::getInstance();
+
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
             $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
@@ -331,10 +335,15 @@ class PaymentIntents extends BaseGateway
         }
 
         $requestData['payment_method'] = $paymentMethodId;
-        try {
-            $paymentIntentService = $stripePlugin->getPaymentIntents();
-            $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
 
+        try {
+            // If this is a customer that's logged in, attempt to continue the timeline
+            if ($customer) {
+                $paymentIntentService = $stripePlugin->getPaymentIntents();
+                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+            }
+
+            // If a payment intent exists, update that.
             if ($paymentIntent) {
                 $stripePaymentIntent = PaymentIntent::update($paymentIntent->reference, $requestData, ['idempotency_key' => $transaction->hash]);
             } else {
@@ -344,17 +353,21 @@ class PaymentIntents extends BaseGateway
 
                 $stripePaymentIntent = PaymentIntent::create($requestData, ['idempotency_key' => $transaction->hash]);
 
-                $paymentIntent = new PaymentIntentModel([
-                    'orderId' => $transaction->orderId,
-                    'customerId' => $customer->id,
-                    'gatewayId' => $this->id,
-                    'reference' => $stripePaymentIntent->id,
-                ]);
+                if ($customer) {
+                    $paymentIntent = new PaymentIntentModel([
+                        'orderId' => $transaction->orderId,
+                        'customerId' => $customer->id,
+                        'gatewayId' => $this->id,
+                        'reference' => $stripePaymentIntent->id,
+                    ]);
+                }
             }
 
-            // Save data before confirming.
-            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
-            $paymentIntentService->savePaymentIntent($paymentIntent);
+            if ($paymentIntent) {
+                // Save data before confirming.
+                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntentService->savePaymentIntent($paymentIntent);
+            }
 
             $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
 
