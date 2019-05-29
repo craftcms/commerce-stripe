@@ -45,9 +45,12 @@ abstract class Gateway extends BaseGateway
     /**
      * @event BuildGatewayRequestEvent The event that is triggered when a gateway request is being built.
      *
-     * Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+     * Plugins get a chance to provide additional data to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
      *
-     * Note, that any changes to the `Transaction` model will be ignored and it is not possible to set `order_number`, `order_id`, `transaction_id`, `transaction_reference`, and `client_ip` metadata keys.
+     * There are some restrictions:
+     *     Changes to the `Transaction` model available as the `transaction` property will be ignored;
+     *     Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys will be ignored;
+     *     Changes to the `amount`, `currency` and `description` request keys will be ignored;
      *
      * ```php
      * use craft\commerce\models\Transaction;
@@ -57,7 +60,6 @@ abstract class Gateway extends BaseGateway
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
      *     if ($e->transaction->type === 'refund') {
-     *         $e->metadata['someKey'] = 'some value';
      *         $e->request['someKey'] = 'some value';
      *     }
      * });
