@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.0.1 - 2019-05-30
 
 ### Changed
 - Country ISO code is now submitted to Stripe, instead of the country name. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
