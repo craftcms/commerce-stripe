@@ -162,8 +162,12 @@ class PaymentIntents extends BaseGateway
         $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
 
         $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($paymentIntentReference);
-        $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
-        $paymentIntentsService->savePaymentIntent($paymentIntent);
+
+        // Make sure we have the payment intent before we attempt to do anything with it.
+        if ($paymentIntent) {
+            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+            $paymentIntentsService->savePaymentIntent($paymentIntent);
+        }
 
         $intentData = $stripePaymentIntent->jsonSerialize();
 
