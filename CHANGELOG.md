@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- Country ISO code is now submitted to Stripe, instead of the country name. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
+
 ### Fixed
 - Fixed an error with Payment Intents gateway where it was impossible to pay while not logged in. ([#60](https://github.com/craftcms/commerce-stripe/issues/60))
 
