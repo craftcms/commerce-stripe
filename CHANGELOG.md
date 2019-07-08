@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a bug where payment forms would not ensure that jQuery was present, before depending on it. ([#63](https://github.com/craftcms/commerce-stripe/issues/63))
+
 ## 2.0.1.1 - 2019-05-30
 
 ### Fixed

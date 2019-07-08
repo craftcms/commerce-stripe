@@ -8,6 +8,7 @@
 namespace craft\commerce\stripe\web\assets\chargeform;
 
 use craft\web\AssetBundle;
+use yii\web\JqueryAsset;
 
 /**
  * Asset bundle for the Payment Form
@@ -27,6 +28,10 @@ class ChargeFormAsset extends AssetBundle
 
         $this->js = [
             'js/paymentForm.js',
+        ];
+
+        $this->depends = [
+            JqueryAsset::class,
         ];
 
         parent::init();

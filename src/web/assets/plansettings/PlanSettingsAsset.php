@@ -8,6 +8,7 @@
 namespace craft\commerce\stripe\web\assets\plansettings;
 
 use craft\web\AssetBundle;
+use yii\web\JqueryAsset;
 
 /**
  * Asset bundle for editing Craft subscription plans
@@ -23,6 +24,10 @@ class PlanSettingsAsset extends AssetBundle
 
         $this->js = [
             'js/planSettings.js',
+        ];
+
+        $this->depends = [
+            JqueryAsset::class,
         ];
 
         parent::init();
