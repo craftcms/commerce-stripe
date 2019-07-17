@@ -94,6 +94,30 @@ abstract class Gateway extends BaseGateway
      */
     const STRIPE_API_VERSION = '2019-03-14';
 
+    // Properties
+    // =========================================================================
+
+    /**
+     * @var string
+     */
+    public $publishableKey;
+
+    /**
+     * @var string
+     */
+    public $apiKey;
+
+    /**
+     * @var bool
+     */
+    public $sendReceiptEmail;
+
+    /**
+     * @var string
+     */
+    public $signingSecret;
+
+
     // Public Methods
     // =========================================================================
 
@@ -104,8 +128,6 @@ abstract class Gateway extends BaseGateway
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiKey(Craft::parseEnv($this->apiKey));
         Stripe::setApiVersion(self::STRIPE_API_VERSION);
-
-        $this->signingSecret = Craft::parseEnv($this->signingSecret);
     }
 
     /**
@@ -133,7 +155,7 @@ abstract class Gateway extends BaseGateway
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
 
-        $secret = $this->signingSecret;
+        $secret = Craft::parseEnv($this->signingSecret);
         $stripeSignature = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
         if (!$secret || !$stripeSignature) {

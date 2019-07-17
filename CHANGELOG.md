@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a bug where Webhook Signing Secret setting could not be set to an environment variable. ([#61](https://github.com/craftcms/commerce-stripe/issues/61))
+
 ## 2.0.1.2 - 2019-07-08
 
 ### Fixed
