@@ -208,10 +208,15 @@ class PaymentIntents extends BaseGateway
                 'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             ]);
 
-            // Fetch the new intent data
-            $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
-            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
-            $paymentIntentsService->savePaymentIntent($paymentIntent);
+            // Entirely possible there's no payment intent stored locally.
+            // Most likely case being a guest user purchase for which we're unable
+            // to keep track of Stripe customer.
+            if ($paymentIntent) {
+                // Fetch the new intent data
+                $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
+                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntentsService->savePaymentIntent($paymentIntent);
+            }
 
             return $this->createPaymentResponseFromApiResource($refund);
         } catch (\Exception $exception) {
