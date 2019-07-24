@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Changed
+- Update Craft Commerce requirements to allow for Craft Commerce 3.
+
 ### Fixed
 - Fixed a bug where Webhook Signing Secret setting could not be set to an environment variable. ([#61](https://github.com/craftcms/commerce-stripe/issues/61))
 - Fixed a bug where Commerce wouldn't correctly refund purchases by guest users using Payment Intents gateway. ([#64](https://github.com/craftcms/commerce-stripe/issues/64))
