@@ -7,7 +7,9 @@
             <input type="hidden" name="stripe-line1" value="{{ billingAddress.address1 }}" />
             <input type="hidden" name="stripe-postal-code" value="{{ billingAddress.zipCode }}" />
             <input type="hidden" name="stripe-city" value="{{ billingAddress.city }}" />
-            <input type="hidden" name="stripe-country" value="{{ billingAddress.country.iso }}" />
+            {% if billingAddress.country is not null %}
+                <input type="hidden" name="stripe-country" value="{{ billingAddress.country.iso }}" />
+            {% endif %}
             <input type="hidden" name="stripe-state" value="{{ billingAddress.state }}" />
         </div>
     {% endif %}
