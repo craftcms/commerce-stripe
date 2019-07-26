@@ -47,3 +47,11 @@
     on: gateway.sendReceiptEmail,
     errors: gateway.getErrors('sendReceiptEmail'),
 }) }}
+
+{{ lightswitchField({
+    label: "Include Stripe assets?"|t('commerce-stripe'),
+    instructions: "Disable this option to build your own Stripe Elements implementation.",
+    name: 'includeAssets',
+    on: gateway.includeAssets,
+    errors: gateway.getErrors('includeAssets'),
+}) }}

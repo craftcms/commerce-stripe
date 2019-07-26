@@ -67,6 +67,12 @@ class PaymentIntents extends BaseGateway
      */
     public $signingSecret;
 
+    /**
+     * @var bool
+     */
+    public $includeAssets;
+
+    
     // Public methods
     // =========================================================================
 
@@ -110,8 +116,10 @@ class PaymentIntents extends BaseGateway
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
-        $view->registerJsFile('https://js.stripe.com/v3/');
-        $view->registerAssetBundle(IntentsFormAsset::class);
+        if ($this->includeAssets) {
+            $view->registerJsFile('https://js.stripe.com/v3/');
+            $view->registerAssetBundle(IntentsFormAsset::class);
+        }
 
         $html = $view->renderTemplate('commerce-stripe/paymentForms/intentsForm', $params);
         $view->setTemplateMode($previousMode);

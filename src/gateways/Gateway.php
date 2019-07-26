@@ -102,6 +102,12 @@ class Gateway extends BaseGateway
      */
     public $signingSecret;
 
+    /**
+     * @var bool
+     */
+    public $includeAssets;
+
+
     // Public methods
     // =========================================================================
 
@@ -145,8 +151,10 @@ class Gateway extends BaseGateway
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
-        $view->registerJsFile('https://js.stripe.com/v3/');
-        $view->registerAssetBundle(ChargeFormAsset::class);
+        if ($this->includeAssets) {
+            $view->registerJsFile('https://js.stripe.com/v3/');
+            $view->registerAssetBundle(ChargeFormAsset::class);
+        }
 
         $html = $view->renderTemplate('commerce-stripe/paymentForms/chargeForm', $params);
         $view->setTemplateMode($previousMode);
