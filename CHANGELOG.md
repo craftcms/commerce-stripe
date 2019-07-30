@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+### Added
+- Added support for resolving subscription billing issues.
+
 ### Fixed
 - Fixed a bug where payment forms would sometimes throw an error. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
 
