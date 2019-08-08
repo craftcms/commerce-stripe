@@ -6,7 +6,7 @@
 - Added support for resolving subscription billing issues.
 
 ### Changed
-- Update Craft Commerce requirements to require Craft Commerce 3 Alpha 2.
+- Update Craft Commerce requirements to require Craft Commerce 2.2.
 
 ### Fixed
 - Fixed a bug where payment forms would sometimes throw an error. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
