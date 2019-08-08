@@ -93,6 +93,10 @@ class PaymentIntentResponse implements RequestResponseInterface
     public function getCode(): string
     {
         if (empty($this->data['code'])) {
+            if (!empty($this->data['last_payment_error'])) {
+                return $this->data['last_payment_error']['code'];
+            }
+
             return '';
         }
 
@@ -113,6 +117,14 @@ class PaymentIntentResponse implements RequestResponseInterface
     public function getMessage(): string
     {
         if (empty($this->data['message'])) {
+            if (!empty($this->data['last_payment_error'])) {
+                if ($this->data['last_payment_error']['code'] === 'payment_intent_authentication_failure') {
+                    return 'The provided payment method has failed authentication.';
+                }
+
+                return $this->data['last_payment_error']['message'];
+            }
+
             return '';
         }
 

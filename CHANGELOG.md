@@ -15,6 +15,7 @@
 ### Fixed
 - Fixed a bug where payment forms would sometimes throw an error. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
 - Fixed a PHP error when retrieving the subscriptions next payment amount. ([#71](https://github.com/craftcms/commerce-stripe/issues/71))
+- Fixed a bug where failed 3DS authentications would have no error code and error message.
 
 ## 2.1.0 - 2019-07-24
 
