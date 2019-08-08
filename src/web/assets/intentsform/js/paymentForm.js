@@ -6,142 +6,154 @@ function initStripe() {
         $('.stripe-payment-intents-form').each(function() {
             $container = $(this);
 
+            var handlerInstance = new PaymentIntentsHandler($container.data('publishablekey'));
+            $container.data('handlerInstance', handlerInstance);
+
             if ($container.data('scenario') == 'payment') {
-                paymentForm();
+                handlerInstance.displayPaymentForm();
             }
 
             if ($container.data('scenario') == '3ds') {
-                perform3ds();
+                handlerInstance.perform3dsAuthentication();
             }
 
         });
     }
 }
 
-function perform3ds() {
-    $('.payment-form-fields').remove();
-    var stripe = Stripe($container.data('publishablekey'));
+class PaymentIntentsHandler {
 
-    stripe.handleCardPayment($container.data('client-secret')).then(function(result) {
-        if (result.error) {
-            alert(result.error.message);
-        }
+    constructor(publishableKey) {
+        this.stripeInstance = Stripe(publishableKey);
+    }
 
-        location.reload();
-    });
-}
+    perform3dsAuthentication(card)  {
 
-function paymentForm() {
-    $('.payment-form-fields').removeClass('hidden');
-    function updateErrorMessage(event) {
-        var displayError = $('.card-errors', $container).get(0);
+        this.displayMessage('Please wait, processing payment...');
+        this.stripeInstance.handleCardPayment($container.data('client-secret'), card).then(function(result) {
+            if (result.error) {
+                this.displayMessage(result.error.message);
+                this.displayPaymentForm();
+            } else {
+                location.reload();
+            }
+        }.bind(this));
+    }
 
+    displayStripeMessage(event) {
         if (event.error) {
-            displayError.textContent = event.error.message;
+            this.displayMessage(event.error.message);
         } else {
-            displayError.textContent = '';
+            this.displayMessage('');
         }
+    }
+
+    displayMessage(message) {
+
+        var messageContainer = $('.card-errors', $container).get(0);
+
+        messageContainer.textContent = message;
 
         if ($('.modal').data('modal')) {
             $('.modal').data('modal').updateSizeAndPosition();
         }
     }
 
-    var stripe = Stripe($container.data('publishablekey'));
-    var elements = stripe.elements();
+    displayPaymentForm() {
+        $('.payment-form-fields').removeClass('hidden');
 
-    var style = {
-        base: {
-            // Add your base input styles here. For example:
-            fontSize: '14px',
-            lineHeight: '21px'
-        }
-    };
+        var elements = this.stripeInstance.elements();
 
-    // Create an instance of the card Element
-    var card = elements.create('card', {
-            style: style,
-            hidePostalCode: true
-        }
-    );
-
-    card.addEventListener('change', updateErrorMessage);
-
-    // Add an instance of the card Element into the `card-element` <div>
-    card.mount($('.card-data', $container).empty().get(0));
-
-    var $form = $('form', $container);
-
-    if ($form.length === 0) {
-        $form = $container.parents('form');
-    }
-
-    // Remove already bound events
-    $form.off('submit');
-
-    $form.on('submit', function(ev) {
-        ev.preventDefault();
-
-        // If form submitted already, disregard.
-        if ($form.data('processing')) {
-            return false;
-        }
-
-        $form.data('processing', true);
-
-        // Compose card holder info
-        var cardHolderName, orderEmail, ownerAddress;
-
-        if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0) {
-            cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
-        }
-
-        if ($('.stripe-address', $form).length > 0) {
-            ownerAddress = {
-                'line1': $('input[name=stripe-line1]', $form).val(),
-                'city': $('input[name=stripe-city]', $form).val(),
-                'postal_code': $('input[name=stripe-postal-code]', $form).val(),
-                'country': $('input[name=stripe-country]', $form).val(),
-            };
-        }
-
-        // If client secret is present, that's a pretty good indicator that things should be handled on page.
-        if ($container.data('client-secret')) {
-            stripe.handleCardPayment($container.data('client-secret'), card).then(function(result) {
-                if (result.error) {
-                    alert(result.error.message);
-                }
-
-                location.reload();
-            });
-
-            return;
-        }
-
-        orderEmail = $('input[name=orderEmail]').val();
-        var paymentData = {
-            billing_details: {
-                name: cardHolderName,
-                email: orderEmail,
-                address: ownerAddress
+        var style = {
+            base: {
+                // Add your base input styles here. For example:
+                fontSize: '14px',
+                lineHeight: '21px'
             }
         };
 
-        // Tokenize the credit card details and create a payment source
-        stripe.createPaymentMethod('card', card, paymentData).then(function(result) {
-            if (result.error) {
-                updateErrorMessage(result);
-                $form.data('processing', false);
-            } else {
-                // Add the payment source token to the form.
-                $form.append($('<input type="hidden" name="paymentMethodId"/>').val(result.paymentMethod.id));
-                $form.get(0).submit();
+        // Create an instance of the card Element
+        var card = elements.create('card', {
+                style: style,
+                hidePostalCode: true
             }
-        });
-    });
+        );
 
-    if ($('.modal').data('modal')) {
-        $('.modal').data('modal').updateSizeAndPosition();
+        card.addEventListener('change', this.displayStripeMessage.bind(this));
+
+        // Add an instance of the card Element into the `card-element` <div>
+        card.mount($('.card-data', $container).empty().get(0));
+
+        var $form = $('form', $container);
+
+        if ($form.length === 0) {
+            $form = $container.parents('form');
+        }
+
+        // Remove already bound events
+        $form.off('submit');
+        $form.data('processing', false);
+
+        $form.on('submit', function(ev) {
+            ev.preventDefault();
+
+            // If form submitted already, disregard.
+            if ($form.data('processing')) {
+                return false;
+            }
+
+            $form.data('processing', true);
+
+            // Compose card holder info
+            var cardHolderName, orderEmail, ownerAddress;
+
+            if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0) {
+                cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
+            }
+
+            if ($('.stripe-address', $form).length > 0) {
+                ownerAddress = {
+                    'line1': $('input[name=stripe-line1]', $form).val(),
+                    'city': $('input[name=stripe-city]', $form).val(),
+                    'postal_code': $('input[name=stripe-postal-code]', $form).val(),
+                    'country': $('input[name=stripe-country]', $form).val(),
+                };
+            }
+
+
+            // If client secret is present, that's a pretty good indicator that things should be handled on page.
+            if ($container.data('client-secret')) {
+                this.perform3dsAuthentication(card);
+
+                return;
+            }
+
+            // This section is for handling things on server end
+            orderEmail = $('input[name=orderEmail]').val();
+            var paymentData = {
+                billing_details: {
+                    name: cardHolderName,
+                    email: orderEmail,
+                    address: ownerAddress
+                }
+            };
+
+            // Tokenize the credit card details and create a payment source
+            this.stripeInstance.createPaymentMethod('card', card, paymentData).then(function(result) {
+                if (result.error) {
+                    this.displayMessage('Please wait, processing payment...');
+                    $form.data('processing', false);
+                } else {
+                    // Add the payment source token to the form.
+                    $form.append($('<input type="hidden" name="paymentMethodId"/>').val(result.paymentMethod.id));
+                    $form.get(0).submit();
+                }
+            });
+        }.bind(this));
+
+        if ($('.modal').data('modal')) {
+            $('.modal').data('modal').updateSizeAndPosition();
+        }
     }
 }
 
