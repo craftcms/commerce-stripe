@@ -106,7 +106,7 @@ function paymentForm() {
         }
 
         // If client secret is present, that's a pretty good indicator that things should be handled on page.
-        if ($container.data('client-secret').length) {
+        if ($container.data('client-secret')) {
             stripe.handleCardPayment($container.data('client-secret'), card).then(function(result) {
                 if (result.error) {
                     alert(result.error.message);
