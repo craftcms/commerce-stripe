@@ -15,13 +15,14 @@ use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
-use craft\commerce\models\subscriptions\SubscriptionForm;
+use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
+use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
 use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
@@ -266,8 +267,9 @@ class PaymentIntents extends BaseGateway
      * @inheritdoc
      * @throws SubscriptionException if there was a problem subscribing to the plan
      */
-    public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
+    public function subscribe(User $user, BasePlan $plan, BaseSubscriptionForm $parameters): SubscriptionResponseInterface
     {
+        /** @var SubscriptionForm $parameters */
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
         $paymentMethods = PaymentMethod::all(['customer' => $customer->reference, 'type' => 'card']);
 
@@ -282,6 +284,8 @@ class PaymentIntents extends BaseGateway
 
         if ($parameters->trialDays !== null) {
             $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
+        } elseif ($parameters->trialEnd !== null) {
+            $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;;
         } else {
             $subscriptionParameters['trial_from_plan'] = true;
         }

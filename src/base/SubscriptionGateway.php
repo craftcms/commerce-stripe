@@ -15,12 +15,13 @@ use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\Currency;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
-use craft\commerce\models\subscriptions\SubscriptionForm;
+use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
+use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
 use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
@@ -176,7 +177,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * @inheritdoc
      */
-    public function getSubscriptionFormModel(): SubscriptionForm
+    public function getSubscriptionFormModel(): BaseSubscriptionForm
     {
         return new SubscriptionForm();
     }
@@ -403,6 +404,10 @@ abstract class SubscriptionGateway extends Gateway
             ]
         ];
         $stripeSubscription->prorate = (bool)$parameters->prorate;
+
+        if ($parameters->billingCycleAnchor) {
+            $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
+        }
 
         $response = $this->createSubscriptionResponse($stripeSubscription->save());
 

@@ -4,9 +4,13 @@
 
 ### Added
 - Added support for resolving subscription billing issues.
+- Added `craft\commerce\stripe\models\forms\Subscription`.
+- Added `craft\commerce\stripe\models\forms\SwitchPlans::$billingCycleAnchor`.
 
 ### Changed
 - Update Craft Commerce requirements to require Craft Commerce 2.2.
+- Improved support for specifying trial when starting a subscription.
+- Improved support for specifying billing cycle changes when switching subscription plans.
 
 ### Fixed
 - Fixed a bug where payment forms would sometimes throw an error. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))

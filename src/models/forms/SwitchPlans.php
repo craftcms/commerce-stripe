@@ -20,12 +20,17 @@ class SwitchPlans extends SwitchPlansForm
     /**
      * Whether plan change should be prorated
      *
-     * @var int
+     * @var bool
      */
     public $prorate = false;
 
     /**
-     * @var bool whether the plan change should be billed immediately.
+     * @var bool Whether the plan change should be billed immediately.
      */
     public $billImmediately = false;
+
+    /**
+     * @var bool The billing cycle anchor. Can be set to `now` or `unchanged` (default).
+     */
+    public $billingCycleAnchor;
 }
