@@ -42,6 +42,11 @@ The old “Stripe” gateway has been renamed to “Stripe Charge”, and is now
 To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
  
  > Note: A “Stripe Charge” gateway is also available, but it is deprecated. (See [Changes in 2.0](#changes-in-2-0).)
+ 
+ In order for the gateway to work properly, the following settings are required:
+ 
+* Publishable API Key
+* Secret API Key
 
 ## Payment security enforcement
 
@@ -49,7 +54,9 @@ This plugin does not allow submitting credit card details directly. Instead, you
 
 ## Webhooks
 
-### Configure Stripe
+Setting up webhooks support requires configuration on both the Stripe side and the gateway plugin side.
+
+### Configuring Stripe
 
 Set up a webhook endpoint in your Stripe dashboard API settings. The URL for this endpoint can be found in your Commerce Stripe gateway settings.
 
@@ -76,9 +83,9 @@ However, it is strongly recommended to enable the following events as well to en
 * `customer.subscription.updated`
 * `invoice.payment_failed`
 
-### Configure the gateway
+### Configuring the gateway
 
-When the endpoint has been set up, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the appropriate field.
+When you've set up the endpoint, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
 
 ## Configuration settings
 
