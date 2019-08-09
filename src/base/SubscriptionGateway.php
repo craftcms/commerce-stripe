@@ -413,10 +413,14 @@ abstract class SubscriptionGateway extends Gateway
 
         // Bill immediately only for non-trials
         if (!$subscription->getIsOnTrial() && $parameters->billImmediately) {
-            StripeInvoice::create([
-                'customer' => $stripeSubscription->customer,
-                'subscription' => $stripeSubscription->id
-            ]);
+            try {
+                StripeInvoice::create([
+                    'customer' => $stripeSubscription->customer,
+                    'subscription' => $stripeSubscription->id
+                ]);
+            } catch (\Throwable $exception) {
+                // Or, maybe, Stripe already invoiced them because reasons.
+            }
         }
 
         return $response;
