@@ -625,7 +625,7 @@ abstract class SubscriptionGateway extends Gateway
         $canceledAt = $subscriptionData['canceled_at'];
         $endedAt = $subscriptionData['ended_at'];
         $status = $subscriptionData['status'];
-        
+
         switch ($status) {
             // Somebody didn't manage to provide/authenticate a payment method
             case 'incomplete_expired':

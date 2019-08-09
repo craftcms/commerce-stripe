@@ -520,6 +520,7 @@ class PaymentIntents extends BaseGateway
         ]);
 
         $subscription->setSubscriptionData($stripeSubscription->jsonSerialize());
+        $this->setSubscriptionStatusData($subscription);
         Craft::$app->getElements()->saveElement($subscription);
 
         return $subscription;
