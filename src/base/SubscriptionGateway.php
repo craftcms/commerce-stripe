@@ -582,10 +582,6 @@ abstract class SubscriptionGateway extends Gateway
     protected function handleSubscriptionUpdated(array $data)
     {
         $stripeSubscription = $data['data']['object'];
-        $canceledAt = $data['data']['object']['canceled_at'];
-        $endedAt = $data['data']['object']['ended_at'];
-        $status = $data['data']['object']['status'];
-
         $subscription = Subscription::find()->anyStatus()->reference($stripeSubscription['id'])->one();
 
         if (!$subscription) {
@@ -599,39 +595,7 @@ abstract class SubscriptionGateway extends Gateway
 
             $subscription->setSubscriptionData($data['data']['object']);
 
-            switch ($status) {
-                // Somebody didn't manage to provide/authenticate a payment method
-                case 'incomplete_expired':
-                    $subscription->isExpired = true;
-                    $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
-                    $subscription->isCanceled = false;
-                    $subscription->dateCanceled = null;
-                    $subscription->nextPaymentDate = null;
-                    break;
-                // Definitely not suspended
-                case 'active':
-                    $subscription->isSuspended = false;
-                    $subscription->dateSuspended = null;
-                    break;
-                // Suspend this and make a guess at the suspension date
-                case 'past_due':
-                    $timeLastInvoiceCreated = $data['data']['object']['latest_invoice']['created'] ?? null;
-                    $dateSuspended = $timeLastInvoiceCreated ? DateTimeHelper::toDateTime($timeLastInvoiceCreated) : null;
-                    $subscription->dateSuspended = $subscription->isSuspended ? $subscription->dateSuspended : $dateSuspended;
-                    $subscription->isSuspended = true;
-                    break;
-                case 'canceled':
-                    $subscription->isExpired = true;
-                    $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
-            }
-
-            // Make sure we mark this as started, if appropriate
-            $subscription->hasStarted = !in_array($status, ['incomplete', 'incomplete_expired']);
-
-            // Update all the other tidbits
-            $subscription->isCanceled = (bool)$canceledAt;
-            $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
-            $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
+            $this->setSubscriptionStatusData($subscription);
 
             if (empty($data['data']['object']['plan'])) {
                 Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
@@ -648,6 +612,53 @@ abstract class SubscriptionGateway extends Gateway
 
             Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
         }
+    }
+
+    /**
+     * Set the various status properties on a Subscription by the subscription data set on it.
+     *
+     * @param Subscription $subscription
+     */
+    protected function setSubscriptionStatusData(Subscription $subscription)
+    {
+        $subscriptionData = $subscription->getSubscriptionData();
+        $canceledAt = $subscriptionData['canceled_at'];
+        $endedAt = $subscriptionData['ended_at'];
+        $status = $subscriptionData['status'];
+        
+        switch ($status) {
+            // Somebody didn't manage to provide/authenticate a payment method
+            case 'incomplete_expired':
+                $subscription->isExpired = true;
+                $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
+                $subscription->isCanceled = false;
+                $subscription->dateCanceled = null;
+                $subscription->nextPaymentDate = null;
+                break;
+            // Definitely not suspended
+            case 'active':
+                $subscription->isSuspended = false;
+                $subscription->dateSuspended = null;
+                break;
+            // Suspend this and make a guess at the suspension date
+            case 'past_due':
+                $timeLastInvoiceCreated = $subscriptionData['latest_invoice']['created'] ?? null;
+                $dateSuspended = $timeLastInvoiceCreated ? DateTimeHelper::toDateTime($timeLastInvoiceCreated) : null;
+                $subscription->dateSuspended = $subscription->isSuspended ? $subscription->dateSuspended : $dateSuspended;
+                $subscription->isSuspended = true;
+                break;
+            case 'canceled':
+                $subscription->isExpired = true;
+                $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
+        }
+
+        // Make sure we mark this as started, if appropriate
+        $subscription->hasStarted = !in_array($status, ['incomplete', 'incomplete_expired']);
+
+        // Update all the other tidbits
+        $subscription->isCanceled = (bool)$canceledAt;
+        $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
+        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($subscriptionData['current_period_end']);
     }
 
     /**
