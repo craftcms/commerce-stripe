@@ -430,6 +430,37 @@ abstract class SubscriptionGateway extends Gateway
         return $response;
     }
 
+    /**
+     * Preview a subscription plan switch cost for a subscription.
+     *
+     * @param Subscription $subscription
+     * @param BasePlan $plan
+     * @return float
+     */
+    public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
+    {
+        /** @var StripeSubscription $stripeSubscription */
+        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+
+        $items = [
+            [
+                'id' => $stripeSubscription->items->data[0]->id,
+                'plan' => $plan->reference,
+            ],
+        ];
+
+        $invoice = StripeInvoice::upcoming([
+            'customer' => $stripeSubscription->customer,
+            'subscription' => $subscription->reference,
+            'subscription_items' => $items,
+            'subscription_billing_cycle_anchor' => 'now',
+        ]);
+
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
+
+        return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
+    }
+
     // Protected methods
     // =========================================================================
 
