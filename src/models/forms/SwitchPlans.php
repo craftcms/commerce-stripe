@@ -33,4 +33,9 @@ class SwitchPlans extends SwitchPlansForm
      * @var bool The billing cycle anchor. Can be set to `now` or `unchanged` (default).
      */
     public $billingCycleAnchor;
+
+    /**
+     * @var int Timestamp on which to base the proration calculation
+     */
+    public $prorationDate;
 }

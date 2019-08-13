@@ -409,6 +409,10 @@ abstract class SubscriptionGateway extends Gateway
             $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
         }
 
+        if ($parameters->prorationDate) {
+            $stripeSubscription->proration_date = $parameters->prorationDate;
+        }
+
         $response = $this->createSubscriptionResponse($stripeSubscription->save());
 
         // Bill immediately only for non-trials
