@@ -144,7 +144,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getNextPaymentAmount(Subscription $subscription): string
     {
-        $data = Json::decode($subscription->subscriptionData);
+        $data = $subscription->subscriptionData;
         $currencyCode = strtoupper($data['plan']['currency']);
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
 
