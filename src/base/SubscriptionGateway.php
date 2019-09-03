@@ -201,6 +201,7 @@ abstract class SubscriptionGateway extends Gateway
                 continue;
             }
 
+            $data['created'] = isset($data['date']) && $data['date'] ? $data['date'] : $data['created'];
             $payments[$data['created']] = $this->createSubscriptionPayment($data, $currency);
         }
 
