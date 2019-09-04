@@ -172,7 +172,11 @@ class PaymentIntents extends BaseGateway
         $intentData = $stripePaymentIntent->jsonSerialize();
 
         if (!empty($intentData['payment_method'])) {
-            $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
+            try {
+                $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
+            } catch (\Exception $exception) {
+                return $this->createPaymentResponseFromError($exception);
+            }
         }
 
         return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
