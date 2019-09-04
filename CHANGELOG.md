@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.1.2 - 2019-09-04
 
 ### Fixed
 - Fixed a bug where payment form errors were not being caught and returned. ([#75](https://github.com/craftcms/commerce-stripe/issues/75))
