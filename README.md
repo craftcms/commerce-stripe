@@ -148,7 +148,7 @@ use yii\base\Event;
 
 Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
   if ($e->transaction->type === 'refund') {
-    $e->request['someKey] = 'some value';
+    $e->request['someKey'] = 'some value';
   }
 });
 ```

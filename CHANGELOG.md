@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.1.2 - 2019-09-04
 
 ### Added
 - Added support for resolving subscription billing issues.
