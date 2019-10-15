@@ -203,6 +203,21 @@ class PaymentIntents extends BaseGateway
             throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
         }
 
+        // Are we dealing with a transaction that was created under the previous 'Charge' gateway?
+        if (substr($transaction->reference, 0, 3) === "ch_") {
+            try {
+                $request = [
+                    'charge' => $transaction->reference,
+                    'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+                ];
+                $refund = Refund::create($request);
+
+                return $this->createPaymentResponseFromApiResource($refund);
+            } catch (\Exception $exception) {
+                return $this->createPaymentResponseFromError($exception);
+            }
+        }
+
         $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
         $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
 
