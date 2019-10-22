@@ -21,6 +21,7 @@ use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
+use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Customer;
@@ -154,6 +155,7 @@ abstract class Gateway extends BaseGateway
     {
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
+        $response->format = Response::FORMAT_RAW;
 
         $secret = Craft::parseEnv($this->signingSecret);
         $stripeSignature = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
