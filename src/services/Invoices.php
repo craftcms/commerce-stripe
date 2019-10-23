@@ -68,7 +68,7 @@ class Invoices extends Component
     // =========================================================================
 
     /**
-     * Returns a customer by gateway and user id.
+     * Returns all invoices for a subscription by its id.
      *
      * @param int $subscriptionId The subscription id.
      * @return Invoice[]
@@ -78,6 +78,29 @@ class Invoices extends Component
         $results = $this->_createInvoiceQuery()
             ->where(['subscriptionId' => $subscriptionId])
             ->orderBy(['dateCreated' => SORT_DESC])
+            ->all();
+
+        $invoices = [];
+
+        foreach ($results as $result) {
+            $result['invoiceData'] = Json::decodeIfJson($result['invoiceData']);
+            $invoices[] = new Invoice($result);
+        }
+
+        return $invoices;
+    }
+
+    /**
+     * Returns all invoices for a user by its id.
+     *
+     * @param int $subscriptionId The subscription id.
+     * @return Invoice[]
+     */
+    public function getUserInvoices(int $userId): array
+    {
+        $results = $this->_createInvoiceQuery()
+            ->innerJoin(['{{%commerce_subscriptions}} subscriptions'], '[[subscriptions.id]] = [[invoices.subscriptionId]]')
+            ->where(['subscriptions.userId' => $userId])
             ->all();
 
         $invoices = [];
@@ -172,12 +195,12 @@ class Invoices extends Component
     {
         return (new Query())
             ->select([
-                'id',
-                'reference',
-                'subscriptionId',
-                'invoiceData',
+                'invoices.id',
+                'invoices.reference',
+                'invoices.subscriptionId',
+                'invoices.invoiceData',
             ])
-            ->from(['{{%stripe_invoices}}']);
+            ->from(['{{%stripe_invoices}} invoices']);
     }
 
 }

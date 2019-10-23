@@ -11,6 +11,8 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\elements\Subscription;
+use craft\commerce\errors\NotImplementedException;
 use craft\commerce\errors\PaymentException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\errors\TransactionException;
@@ -27,6 +29,7 @@ use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\Charge as PaymentForm;
 use craft\commerce\stripe\responses\ChargeResponse;
+use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\chargeform\ChargeFormAsset;
 use craft\elements\User;
 use craft\helpers\Json;
@@ -247,6 +250,16 @@ class Gateway extends BaseGateway
         return $this->createSubscriptionResponse($subscription);
     }
 
+    /**
+     * @inheritdoc
+     * @throws NotImplementedException always
+     */
+    public function getHasBillingIssues(Subscription $subscription): bool
+    {
+        throw new NotImplementedException('This gateway does not support that functionality');
+    }
+
+
     // Protected methods
     // =========================================================================
 
@@ -464,6 +477,30 @@ class Gateway extends BaseGateway
         }
 
         return true;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function hasBillingIssue(Subscription $subscription): bool
+    {
+        return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getBillingIssueDescription(Subscription $subscription): string
+    {
+        return '';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getBillingIssueResolveFormHtml(Subscription $subscription): string
+    {
+        return '';
     }
 
     // Protected methods

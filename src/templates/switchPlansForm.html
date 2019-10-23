@@ -19,6 +19,14 @@
                 {'label': 'Add to next invoice'|t('commerce-stripe'), value: (targetPlan.uid ~ ':0')|hash}
             ]
         }) }}
+        {{ forms.selectField ({
+            label: 'Reset billing cycle'|t,
+            name: 'billingCycleAnchor',
+            options: [
+                {'label': 'Reset billing cycle'|t('commerce-stripe'), value: (targetPlan.uid ~ ':now')|hash},
+                {'label': 'Keep the same billing cycle'|t('commerce-stripe'), value: (targetPlan.uid ~ ':unchanged')|hash}
+            ]
+        }) }}
     {% else %}
         {{ forms.field ({
             label: 'Billing'|t,

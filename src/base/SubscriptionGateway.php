@@ -15,12 +15,13 @@ use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\Currency;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
-use craft\commerce\models\subscriptions\SubscriptionForm;
+use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
+use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
 use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
@@ -176,7 +177,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * @inheritdoc
      */
-    public function getSubscriptionFormModel(): SubscriptionForm
+    public function getSubscriptionFormModel(): BaseSubscriptionForm
     {
         return new SubscriptionForm();
     }
@@ -405,17 +406,60 @@ abstract class SubscriptionGateway extends Gateway
         ];
         $stripeSubscription->prorate = (bool)$parameters->prorate;
 
+        if ($parameters->billingCycleAnchor) {
+            $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
+        }
+
+        if ($parameters->prorationDate) {
+            $stripeSubscription->proration_date = $parameters->prorationDate;
+        }
+
         $response = $this->createSubscriptionResponse($stripeSubscription->save());
 
         // Bill immediately only for non-trials
         if (!$subscription->getIsOnTrial() && $parameters->billImmediately) {
-            StripeInvoice::create([
-                'customer' => $stripeSubscription->customer,
-                'subscription' => $stripeSubscription->id
-            ]);
+            try {
+                StripeInvoice::create([
+                    'customer' => $stripeSubscription->customer,
+                    'subscription' => $stripeSubscription->id
+                ]);
+            } catch (\Throwable $exception) {
+                // Or, maybe, Stripe already invoiced them because reasons.
+            }
         }
 
         return $response;
+    }
+
+    /**
+     * Preview a subscription plan switch cost for a subscription.
+     *
+     * @param Subscription $subscription
+     * @param BasePlan $plan
+     * @return float
+     */
+    public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
+    {
+        /** @var StripeSubscription $stripeSubscription */
+        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+
+        $items = [
+            [
+                'id' => $stripeSubscription->items->data[0]->id,
+                'plan' => $plan->reference,
+            ],
+        ];
+
+        $invoice = StripeInvoice::upcoming([
+            'customer' => $stripeSubscription->customer,
+            'subscription' => $subscription->reference,
+            'subscription_items' => $items,
+            'subscription_billing_cycle_anchor' => 'now',
+        ]);
+
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
+
+        return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
     }
 
     // Protected methods
@@ -574,9 +618,7 @@ abstract class SubscriptionGateway extends Gateway
     protected function handleSubscriptionUpdated(array $data)
     {
         $stripeSubscription = $data['data']['object'];
-        $canceledAt = $data['data']['object']['canceled_at'];
-
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->one();
+        $subscription = Subscription::find()->anyStatus()->reference($stripeSubscription['id'])->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “' . $stripeSubscription['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
@@ -587,21 +629,72 @@ abstract class SubscriptionGateway extends Gateway
         // See if we care about this subscription at all
         if ($subscription) {
 
-            $subscription->isCanceled = (bool)$canceledAt;
-            $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
-            $subscription->nextPaymentDate = DateTimeHelper::toDateTime($data['data']['object']['current_period_end']);
+            $subscription->setSubscriptionData($data['data']['object']);
 
-            $planReference = $data['data']['object']['plan']['id'];
-            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
+            $this->setSubscriptionStatusData($subscription);
 
-            if ($plan) {
-                $subscription->planId = $plan->id;
+            if (empty($data['data']['object']['plan'])) {
+                Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
             } else {
-                Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
+                $planReference = $data['data']['object']['plan']['id'];
+                $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
+
+                if ($plan) {
+                    $subscription->planId = $plan->id;
+                } else {
+                    Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
+                }
             }
 
             Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
         }
+    }
+
+    /**
+     * Set the various status properties on a Subscription by the subscription data set on it.
+     *
+     * @param Subscription $subscription
+     */
+    protected function setSubscriptionStatusData(Subscription $subscription)
+    {
+        $subscriptionData = $subscription->getSubscriptionData();
+        $canceledAt = $subscriptionData['canceled_at'];
+        $endedAt = $subscriptionData['ended_at'];
+        $status = $subscriptionData['status'];
+
+        switch ($status) {
+            // Somebody didn't manage to provide/authenticate a payment method
+            case 'incomplete_expired':
+                $subscription->isExpired = true;
+                $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
+                $subscription->isCanceled = false;
+                $subscription->dateCanceled = null;
+                $subscription->nextPaymentDate = null;
+                break;
+            // Definitely not suspended
+            case 'active':
+                $subscription->isSuspended = false;
+                $subscription->dateSuspended = null;
+                break;
+            // Suspend this and make a guess at the suspension date
+            case 'past_due':
+                $timeLastInvoiceCreated = $subscriptionData['latest_invoice']['created'] ?? null;
+                $dateSuspended = $timeLastInvoiceCreated ? DateTimeHelper::toDateTime($timeLastInvoiceCreated) : null;
+                $subscription->dateSuspended = $subscription->isSuspended ? $subscription->dateSuspended : $dateSuspended;
+                $subscription->isSuspended = true;
+                break;
+            case 'canceled':
+                $subscription->isExpired = true;
+                $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
+        }
+
+        // Make sure we mark this as started, if appropriate
+        $subscription->hasStarted = !in_array($status, ['incomplete', 'incomplete_expired']);
+
+        // Update all the other tidbits
+        $subscription->isCanceled = (bool)$canceledAt;
+        $subscription->dateCanceled = $canceledAt ? DateTimeHelper::toDateTime($canceledAt) : null;
+        $subscription->nextPaymentDate = DateTimeHelper::toDateTime($subscriptionData['current_period_end']);
     }
 
     /**
