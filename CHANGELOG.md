@@ -7,6 +7,17 @@
 
 ## 2.1.2 - 2019-09-04
 
+### Added
+- Added support for resolving subscription billing issues.
+- Added `craft\commerce\stripe\models\forms\Subscription`.
+- Added `craft\commerce\stripe\models\forms\SwitchPlans::$billingCycleAnchor`.
+- Added `craft\commerce\stripe\services\Invoices::getUserInvoices()`.
+
+### Changed
+- Update Craft Commerce requirements to require Craft Commerce 2.2.
+- Improved support for specifying trial when starting a subscription.
+- Improved support for specifying billing cycle changes when switching subscription plans.
+
 ### Fixed
 - Fixed a bug where payment form errors were not being caught and returned. ([#75](https://github.com/craftcms/commerce-stripe/issues/75))
 - Fixed a PHP error caused by a change in the Stripe API.    
@@ -16,6 +27,7 @@
 ### Fixed
 - Fixed a bug where payment forms would sometimes throw an error. ([#59](https://github.com/craftcms/commerce-stripe/issues/59))
 - Fixed a PHP error when retrieving the subscriptions next payment amount. ([#71](https://github.com/craftcms/commerce-stripe/issues/71))
+- Fixed a bug where failed 3DS authentications would have no error code and error message.
 
 ## 2.1.0 - 2019-07-24
 
