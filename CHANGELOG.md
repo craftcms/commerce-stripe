@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased 2.2
+## 2.2.0 - 2019-10-23
 
 ### Fixed
 - Fixed a bug where Stripe webhook reponses could contain unnecessary JavaScript. ([##86](https://github.com/craftcms/commerce-stripe/issues/86))  
