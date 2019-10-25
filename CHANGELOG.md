@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unlreased
+
+### Fixed
+- Fixed a bug that caused the plan selection dropdown to have the incorrect item selected.
+
 ## 2.2.0 - 2019-10-23
 
 ### Fixed

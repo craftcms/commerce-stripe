@@ -41,3 +41,5 @@ $stripeButton.on('click', function(ev) {
         }
     });
 });
+
+$stripeButton.click();
