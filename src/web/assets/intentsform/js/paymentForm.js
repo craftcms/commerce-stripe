@@ -139,11 +139,11 @@ class PaymentIntentsHandler {
             };
 
             // Tokenize the credit card details and create a payment source
-            this.stripeInstance.createPaymentMethod('card', card, paymentData).then(function(result) {
+            this.stripeInstance.createPaymentMethod('card', card, paymentData).then(result => {
                 if (result.error) {
-                    this.displayMessage('Please wait, processing payment...');
                     $form.data('processing', false);
                 } else {
+                    this.displayMessage('Please wait, processing payment...');
                     // Add the payment source token to the form.
                     $form.append($('<input type="hidden" name="paymentMethodId"/>').val(result.paymentMethod.id));
                     $form.get(0).submit();
