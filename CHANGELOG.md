@@ -4,6 +4,7 @@
 
 ### Fixed
 - Fixed a bug that caused the plan selection dropdown to have the incorrect item selected.
+- Fixed a bug that caused an order to be marked as complete multiple times with the “Stripe Charge” gateway.
 
 ## 2.2.0 - 2019-10-23
 
