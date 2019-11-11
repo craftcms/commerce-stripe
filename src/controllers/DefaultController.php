@@ -38,13 +38,18 @@ class DefaultController extends BaseController
      */
     public function actionFetchPlans()
     {
-        try {
-            $this->requirePostRequest();
-            $this->requireAcceptsJson();
+        $this->requirePostRequest();
+        $this->requireAcceptsJson();
 
-            $request = Craft::$app->getRequest();
-            $gatewayId = $request->getRequiredBodyParam('gatewayId');
-            $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
+        $request = Craft::$app->getRequest();
+        $gatewayId = $request->getRequiredBodyParam('gatewayId');
+
+        if (!$gatewayId) {
+            return $this->asJson([]);
+        }
+
+        try {
+            $gateway = Commerce::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
 
             if (!$gateway || !$gateway instanceof SubscriptionGateway) {
                 throw new BadRequestHttpException('That is not a valid gateway id.');
