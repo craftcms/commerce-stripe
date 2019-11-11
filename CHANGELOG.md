@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.2.2 - 2019-11-11
+
+## Fixed
+- Fixed a PHP error when creating a new subscription plan. ([#91](https://github.com/craftcms/commerce-stripe/issues/91))
+
 ## 2.2.1 - 2019-10-29
 
 ### Fixed
