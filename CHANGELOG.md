@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.2.3 - 2019-12-12
 
 ### Fixed
 - Fixed a javascript error in Payment Intents `paymentForm.js` when using IE 11. ([#92](https://github.com/craftcms/commerce-stripe/issues/92))
