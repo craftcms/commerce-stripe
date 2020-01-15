@@ -285,14 +285,20 @@ class Gateway extends BaseGateway
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
-        $limit = 15;
+        $limit = 30;
+        $isOrderCompleted = false;
 
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the transactions that triggered the webhook
             sleep(1);
             $transaction = Commerce::getInstance()->getTransactions()->getTransactionByReferenceAndStatus($sourceId, TransactionRecord::STATUS_PROCESSING);
+
+            // TODO implement a more robust solution for waiting for an order to complete
+            if ($transaction && $order = $transaction->getOrder()) {
+                $isOrderCompleted = $order->isCompleted;
+            }
             $counter++;
-        } while (!$transaction && $counter < $limit);
+        } while (!$transaction && !$isOrderCompleted && $counter < $limit);
 
         if (!$transaction) {
             Craft::error('Transaction with the reference “' . $sourceId . '” and status “' . TransactionRecord::STATUS_PROCESSING . '” not found when processing webhook ' . $data['id'], 'stripe');

@@ -1,9 +1,20 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unlreased
+## 2.2.3 - 2019-12-12
+
+### Fixed
+- Fixed a javascript error in Payment Intents `paymentForm.js` when using IE 11. ([#92](https://github.com/craftcms/commerce-stripe/issues/92))
+
+## 2.2.2 - 2019-11-11
+
+### Fixed
+- Fixed a PHP error when creating a new subscription plan. ([#91](https://github.com/craftcms/commerce-stripe/issues/91))
+
+## 2.2.1 - 2019-10-29
 
 ### Fixed
 - Fixed a bug that caused the plan selection dropdown to have the incorrect item selected.
+- Fixed a bug that caused an order to be marked as complete multiple times with the “Stripe Charge” gateway.
 
 ## 2.2.0 - 2019-10-23
 
