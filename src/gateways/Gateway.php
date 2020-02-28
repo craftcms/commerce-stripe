@@ -259,20 +259,19 @@ class Gateway extends BaseGateway
         throw new NotImplementedException('This gateway does not support that functionality');
     }
 
-
-    // Protected methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
-    protected function handleWebhook(array $data) {
+    public function handleWebhook(array $data) {
         if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
             $this->handle3DSecureFlowEvent($data);
         }
 
         parent::handleWebhook($data);
     }
+
+    // Protected methods
+    // =========================================================================
 
     /**
      * Handle a 3D Secure related event.
