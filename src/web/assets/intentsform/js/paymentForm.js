@@ -40,7 +40,7 @@ function PaymentIntents(publishableKey, container) {
         var style = {
             base: {
                 // Add your base input styles here. For example:
-                fontSize: '14px',
+                fontSize: '16px',
                 lineHeight: '21px'
             }
         };

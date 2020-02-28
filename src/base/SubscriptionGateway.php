@@ -492,6 +492,33 @@ abstract class SubscriptionGateway extends Gateway
         return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
     }
 
+    /**
+     * @inheritdoc
+     */
+    public function handleWebhook(array $data)
+    {
+        switch ($data['type']) {
+            case 'plan.deleted':
+            case 'plan.updated':
+                $this->handlePlanEvent($data);
+                break;
+            case 'invoice.payment_succeeded':
+                $this->handleInvoiceSucceededEvent($data);
+                break;
+            case 'invoice.created':
+                $this->handleInvoiceCreated($data);
+                break;
+            case 'customer.subscription.deleted':
+                $this->handleSubscriptionExpired($data);
+                break;
+            case 'customer.subscription.updated':
+                $this->handleSubscriptionUpdated($data);
+                break;
+        }
+
+        parent::handleWebhook($data);
+    }
+
     // Protected methods
     // =========================================================================
 
@@ -745,33 +772,4 @@ abstract class SubscriptionGateway extends Gateway
 
         return $invoice;
     }
-
-    /**
-     * @inheritdoc
-     */
-    protected function handleWebhook(array $data)
-    {
-        switch ($data['type']) {
-            case 'plan.deleted':
-            case 'plan.updated':
-                $this->handlePlanEvent($data);
-                break;
-            case 'invoice.payment_succeeded':
-                $this->handleInvoiceSucceededEvent($data);
-                break;
-            case 'invoice.created':
-                $this->handleInvoiceCreated($data);
-                break;
-            case 'customer.subscription.deleted':
-                $this->handleSubscriptionExpired($data);
-                break;
-            case 'customer.subscription.updated':
-                $this->handleSubscriptionUpdated($data);
-                break;
-        }
-
-        parent::handleWebhook($data);
-    }
-
-
 }
