@@ -25,8 +25,8 @@ use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Customer;
-use Stripe\Error\Base;
-use Stripe\Error\Card as CardError;
+use Stripe\Exception\CardException;
+use Stripe\Exception\ExceptionInterface;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -387,13 +387,13 @@ abstract class Gateway extends BaseGateway
      */
     protected function createPaymentResponseFromError(\Exception $exception): RequestResponseInterface
     {
-        if ($exception instanceof CardError) {
+        if ($exception instanceof CardException) {
             $body = $exception->getJsonBody();
             $data = $body;
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
             $data['id'] = $body['error']['charge'];
-        } else if ($exception instanceof Base) {
+        } else if ($exception instanceof ExceptionInterface) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
             $data = $body;

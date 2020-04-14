@@ -214,7 +214,7 @@ use yii\base\Event;
 
 Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
     $order = $e->transaction->getOrder();
-    $orderStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
+    $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
     if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
         $order->orderStatusId = $paidStatus->id;
         Craft::$app->getElements()->saveElement($order);

@@ -1,5 +1,15 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.3.0 - 2020-04-14
+
+### Changed
+- Updated `stripe-php` dependency. ([#95](https://github.com/craftcms/commerce-stripe/issues/95))
+- JavaScript SDK is now loaded at the end of the body.
+- Gateway `handleWebhook()` methods are now public.
+
+### Fixed
+- Fixed a bug that could cause viewport zooming on mobile devices. ([#94](https://github.com/craftcms/commerce-stripe/issues/94))
+
 ## 2.2.3 - 2019-12-12
 
 ### Fixed

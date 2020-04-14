@@ -112,7 +112,7 @@ class PaymentIntents extends BaseGateway
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
-        $view->registerJsFile('https://js.stripe.com/v3/');
+        $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
         $view->registerAssetBundle(IntentsFormAsset::class);
 
         $html = $view->renderTemplate('commerce-stripe/paymentForms/intentsForm', $params);
@@ -132,7 +132,6 @@ class PaymentIntents extends BaseGateway
         } catch (\Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
-
     }
 
     /**
@@ -398,14 +397,10 @@ class PaymentIntents extends BaseGateway
         return in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid']) && in_array($intentData['status'], ['requires_payment_method', 'requires_confirmation', 'requires_action']);
     }
 
-
-    // Protected methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
-    protected function handleWebhook(array $data)
+    public function handleWebhook(array $data)
     {
         switch ($data['type']) {
             case 'invoice.payment_failed':
@@ -416,8 +411,12 @@ class PaymentIntents extends BaseGateway
         parent::handleWebhook($data);
     }
 
+    // Protected methods
+    // =========================================================================
+
     /**
      * Handle a failed invoice by updating the subscription data for the subscription it failed.
+     *
      * @param $data
      * @throws \Throwable
      * @throws \craft\errors\ElementNotFoundException
