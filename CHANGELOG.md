@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Changed
+- Updated `stripe-php` dependency. ([#95](https://github.com/craftcms/commerce-stripe/issues/95))
+
 ## 2.2.3 - 2019-12-12
 
 ### Fixed
