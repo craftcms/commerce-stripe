@@ -26,4 +26,9 @@ class Settings extends Model
      * @var bool Whether to attempt to charge any created invoice immediately instead of waiting 1-2 hours.
      */
     public $chargeInvoicesImmediately = false;
+
+    /**
+     * @var bool Whether to allow creation of a subscription for customers without any payment methods, useful for trials without taking payment up-front
+     */
+    public $allowSubscriptionWithoutPaymentMethod = false;
 }
