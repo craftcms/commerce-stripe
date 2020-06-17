@@ -290,7 +290,7 @@ abstract class Gateway extends BaseGateway
 
     /**
      * @return string
-     * @since 3.x
+     * @since 2.3.1
      */
     public function getTransactionHashFromWebhook()
     {
