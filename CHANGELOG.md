@@ -1,9 +1,14 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.3.1.1 - 2020-06-17
+
+### Fixed
+- Fixed minor typo.
+
 ## 2.3.1 - 2020-06-17
 
 ### Added
-- Added `craft\commerce\mollie\gateways\Gateway::getTransactionHashFromWebhook()` to support mutex lock when processing a webhook. ([#23](https://github.com/craftcms/commerce-mollie/issues/23))
+- Added `craft\commerce\stripe\gateways\Gateway::getTransactionHashFromWebhook()` to support mutex lock when processing a webhook.
 
 ## 2.3.0 - 2020-04-14
 
