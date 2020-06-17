@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.3.1.1 - 2020-06-17
+
+### Fixed
+- Fixed minor typo.
+
 ## 2.3.1 - 2020-06-17
 
 ### Added
