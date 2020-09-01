@@ -366,7 +366,7 @@ abstract class Gateway extends BaseGateway
         $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
         $request = array_merge($event->request, $request);
-        $request['metadata'] = array_merge($event->metadata, $metadata);
+        $request['metadata'] = array_merge($event->metadata, $event->request['metadata'], $metadata);
 
         if ($this->sendReceiptEmail) {
             $request['receipt_email'] = $transaction->getOrder()->email;
