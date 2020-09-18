@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a bug where changes to metadata in the `EVENT_BUILD_GATEWAY_REQUEST` event were being overridden. ([#120](https://github.com/craftcms/commerce-stripe/pull/120))
+
 ## 2.3.1.1 - 2020-06-17
 
 ### Fixed

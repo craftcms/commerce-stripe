@@ -363,10 +363,13 @@ abstract class Gateway extends BaseGateway
         ]);
 
         // TODO provide context
-        $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
+        if ($this->hasEventHandlers(self::EVENT_BUILD_GATEWAY_REQUEST)) {
+            $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
-        $request = array_merge($event->request, $request);
-        $request['metadata'] = array_merge($event->metadata, $metadata);
+            $request = array_replace_recursive($event->request, $request);
+            // TODO remove this line when the event `metadata` prop is removed
+            $request['metadata'] = array_replace_recursive($event->metadata, $request['metadata']);
+        }
 
         if ($this->sendReceiptEmail) {
             $request['receipt_email'] = $transaction->getOrder()->email;
