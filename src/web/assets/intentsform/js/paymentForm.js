@@ -90,6 +90,7 @@ function PaymentIntents(publishableKey, container) {
                     'city': $('input[name=stripe-city]', $form).val(),
                     'postal_code': $('input[name=stripe-postal-code]', $form).val(),
                     'country': $('input[name=stripe-country]', $form).val(),
+                    'state': $('input[name=stripe-state]', $form).val(),
                 };
             }
 
