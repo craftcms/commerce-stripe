@@ -84,6 +84,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormHtml(array $params)
     {
+        $this->configureStripeClient();
         $defaults = [
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
@@ -123,6 +124,7 @@ class PaymentIntents extends BaseGateway
 
     public function capture(Transaction $transaction, string $reference): RequestResponseInterface
     {
+        $this->configureStripeClient();
         try {
             /** @var PaymentIntent $intent */
             $intent = PaymentIntent::retrieve($reference);
@@ -139,6 +141,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormModel(): BasePaymentForm
     {
+        $this->configureStripeClient();
         return new PaymentForm();
     }
 
@@ -147,6 +150,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getResponseModel($data): RequestResponseInterface
     {
+        $this->configureStripeClient();
         return new PaymentIntentResponse($data);
     }
 
@@ -155,6 +159,7 @@ class PaymentIntents extends BaseGateway
      */
     public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
+        $this->configureStripeClient();
         $paymentIntentReference = Craft::$app->getRequest()->getParam('payment_intent');
         /** @var PaymentIntent $paymentIntent */
         $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentReference);
@@ -188,6 +193,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getSettingsHtml()
     {
+        $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/intentsSettings', ['gateway' => $this]);
     }
 
@@ -196,6 +202,7 @@ class PaymentIntents extends BaseGateway
      */
     public function refund(Transaction $transaction): RequestResponseInterface
     {
+        $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
@@ -249,6 +256,7 @@ class PaymentIntents extends BaseGateway
      */
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
+        $this->configureStripeClient();
         /** @var PaymentForm $sourceData */
         try {
             $stripeCustomer = $this->getStripeCustomer($userId);
@@ -287,6 +295,7 @@ class PaymentIntents extends BaseGateway
      */
     public function subscribe(User $user, BasePlan $plan, BaseSubscriptionForm $parameters): SubscriptionResponseInterface
     {
+        $this->configureStripeClient();
         /** @var SubscriptionForm $parameters */
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
         $paymentMethods = PaymentMethod::all(['customer' => $customer->reference, 'type' => 'card']);
@@ -332,6 +341,7 @@ class PaymentIntents extends BaseGateway
      */
     public function deletePaymentSource($token): bool
     {
+        $this->configureStripeClient();
         try {
             /** @var PaymentMethod $paymentMethod */
             $paymentMethod = PaymentMethod::retrieve($token);
@@ -348,6 +358,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getBillingIssueDescription(Subscription $subscription): string
     {
+        $this->configureStripeClient();
         $subscriptionData = $this->_getExpandedSubscriptionData($subscription);
         $intentData = $subscriptionData['latest_invoice']['payment_intent'];
 
@@ -368,6 +379,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getBillingIssueResolveFormHtml(Subscription $subscription): string
     {
+        $this->configureStripeClient();
         $subscriptionData = $this->_getExpandedSubscriptionData($subscription);
         $intentData = $subscriptionData['latest_invoice']['payment_intent'];
 
@@ -390,6 +402,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getHasBillingIssues(Subscription $subscription): bool
     {
+        $this->configureStripeClient();
         $subscription = $this->refreshSubscriptionData($subscription);
         $subscriptionData = $subscription->getSubscriptionData();
         $intentData = $subscriptionData['latest_invoice']['payment_intent'];
@@ -402,6 +415,7 @@ class PaymentIntents extends BaseGateway
      */
     public function handleWebhook(array $data)
     {
+        $this->configureStripeClient();
         switch ($data['type']) {
             case 'invoice.payment_failed':
                 $this->handleInvoiceFailed($data);
@@ -424,6 +438,7 @@ class PaymentIntents extends BaseGateway
      */
     protected function handleInvoiceFailed(array $data)
     {
+        $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
 
         // Sanity check
@@ -447,6 +462,7 @@ class PaymentIntents extends BaseGateway
      */
     protected function handleSubscriptionUpdated(array $data)
     {
+        $this->configureStripeClient();
         // Fetch expanded data
         $stripeSubscription = StripeSubscription::retrieve([
             'id' => $data['data']['object']['id'],
@@ -464,6 +480,7 @@ class PaymentIntents extends BaseGateway
      */
     protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
+        $this->configureStripeClient();
         /** @var PaymentForm $form */
         $requestData = $this->buildRequestData($transaction);
         $paymentMethodId = $form->paymentMethodId;
@@ -532,6 +549,7 @@ class PaymentIntents extends BaseGateway
      */
     protected function refreshSubscriptionData(Subscription $subscription)
     {
+        $this->configureStripeClient();
         $stripeSubscription = StripeSubscription::retrieve([
             'id' => $subscription->reference,
             'expand' => ['latest_invoice.payment_intent']
@@ -554,6 +572,7 @@ class PaymentIntents extends BaseGateway
      */
     private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
     {
+        $this->configureStripeClient();
         $stripePaymentIntent->confirm([
             'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
         ]);
@@ -567,6 +586,7 @@ class PaymentIntents extends BaseGateway
      */
     private function _getExpandedSubscriptionData(Subscription $subscription): array
     {
+        $this->configureStripeClient();
         $subscriptionData = $subscription->getSubscriptionData();
 
         if (empty($subscriptionData['latest_invoice']['payment_intent'])) {

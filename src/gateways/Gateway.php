@@ -121,6 +121,7 @@ class Gateway extends BaseGateway
      */
     public function getPaymentFormHtml(array $params)
     {
+        $this->configureStripeClient();
         $defaults = [
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
@@ -162,6 +163,7 @@ class Gateway extends BaseGateway
      */
     public function getSettingsHtml()
     {
+        $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/chargeSettings', ['gateway' => $this]);
     }
 
@@ -170,6 +172,7 @@ class Gateway extends BaseGateway
      */
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
+        $this->configureStripeClient();
         /** @var Payment $sourceData */
         $sourceData->token = $this->normalizePaymentToken((string)$sourceData->token);
 
@@ -208,6 +211,7 @@ class Gateway extends BaseGateway
      */
     public function subscribe(User $user, BasePlan $plan, SubscriptionForm $parameters): SubscriptionResponseInterface
     {
+        $this->configureStripeClient();
         try {
             $stripeCustomer = $this->getStripeCustomer($user->id);
         } catch (CustomerException $exception) {
@@ -256,13 +260,17 @@ class Gateway extends BaseGateway
      */
     public function getHasBillingIssues(Subscription $subscription): bool
     {
+        $this->configureStripeClient();
         throw new NotImplementedException('This gateway does not support that functionality');
     }
 
     /**
      * @inheritdoc
      */
-    public function handleWebhook(array $data) {
+    public function handleWebhook(array $data)
+    {
+
+        $this->configureStripeClient();
         if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
             $this->handle3DSecureFlowEvent($data);
         }
@@ -281,6 +289,8 @@ class Gateway extends BaseGateway
      */
     protected function handle3DSecureFlowEvent(array $data)
     {
+        $this->configureStripeClient();
+
         $dataObject = $data['data']['object'];
         $sourceId = $dataObject['id'];
         $counter = 0;
@@ -368,6 +378,7 @@ class Gateway extends BaseGateway
      */
     protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
+        $this->configureStripeClient();
         /** @var PaymentForm $form */
         $requestData = $this->buildRequestData($transaction);
         $paymentSource = $this->buildRequestPaymentSource($transaction, $form, $requestData);
@@ -402,6 +413,7 @@ class Gateway extends BaseGateway
      */
     public function getPaymentFormModel(): BasePaymentForm
     {
+        $this->configureStripeClient();
         return new PaymentForm();
     }
 
@@ -410,6 +422,7 @@ class Gateway extends BaseGateway
      */
     public function capture(Transaction $transaction, string $reference): RequestResponseInterface
     {
+        $this->configureStripeClient();
         try {
             /** @var Charge $charge */
             $charge = Charge::retrieve($reference);
@@ -426,6 +439,7 @@ class Gateway extends BaseGateway
      */
     public function refund(Transaction $transaction): RequestResponseInterface
     {
+        $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
@@ -450,6 +464,7 @@ class Gateway extends BaseGateway
      */
     public function getResponseModel($data): RequestResponseInterface
     {
+        $this->configureStripeClient();
         return new ChargeResponse($data);
     }
 
@@ -458,6 +473,7 @@ class Gateway extends BaseGateway
      */
     public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
+        $this->configureStripeClient();
         $sourceId = Craft::$app->getRequest()->getParam('source');
         /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
@@ -473,6 +489,7 @@ class Gateway extends BaseGateway
      */
     public function deletePaymentSource($token): bool
     {
+        $this->configureStripeClient();
         try {
             /** @var Source $source */
             $source = Source::retrieve($token);
@@ -489,6 +506,7 @@ class Gateway extends BaseGateway
      */
     public function hasBillingIssue(Subscription $subscription): bool
     {
+        $this->configureStripeClient();
         return false;
     }
 
@@ -497,6 +515,7 @@ class Gateway extends BaseGateway
      */
     public function getBillingIssueDescription(Subscription $subscription): string
     {
+        $this->configureStripeClient();
         return '';
     }
 
@@ -505,6 +524,7 @@ class Gateway extends BaseGateway
      */
     public function getBillingIssueResolveFormHtml(Subscription $subscription): string
     {
+        $this->configureStripeClient();
         return '';
     }
 
@@ -523,6 +543,7 @@ class Gateway extends BaseGateway
      */
     protected function buildRequestPaymentSource(Transaction $transaction, PaymentForm $paymentForm, array $request): ApiResource
     {
+        $this->configureStripeClient();
         // For 3D secure, make sure to set the redirect URL and the metadata flag, so we can catch it later.
         if ($paymentForm->threeDSecure) {
             unset($request['description'], $request['receipt_email']);
