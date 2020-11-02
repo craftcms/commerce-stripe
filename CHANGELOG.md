@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a bug that stopped multiple Stripe gateways from being used in the same installation. ([#124](https://github.com/craftcms/commerce-stripe/issues/124))
+
 ## 2.3.2 - 2020-09-24
 
 ### Fixed

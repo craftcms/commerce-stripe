@@ -117,9 +117,7 @@ abstract class Gateway extends BaseGateway
     {
         parent::init();
 
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey(Craft::parseEnv($this->apiKey));
-        Stripe::setApiVersion(self::STRIPE_API_VERSION);
+        $this->configureStripeClient();
     }
 
     /**
@@ -127,6 +125,7 @@ abstract class Gateway extends BaseGateway
      */
     public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
+        $this->configureStripeClient();
         return $this->authorizeOrPurchase($transaction, $form, false);
     }
 
@@ -136,6 +135,7 @@ abstract class Gateway extends BaseGateway
     public function completeAuthorize(Transaction $transaction): RequestResponseInterface
     {
         // It's exactly the same thing,
+        $this->configureStripeClient();
         return $this->completePurchase($transaction);
     }
 
@@ -144,6 +144,7 @@ abstract class Gateway extends BaseGateway
      */
     public function processWebHook(): WebResponse
     {
+        $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
         $response->format = Response::FORMAT_RAW;
@@ -196,6 +197,7 @@ abstract class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
+        $this->configureStripeClient();
         return $this->authorizeOrPurchase($transaction, $form);
     }
 
@@ -294,6 +296,7 @@ abstract class Gateway extends BaseGateway
      */
     public function getTransactionHashFromWebhook()
     {
+        $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
         if (!$rawData) {
             return null;
@@ -331,6 +334,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function buildRequestData(Transaction $transaction, $context = 'charge'): array
     {
+        $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
@@ -387,6 +391,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
+        $this->configureStripeClient();
         $data = $resource->jsonSerialize();
 
         return $this->getResponseModel($data);
@@ -402,6 +407,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function createPaymentResponseFromError(\Exception $exception): RequestResponseInterface
     {
+        $this->configureStripeClient();
         if ($exception instanceof CardException) {
             $body = $exception->getJsonBody();
             $data = $body;
@@ -432,6 +438,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function getStripeCustomer(int $userId): Customer
     {
+        $this->configureStripeClient();
         try {
             $user = Craft::$app->getUsers()->getUserById($userId);
             $customers = StripePlugin::getInstance()->getCustomers();
@@ -459,6 +466,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function normalizePaymentToken(string $token = ''): string
     {
+        $this->configureStripeClient();
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
                 /** @var Source $tokenSource */
@@ -498,6 +506,17 @@ abstract class Gateway extends BaseGateway
      */
     protected function handleWebhook(array $data)
     {
+        $this->configureStripeClient();
         // Do nothing
+    }
+
+    /**
+     * Sets the stripe global connection to this gateway API key
+     */
+    public function configureStripeClient()
+    {
+        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
+        Stripe::setApiKey(Craft::parseEnv($this->apiKey));
+        Stripe::setApiVersion(self::STRIPE_API_VERSION);
     }
 }
