@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- Fixed a bug that stopped multiple Stripe gateways from being used in the same installation. ([#124](https://github.com/craftcms/commerce-stripe/issues/124))
+- Fixed a bug that caused additional Stripe gateways configured in the same installation to fail. ([#124](https://github.com/craftcms/commerce-stripe/issues/124))
 
 ## 2.3.2 - 2020-09-24
 
