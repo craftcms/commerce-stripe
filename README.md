@@ -48,9 +48,15 @@ To add the Stripe payment gateway, go to Commerce → Settings → Gateways, cre
 * Publishable API Key
 * Secret API Key
 
-## Payment security enforcement
+## Payment process and security
 
-This plugin does not allow submitting credit card details directly. Instead, you must create a payment method before submitting the payment form. See [here](src/web/assets/intentsform/js/paymentForm.js) for an example on how it's done when calling the default `getPaymentFormHtml()` method on the gateway.
+This plugin does not allow submitting credit card details directly. Instead, you must create a payment method using the frontend Stripe JS API before submitting to the Craft Commerce payment `commerce/payments/pay` form action.
+
+This is done using the [Create Payment Method](https://stripe.com/docs/js/payment_methods/create_payment_method) method in the Stripe JS api to create the payment method ID.
+
+This repository has an example of doing so [here](src/web/assets/intentsform/js/paymentForm.js). This javascript is used when calling the default `getPaymentFormHtml()` method on the gateway to output the built in payment form.
+
+See the [Stripe JS](https://stripe.com/docs/js) docs for more information. 
 
 ## Webhooks
 
