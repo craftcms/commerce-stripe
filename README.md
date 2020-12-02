@@ -139,6 +139,7 @@ The plugin provides several events that allow you to modify the behaviour of you
 ### Payment request related events
 
 #### The `buildGatewayRequest` event
+
 Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
 
 There are some restrictions:
@@ -152,14 +153,19 @@ use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
-Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
-  if ($e->transaction->type === 'refund') {
-    $e->request['someKey'] = 'some value';
+Event::on(
+  StripeGateway::class, 
+  StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, 
+  function(BuildGatewayRequestEvent $e) {
+    if ($e->transaction->type === 'refund') {
+      $e->request['someKey'] = 'some value';
+    }
   }
-});
+);
 ```
 
 #### The `receiveWebhook` event
+
 Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless the Gateway has done something with the webhook or not.
 
 ```php
@@ -167,32 +173,43 @@ use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
-Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_WEBHOOK, function(ReceiveWebhookEvent $e) {
-  if ($e->webhookData['type'] == 'charge.dispute.created') {
-    if ($e->webhookData['data']['object']['amount'] > 1000000) {
-      // Be concerned that a USD 10,000 charge is being disputed.
+Event::on(
+  StripeGateway::class, 
+  StripeGateway::EVENT_RECEIVE_WEBHOOK, 
+  function(ReceiveWebhookEvent $e) {
+    if ($e->webhookData['type'] == 'charge.dispute.created') {
+      if ($e->webhookData['data']['object']['amount'] > 1000000) {
+        // Be concerned that a USD 10,000 charge is being disputed.
+      }
     }
   }
-});
+);
 ```
 
 ### Subscription events
 
 #### The `createInvoice` event
+
 Plugins get a chance to do something when an invoice is created on the Stripe gateway.
+
 ```php
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
 use yii\base\Event;
 
-Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
+Event::on(
+  StripeGateway::class, 
+  StripeGateway::EVENT_CREATE_INVOICE, 
+  function(CreateInvoiceEvent $e) {
     if ($e->invoiceData['billing'] === 'send_invoice') {
         // Forward this invoice to the accounting dpt.
     }
-});
+  }
+);
 ```
 
 #### The `beforeSubscribe` event
+
 Plugins get a chance to tweak subscription parameters when subscribing.
 
 ```php
@@ -200,16 +217,22 @@ use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
 use yii\base\Event;
 
-Event::on(StripeGateway::class, StripeGateway::EVENT_BEFORE_SUBSCRIBE, function(SubscriptionRequestEvent $e) {
+Event::on(
+  StripeGateway::class, 
+  StripeGateway::EVENT_BEFORE_SUBSCRIBE, 
+  function(SubscriptionRequestEvent $e) {
     $e->parameters['someKey'] = 'some value';
     unset($e->parameters['unneededKey']);
-});
+  }
+);
 ```
 
 ### Deprecated events
+
 The following events are deprecated as they are associated with the deprecated Stripe Charge gateway.
 
 #### The `receive3dsPayment` event
+
 Plugins get a chance to do something whenever a successful 3D Secure payment is received.
 
 ```php
@@ -218,12 +241,16 @@ use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\gateways\Gateway as StripeGateway;
 use yii\base\Event;
 
-Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
+Event::on(
+  StripeGateway::class, 
+  StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, 
+  function(Receive3dsPaymentEvent $e) {
     $order = $e->transaction->getOrder();
     $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
     if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
         $order->orderStatusId = $paidStatus->id;
         Craft::$app->getElements()->saveElement($order);
     }
-});
+  }
+);
 ```
