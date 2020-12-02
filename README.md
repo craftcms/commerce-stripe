@@ -30,7 +30,7 @@ cd /path/to/my-project.test
 composer require craftcms/commerce-stripe
 
 # tell Craft to install the plugin
-./craft install/plugin commerce-stripe
+php craft install/plugin commerce-stripe
 ```
 
 ## Changes in 2.0
