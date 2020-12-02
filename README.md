@@ -166,7 +166,7 @@ Event::on(
 
 #### The `receiveWebhook` event
 
-Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless the Gateway has done something with the webhook or not.
+Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless of whether or not the gateway has done something with the webhook.
 
 ```php
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
@@ -202,7 +202,7 @@ Event::on(
   StripeGateway::EVENT_CREATE_INVOICE, 
   function(CreateInvoiceEvent $e) {
     if ($e->invoiceData['billing'] === 'send_invoice') {
-        // Forward this invoice to the accounting dpt.
+        // Forward this invoice to the accounting department.
     }
   }
 );
