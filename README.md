@@ -8,7 +8,7 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 - Craft CMS 3.1.5 or later
 - Craft Commerce 2.2 or later
-- Stripe API version '2019-03-14'
+- Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
 
 ## Installation
 
