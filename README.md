@@ -97,7 +97,7 @@ When you've set up the endpoint, you can view the signing secret in its settings
 
 ### `chargeInvoicesImmediately`
 
-For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to true in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
+For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to `true` in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
 
 This setting affects all Stripe gateways on your Commerce installation.
 
