@@ -2,21 +2,21 @@
 
 <h1 align="center">Stripe for Craft Commerce</h1>
 
-This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce), with support for [Payment Intents](https://stripe.com/docs/payments/payment-intents) as well as traditional charges.
+This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce) supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and traditional charges.
 
 ## Requirements
 
-This plugin requires Craft 3.1.5 and Craft Commerce 2.2 or later.
-
-This plugin uses Stripe API version '2019-03-14'.
+- Craft CMS 3.1.5 or later
+- Craft Commerce 2.2 or later
+- Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
 
 ## Installation
 
-You can install this plugin from the Plugin Store or with Composer.
+You can install this plugin from the Plugin Store or using Composer.
 
 #### From the Plugin Store
 
-Go to the Plugin Store in your project’s Control Panel and search for “Stripe for Craft Commerce”. Then click on the “Install” button in its modal window.
+Go to the Plugin Store in your project’s control panel, search for “Stripe for Craft Commerce”, and choose **Install** in the plugin’s modal window.
 
 #### With Composer
 
@@ -35,53 +35,53 @@ php craft install/plugin commerce-stripe
 
 ## Changes in 2.0
 
-The old “Stripe” gateway has been renamed to “Stripe Charge”, and is now deprecated. A new “Stripe Payment Intents” gateway has been added which uses Stripe’s new [Payment Intents API](https://stripe.com/docs/payments/payment-intents), and utilizes [3D Secure 2](https://stripe.com/guides/3d-secure-2), which is easier to implement than the old 3D Secure standard and delivers a better customer experience. **Stripe will begin declining all EU charges using its old charge API on September 14, 2019,** so switching to the new Payment Intents gateway is highly recommended. (See Stripe’s [Strong Customer Authentication](https://stripe.com/guides/strong-customer-authentication) guide for more info.)
+We deprecated the original “Stripe” gateway as “Stripe Charge” and added a new “Stripe Payment Intents” gateway which uses Stripe’s [Payment Intents API](https://stripe.com/docs/payments/payment-intents) and [3D Secure 2](https://stripe.com/guides/3d-secure-2), which is easier to implement than the old 3D Secure standard and delivers a better customer experience.
+
+**Stripe began declining all EU charges using its old charge API on September 14, 2019,** so we highly recommend switching to the newer “Stripe Payment Intents” gateway. (Learn more by reading Stripe’s [Strong Customer Authentication](https://stripe.com/guides/strong-customer-authentication) guide.)
 
 ## Setup
 
-To add the Stripe payment gateway, go to Commerce → Settings → Gateways, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
+To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
  
- > Note: A “Stripe Charge” gateway is also available, but it is deprecated. (See [Changes in 2.0](#changes-in-2-0).)
+ > ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
  
- In order for the gateway to work properly, the following settings are required:
+In order for the gateway to work properly, the following settings are required:
  
 * Publishable API Key
 * Secret API Key
 
-## Payment process and security
+You can find these in your Stripe dashboard under **Developers** → **API keys**.
 
-This plugin does not allow submitting credit card details directly. Instead, you must create a payment method using the frontend Stripe JS API before submitting to the Craft Commerce payment `commerce/payments/pay` form action.
+## Payment Process and Security
 
-This is done using the [Create Payment Method](https://stripe.com/docs/js/payment_methods/create_payment_method) method in the Stripe JS api to create the payment method ID.
+This plugin relies on stored payment methods and doesn’t allow directly-submitted credit card details. To check out, a customer must designate a `paymentMethodId` parameter for the Commerce `commerce/payments/pay` form action.
 
-This repository has an example of doing so [here](src/web/assets/intentsform/js/paymentForm.js). This javascript is used when calling the default `getPaymentFormHtml()` method on the gateway to output the built in payment form.
+A new payment method can be created prior to checkout using Stripe’s front-end JavaScript API.
 
-See the [Stripe JS](https://stripe.com/docs/js) docs for more information. 
+Check out Stripe’s [Create Payment Method](https://stripe.com/docs/js/payment_methods/create_payment_method) documentation to learn how to save a payment method. This repository includes an example in [`paymentForm.js`](src/web/assets/intentsform/js/paymentForm.js), which is used when calling the default `getPaymentFormHtml()` method on the gateway in order to output the built-in payment form.
 
 ## Webhooks
 
-Setting up webhooks support requires configuration on both the Stripe side and the gateway plugin side.
+You’ll need to update configuration with this plugin and the Stripe dashboard in order to utilize webhooks.
 
 ### Configuring Stripe
 
 Set up a webhook endpoint in your Stripe dashboard API settings. The URL for this endpoint can be found in your Commerce Stripe gateway settings.
 
-It is recommended to emit all possible events, but the required events are:
+We recommend emitting all possible events, but the required events are:
 
-#### For 3D secure payments (if using Stripe Charge gateway)
+#### For 3D Secure Payments (if using Stripe Charge gateway)
 
  * `source.cancelled`
  * `source.chargeable`
  * `source.failed`
 
-#### For subscriptions
-
-The bare minimum of events required are:
+#### For Subscriptions
 
 * `invoice.payment_succeeded`
 * `customer.subscription.deleted`
 
-However, it is strongly recommended to enable the following events as well to ensure your Commerce subscriptions stay in sync with your Stripe dashboard:
+We strongly recommended enabling the following events to ensure your Commerce subscriptions stay in sync with your Stripe dashboard:
 
 * `plan.deleted`
 * `plan.updated`
@@ -89,56 +89,56 @@ However, it is strongly recommended to enable the following events as well to en
 * `customer.subscription.updated`
 * `invoice.payment_failed`
 
-### Configuring the gateway
+### Configuring the Gateway
 
 When you've set up the endpoint, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
 
-## Configuration settings
+## Configuration Settings
 
-### The `chargeInvoicesImmediately` setting
+### `chargeInvoicesImmediately`
 
-For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to true in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
+For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to `true` in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
 
-This setting affect all Stripe gateways on your Commerce installation.
+This setting affects all Stripe gateways on your Commerce installation.
 
 ## Subscriptions
 
-### Creating a subscription plan
+### Creating a Subscription Plan
 
-1. To create a subscription plan, it must first be [created on Stripe](https://dashboard.stripe.com/test/subscriptions/products).
-2. Go to Commerce → Settings → Subscription plans and create a new subscription plan.
+1. Every subscription plan must first be [created in the Stripe dashboard](https://dashboard.stripe.com/test/subscriptions/products).
+2. In the Craft control panel, navigate to **Commerce** → **Settings** → **Subscription plans** and create a new subscription plan.
 
-### Options when subscribing
+### Subscribe Options
 
-#### The `trialDays` parameter
+#### `trialDays`
 
 When subscribing, you can pass a `trialDays` parameter. The first full billing cycle will start once the number of trial days lapse. Default value is `0`.
 
-### Options when cancelling a subscription.
+### Cancel Options
 
-#### The `cancelImmediately` parameter
+#### `cancelImmediately`
 
 If this parameter is set to `true`, the subscription is canceled immediately. Otherwise, it is marked to cancel at the end of the current billing cycle. Defaults to `false`.
 
-### Options when switching between different subscription plans
+### Plan-Switching Options
 
-#### The `prorate` parameter
+#### `prorate`
 
-If this parameter is set to true, the subscription switch will be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
+If this parameter is set to `true`, the subscription switch will be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
 
-#### The `billImmediately` parameter
+#### `billImmediately`
 
-If this parameter is set to true, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to true and switching to a cheaper plan) is applied to the next invoice.
+If this parameter is set to `true`, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to `true` and switching to a cheaper plan) is applied to the next invoice.
 
-Please note, that the subscription switch will be billed immediately regardless of this parameter if the billing periods differ.
+> ⚠️ If the billing periods differ, the plan switch will be billed immediately and this parameter will be ignored.
 
 ## Events
-The plugin provides several events that allow you to modify the behaviour of your integration.
 
+The plugin provides several events you can use to modify the behavior of your integration.
 
-### Payment request related events
+### Payment Request Events
 
-#### The `buildGatewayRequest` event
+#### `buildGatewayRequest`
 
 Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
 
@@ -154,17 +154,20 @@ use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-  StripeGateway::class, 
-  StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, 
-  function(BuildGatewayRequestEvent $e) {
-    if ($e->transaction->type === 'refund') {
-      $e->request['someKey'] = 'some value';
+    StripeGateway::class, 
+    StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, 
+    function(BuildGatewayRequestEvent $e) {
+        /** @var Transaction $transaction */
+        $transaction = $e->transaction;
+        
+        if ($transaction->type === 'refund') {
+            $e->request['someKey'] = 'some value';
+        }
     }
-  }
 );
 ```
 
-#### The `receiveWebhook` event
+#### `receiveWebhook`
 
 Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless of whether or not the gateway has done something with the webhook.
 
@@ -174,21 +177,21 @@ use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-  StripeGateway::class, 
-  StripeGateway::EVENT_RECEIVE_WEBHOOK, 
-  function(ReceiveWebhookEvent $e) {
-    if ($e->webhookData['type'] == 'charge.dispute.created') {
-      if ($e->webhookData['data']['object']['amount'] > 1000000) {
-        // Be concerned that a USD 10,000 charge is being disputed.
-      }
+    StripeGateway::class, 
+    StripeGateway::EVENT_RECEIVE_WEBHOOK, 
+    function(ReceiveWebhookEvent $e) {
+        if ($e->webhookData['type'] == 'charge.dispute.created') {
+            if ($e->webhookData['data']['object']['amount'] > 1000000) {
+                // Be concerned that a USD 10,000 charge is being disputed.
+            }
+        }
     }
-  }
 );
 ```
 
-### Subscription events
+### Subscription Events
 
-#### The `createInvoice` event
+#### `createInvoice`
 
 Plugins get a chance to do something when an invoice is created on the Stripe gateway.
 
@@ -198,17 +201,17 @@ use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-  StripeGateway::class, 
-  StripeGateway::EVENT_CREATE_INVOICE, 
-  function(CreateInvoiceEvent $e) {
-    if ($e->invoiceData['billing'] === 'send_invoice') {
-        // Forward this invoice to the accounting department.
+    StripeGateway::class, 
+    StripeGateway::EVENT_CREATE_INVOICE, 
+    function(CreateInvoiceEvent $e) {
+        if ($e->invoiceData['billing'] === 'send_invoice') {
+            // Forward this invoice to the accounting department.
+        }
     }
-  }
 );
 ```
 
-#### The `beforeSubscribe` event
+#### `beforeSubscribe`
 
 Plugins get a chance to tweak subscription parameters when subscribing.
 
@@ -218,20 +221,20 @@ use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-  StripeGateway::class, 
-  StripeGateway::EVENT_BEFORE_SUBSCRIBE, 
-  function(SubscriptionRequestEvent $e) {
-    $e->parameters['someKey'] = 'some value';
-    unset($e->parameters['unneededKey']);
-  }
+    StripeGateway::class, 
+    StripeGateway::EVENT_BEFORE_SUBSCRIBE, 
+    function(SubscriptionRequestEvent $e) {
+        $e->parameters['someKey'] = 'some value';
+        unset($e->parameters['unneededKey']);
+    }
 );
 ```
 
-### Deprecated events
+### Deprecated Events
 
-The following events are deprecated as they are associated with the deprecated Stripe Charge gateway.
+The following event is deprecated because it’s associated with the deprecated Stripe Charge gateway.
 
-#### The `receive3dsPayment` event
+#### `receive3dsPayment`
 
 Plugins get a chance to do something whenever a successful 3D Secure payment is received.
 
@@ -242,15 +245,15 @@ use craft\commerce\stripe\gateways\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-  StripeGateway::class, 
-  StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, 
-  function(Receive3dsPaymentEvent $e) {
-    $order = $e->transaction->getOrder();
-    $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
-    if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
-        $order->orderStatusId = $paidStatus->id;
-        Craft::$app->getElements()->saveElement($order);
+    StripeGateway::class, 
+    StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, 
+    function(Receive3dsPaymentEvent $e) {
+        $order = $e->transaction->getOrder();
+        $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
+        if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
+            $order->orderStatusId = $paidStatus->id;
+            Craft::$app->getElements()->saveElement($order);
+        }
     }
-  }
 );
 ```
