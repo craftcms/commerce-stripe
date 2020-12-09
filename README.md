@@ -45,7 +45,7 @@ To add the Stripe payment gateway in the Craft control panel, navigate to **Comm
  
  > ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
  
- In order for the gateway to work properly, the following settings are required:
+In order for the gateway to work properly, the following settings are required:
  
 * Publishable API Key
 * Secret API Key
