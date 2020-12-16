@@ -69,7 +69,6 @@ See the [Stripe JS](https://stripe.com/docs/js) docs for more information on the
 2) Create the basic HTML that the stripe inputs will be loaded into.
 
 (Replace the `<<INSERT YOUR GATEWAY ID HERE>>` with your Stripe payment intents gateway ID)
-
 You do not need his hidden `gatewayId` input if the gateway is already saved to the cart.
 
 ```twig
@@ -77,8 +76,9 @@ You do not need his hidden `gatewayId` input if the gateway is already saved to 
     {{ actionInput('commerce/payments/pay') }}
     {{ redirectInput(siteUrl('shop/customer/order', { number: cart.number, success: 'true' })) }}
     {{ hiddenInput('cancelUrl', siteUrl('shop/checkout/payment')|hash) }}
+    {{ hiddenInput('gatewayId', <<INSERT YOUR GATEWAY ID HERE>>) }}
     {{ csrfInput() }}
-
+    
     <div class="form-row">
         <label for="card-element">
             Credit or debit card inputs will be loaded in here with stripe element JS
@@ -100,6 +100,20 @@ In you page's javascript create the object:
 ```javascript
 var stripe = Stripe('{{ parseEnv(cart.gateway.publishableKey) }}');
 ```
+
+The above expects the Stripe gateway to already be set on the order. If you are setting it on the order during the payment submission (using the `gatewayId` above) 
+then you would need to do this instead:
+
+```twig
+{% set gateway = craft.commmerce.gateways.getGatewayById(<<INSERT YOUR GATEWAY ID HERE>>) }
+```
+
+and
+
+```javascript
+var stripe = Stripe('{{ parseEnv(gateway.publishableKey) }}');
+```
+
 
 Create an instance of Stripe elements:
 
