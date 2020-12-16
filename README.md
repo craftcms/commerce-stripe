@@ -42,11 +42,11 @@ We deprecated the original “Stripe” gateway as “Stripe Charge” and added
 ## Setup
 
 To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
- 
- > ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
- 
+
+> ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
+
 In order for the gateway to work properly, the following settings are required:
- 
+
 * Publishable API Key
 * Secret API Key
 
@@ -54,7 +54,7 @@ You can find these in your Stripe dashboard under **Developers** → **API keys*
 
 ## Payment Process and Security
 
-This plugin relies on stored payment methods and doesn’t allow directly-submitted credit card details. To check out, a customer must submit a  `paymentMethodId` parameter for the Commerce `commerce/payments/pay` form action. Example below.
+This plugin relies on stored payment methods and doesn’t allow directly-submitted credit card details. To check out, a customer must submit a `paymentMethodId` parameter to the Commerce `commerce/payments/pay` form action. Example below.
 
 ## How to create the Stripe payment form for the Payment Intents gateway.
 
@@ -218,22 +218,22 @@ We recommend emitting all possible events, but the required events are:
 
 #### For 3D Secure Payments (if using Stripe Charge gateway)
 
- * `source.cancelled`
- * `source.chargeable`
- * `source.failed`
+- `source.cancelled`
+- `source.chargeable`
+- `source.failed`
 
 #### For Subscriptions
 
-* `invoice.payment_succeeded`
-* `customer.subscription.deleted`
+- `invoice.payment_succeeded`
+- `customer.subscription.deleted`
 
 We strongly recommended enabling the following events to ensure your Commerce subscriptions stay in sync with your Stripe dashboard:
 
-* `plan.deleted`
-* `plan.updated`
-* `invoice.created`
-* `customer.subscription.updated`
-* `invoice.payment_failed`
+- `plan.deleted`
+- `plan.updated`
+- `invoice.created`
+- `customer.subscription.updated`
+- `invoice.payment_failed`
 
 ### Configuring the Gateway
 
@@ -289,9 +289,10 @@ The plugin provides several events you can use to modify the behavior of your in
 Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
 
 There are some restrictions:
-* Changes to the `Transaction` model available as the `transaction` property will be ignored;
-* Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys will be ignored;
-* Changes to the `amount`, `currency` and `description` request keys will be ignored;
+
+- Changes to the `Transaction` model available as the `transaction` property will be ignored;
+- Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys will be ignored;
+- Changes to the `amount`, `currency` and `description` request keys will be ignored;
 
 ```php
 use craft\commerce\models\Transaction;
@@ -300,8 +301,8 @@ use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-    StripeGateway::class, 
-    StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, 
+    StripeGateway::class,
+    StripeGateway::EVENT_BUILD_GATEWAY_REQUEST,
     function(BuildGatewayRequestEvent $e) {
         /** @var Transaction $transaction */
         $transaction = $e->transaction;
@@ -323,8 +324,8 @@ use craft\commerce\stripe\base\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-    StripeGateway::class, 
-    StripeGateway::EVENT_RECEIVE_WEBHOOK, 
+    StripeGateway::class,
+    StripeGateway::EVENT_RECEIVE_WEBHOOK,
     function(ReceiveWebhookEvent $e) {
         if ($e->webhookData['type'] == 'charge.dispute.created') {
             if ($e->webhookData['data']['object']['amount'] > 1000000) {
@@ -348,7 +349,7 @@ use yii\base\Event;
 
 Event::on(
     StripeGateway::class, 
-    StripeGateway::EVENT_CREATE_INVOICE, 
+    StripeGateway::EVENT_CREATE_INVOICE,
     function(CreateInvoiceEvent $e) {
         if ($e->invoiceData['billing'] === 'send_invoice') {
             // Forward this invoice to the accounting department.
@@ -367,8 +368,8 @@ use craft\commerce\stripe\base\SubscriptionGateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-    StripeGateway::class, 
-    StripeGateway::EVENT_BEFORE_SUBSCRIBE, 
+    StripeGateway::class,
+    StripeGateway::EVENT_BEFORE_SUBSCRIBE,
     function(SubscriptionRequestEvent $e) {
         $e->parameters['someKey'] = 'some value';
         unset($e->parameters['unneededKey']);
@@ -391,8 +392,8 @@ use craft\commerce\stripe\gateways\Gateway as StripeGateway;
 use yii\base\Event;
 
 Event::on(
-    StripeGateway::class, 
-    StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, 
+    StripeGateway::class,
+    StripeGateway::EVENT_RECEIVE_3DS_PAYMENT,
     function(Receive3dsPaymentEvent $e) {
         $order = $e->transaction->getOrder();
         $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
