@@ -56,7 +56,142 @@ This is done using the [Create Payment Method](https://stripe.com/docs/js/paymen
 
 This repository has an example of doing so [here](src/web/assets/intentsform/js/paymentForm.js). This javascript is used when calling the default `getPaymentFormHtml()` method on the gateway to output the built in payment form.
 
-See the [Stripe JS](https://stripe.com/docs/js) docs for more information. 
+See the [Stripe JS](https://stripe.com/docs/js) docs for more information. See below for a guide on the basics of getting a payment form 
+
+## How to create the Stripe payment form for the Payment Intents gateway.
+
+If you are wanting to make a custom Stripe payment form, follow the instructions below.
+
+Alternatively, you can output the standard form with `order.gateway.getPaymentFormHtml()` or `gateway.getPaymentFormHtml()` and not follow these steps in your template..
+
+1) Include the stripe.js `<script src="https://js.stripe.com/v3/"></script>` script into the payment page.
+ 
+2) Create the basic HTML that the stripe inputs will be loaded into.
+
+(Replace the `<<INSERT YOUR GATEWAY ID HERE>>` with your Stripe payment intents gateway ID)
+
+You do not need his hidden `gatewayId` input if the gateway is already saved to the cart.
+
+```twig
+<form method="post" action="" id="payment-form">
+    {{ actionInput('commerce/payments/pay') }}
+    {{ redirectInput(siteUrl('shop/customer/order', { number: cart.number, success: 'true' })) }}
+    {{ hiddenInput('cancelUrl', siteUrl('shop/checkout/payment')|hash) }}
+    {{ csrfInput() }}
+
+    <div class="form-row">
+        <label for="card-element">
+            Credit or debit card inputs will be loaded in here with stripe element JS
+        </label>
+        <div id="card-element">
+            <!-- A Stripe Element will be inserted here. -->
+        </div>
+        <!-- Used to display form errors. -->
+        <div id="card-errors" role="alert"></div>
+    </div>
+
+    <button id="submit-button" type="submit">Submit Payment</button>
+</form>
+```
+2) Create an instance of the Stripe JS library with the `publishableKey` from your Stripe gateway settings.
+
+In you page's javascript create the object:
+
+```javascript
+var stripe = Stripe('{{ parseEnv(cart.gateway.publishableKey) }}');
+```
+
+Create an instance of Stripe elements:
+
+```javascript
+// Create an instance of Elements.
+var elements = stripe.elements();
+```
+
+Set up the style attributes of the card element we are going to create
+
+```javascript
+// Custom styling can be passed to options when creating an Element.
+// (Note that this demo uses a wider set of styles than the guide below.)
+var style = {
+  base: {
+    color: '#32325d',
+    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
+    fontSmoothing: 'antialiased',
+    fontSize: '16px',
+    '::placeholder': {
+      color: '#aab7c4'
+    }
+  },
+  invalid: {
+    color: '#fa755a',
+    iconColor: '#fa755a'
+  }
+};
+```
+
+Create the cart insance using the style:
+
+```javascript
+// Create an instance of the card Element.
+var card = elements.create('card', {style: style});
+```
+
+Mount the card into the ` <div id="card-element">` in our html we created above:
+
+```javascript
+// Add an instance of the card Element into the `card-element` <div>.
+card.mount('#card-element');
+```
+
+Handle real-time validation errors from the card Element being updated. We will add the error messages in realtime to the `<div id="card-errors" role="alert"></div>` we created above:
+
+```javascript
+card.on('change', function(event) {
+    var displayError = document.getElementById('card-errors');
+    if (event.error) {
+        displayError.textContent = event.error.message;
+    } else {
+        displayError.textContent = '';
+    }
+});
+```
+
+Set up the form listener to create a stripe payment method from the card element, as well as passing in optional billing details when creating the payment method:
+
+```javascript
+var form = document.getElementById('payment-form');
+form.addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    var paymentData = {
+        billing_details: {
+            email: "{{ cart.email }}",
+        }
+    };
+
+    // https://stripe.com/docs/js/payment_methods/create_payment_method
+    stripe.createPaymentMethod('card', card, paymentData).then(function(result) {
+        if (result.error) {
+            // Inform the user if there was an error.
+            var errorElement = document.getElementById('card-errors');
+            errorElement.textContent = result.error.message;
+        } else {
+            // Insert the token ID into the form so it gets submitted to the server
+            var form = document.getElementById('payment-form');
+            var hiddenInput = document.createElement('input');
+            hiddenInput.setAttribute('type', 'hidden');
+            hiddenInput.setAttribute('name', 'paymentMethodId'); // This is the only thing that needs to be submitted to the craft server.
+            hiddenInput.setAttribute('value', result.paymentMethod.id);
+            form.appendChild(hiddenInput);
+
+            // Submit the form
+            form.submit();
+        }
+    });
+});
+```
+
 
 ## Webhooks
 
