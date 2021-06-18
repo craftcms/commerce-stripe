@@ -76,7 +76,7 @@ class PaymentIntents extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce-stripe', 'Stripe Payment Intents');
+        return Craft::t('commerce-stripe', 'Stripe');
     }
 
     /**

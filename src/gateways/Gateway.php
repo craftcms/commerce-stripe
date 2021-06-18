@@ -113,7 +113,7 @@ class Gateway extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce-stripe', 'Stripe Charge');
+        return Craft::t('commerce-stripe', 'Stripe Charge (Deprecated)');
     }
 
     /**
