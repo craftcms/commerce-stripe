@@ -596,7 +596,7 @@ abstract class SubscriptionGateway extends Gateway
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the subscription that triggered the webhook
             sleep(1);
-            $subscription = Subscription::find()->reference($subscriptionReference)->one();
+            $subscription = Subscription::find()->reference($subscriptionReference)->anyStatus()->one();
             $counter++;
         } while (!$subscription && $counter < $limit);
 
