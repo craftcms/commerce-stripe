@@ -7,6 +7,7 @@
 
 namespace craft\commerce\stripe\events;
 
+use craft\commerce\base\Plan;
 use yii\base\Event;
 
 /**
@@ -19,6 +20,11 @@ class SubscriptionRequestEvent extends Event
 {
     // Properties
     // =========================================================================
+
+    /**
+     * @var Plan The subscription plan
+     */
+    public $plan;
 
     /**
      * @var array The subscription parameters
