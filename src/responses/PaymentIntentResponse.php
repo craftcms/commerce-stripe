@@ -7,6 +7,7 @@
 
 namespace craft\commerce\stripe\responses;
 
+use Craft;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
 
@@ -119,16 +120,16 @@ class PaymentIntentResponse implements RequestResponseInterface
         if (empty($this->data['message'])) {
             if (!empty($this->data['last_payment_error'])) {
                 if ($this->data['last_payment_error']['code'] === 'payment_intent_authentication_failure') {
-                    return 'The provided payment method has failed authentication.';
+                    return Craft::t('commerce-stripe', 'The provided payment method has failed authentication.');
                 }
 
-                return $this->data['last_payment_error']['message'];
+                return Craft::t('commerce-stripe', $this->data['last_payment_error']['message']);
             }
 
             return '';
         }
 
-        return $this->data['message'];
+        return Craft::t('commerce-stripe', $this->data['message']);
     }
 
     /**
