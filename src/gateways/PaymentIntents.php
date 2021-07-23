@@ -45,9 +45,6 @@ use yii\base\NotSupportedException;
  **/
 class PaymentIntents extends BaseGateway
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var string
      */
@@ -67,9 +64,6 @@ class PaymentIntents extends BaseGateway
      * @var string
      */
     public $signingSecret;
-
-    // Public methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -425,9 +419,6 @@ class PaymentIntents extends BaseGateway
         parent::handleWebhook($data);
     }
 
-    // Protected methods
-    // =========================================================================
-
     /**
      * Handle a failed invoice by updating the subscription data for the subscription it failed.
      *
@@ -561,9 +552,6 @@ class PaymentIntents extends BaseGateway
 
         return $subscription;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Confirm a payment intent and set the return URL.

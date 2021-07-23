@@ -22,9 +22,6 @@ use craft\helpers\MigrationHelper;
  */
 class Install extends Migration
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
@@ -99,9 +96,6 @@ class Install extends Migration
 
         return true;
     }
-
-    // Private Methods
-    // =========================================================================
 
     /**
      * Converts any old school Stripe gateways to this one

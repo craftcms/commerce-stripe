@@ -24,9 +24,6 @@ use yii\base\Exception;
  */
 class Invoices extends Component
 {
-    // Constants
-    // =========================================================================
-
     /**
      * @event SaveInvoiceEvent The event that is triggered when an invoice is saved.
      * You may set [[SaveInvoiceEvent::isValid]] to `false` to prevent the invoice from being saved
@@ -63,9 +60,6 @@ class Invoices extends Component
      * ```
      */
     const EVENT_SAVE_INVOICE = 'afterSaveInvoice';
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * Returns all invoices for a subscription by its id.
@@ -182,9 +176,6 @@ class Invoices extends Component
 
         return false;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Returns a Query object prepped for retrieving invoices.

@@ -45,9 +45,6 @@ use Stripe\Subscription as StripeSubscription;
  */
 abstract class SubscriptionGateway extends Gateway
 {
-    // Constants
-    // =========================================================================
-
     /**
      * @event CreateInvoiceEvent The event that is triggered when an invoice is being created on the gateway.
      *
@@ -89,9 +86,6 @@ abstract class SubscriptionGateway extends Gateway
      * string The Stripe API version to use.
      */
     const STRIPE_API_VERSION = '2019-03-14';
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -505,9 +499,6 @@ abstract class SubscriptionGateway extends Gateway
 
         parent::handleWebhook($data);
     }
-
-    // Protected methods
-    // =========================================================================
 
     /**
      * Create a subscription payment model from invoice.

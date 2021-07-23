@@ -27,9 +27,6 @@ use craft\elements\User;
  */
 class PaymentIntent extends Model
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var int Payment Intent ID
      */
@@ -79,9 +76,6 @@ class PaymentIntent extends Model
      * @var Order|null
      */
     private $_order;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * Returns the customer identifier
@@ -157,7 +151,6 @@ class PaymentIntent extends Model
      */
     public function rules()
     {
-
         return [
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
             [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId'], 'required']

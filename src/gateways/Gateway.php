@@ -51,9 +51,6 @@ use yii\base\NotSupportedException;
  */
 class Gateway extends BaseGateway
 {
-    // Events
-    // =========================================================================
-
     /**
      * @event Receive3dsPaymentEvent The event that is triggered when a successful 3ds payment is received.
      *
@@ -76,9 +73,6 @@ class Gateway extends BaseGateway
      * ```
      */
     const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
-
-    // Properties
-    // =========================================================================
 
     /**
      * @var string
@@ -104,9 +98,6 @@ class Gateway extends BaseGateway
      * @var string
      */
     public $signingSecret;
-
-    // Public methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -277,9 +268,6 @@ class Gateway extends BaseGateway
 
         parent::handleWebhook($data);
     }
-
-    // Protected methods
-    // =========================================================================
 
     /**
      * Handle a 3D Secure related event.
@@ -527,9 +515,6 @@ class Gateway extends BaseGateway
         $this->configureStripeClient();
         return '';
     }
-
-    // Protected methods
-    // =========================================================================
 
     /**
      * Build a payment source for request.

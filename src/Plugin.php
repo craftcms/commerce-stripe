@@ -24,21 +24,12 @@ use yii\base\Event;
  */
 class Plugin extends \craft\base\Plugin
 {
-    // Public Properties
-    // =========================================================================
-
     /**
      * @inheritDoc
      */
     public $schemaVersion = '2.2.0';
 
-    // Traits
-    // =========================================================================
-
     use Services;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -49,10 +40,14 @@ class Plugin extends \craft\base\Plugin
 
         $this->_setPluginComponents();
 
-        Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES, function(RegisterComponentTypesEvent $event) {
-            $event->types[] = Gateway::class;
-            $event->types[] = PaymentIntents::class;
-        });
+        Event::on(
+            Gateways::class,
+            Gateways::EVENT_REGISTER_GATEWAY_TYPES,
+            function(RegisterComponentTypesEvent $event) {
+                $event->types[] = Gateway::class;
+                $event->types[] = PaymentIntents::class;
+            }
+        );
     }
 
     /**

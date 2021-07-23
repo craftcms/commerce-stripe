@@ -18,9 +18,6 @@ use yii\base\Event;
  */
 class BuildGatewayRequestEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var array The metadata of the gateway request
      * @deprecated in 1.1 Use [[request]] instead.

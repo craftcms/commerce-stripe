@@ -28,9 +28,6 @@ use yii\db\ActiveQueryInterface;
  */
 class PaymentIntent extends ActiveRecord
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */

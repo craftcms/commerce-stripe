@@ -23,9 +23,6 @@ use yii\base\Exception;
  */
 class PaymentIntents extends Component
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * Returns a payment intent by gateway, order id and stripe plugin customer id
      *
@@ -105,9 +102,6 @@ class PaymentIntents extends Component
 
         return false;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Returns a Query object prepped for retrieving customers.

@@ -29,9 +29,6 @@ use yii\base\Exception;
  */
 class Customers extends Component
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * Returns a customer by gateway and user
      *
@@ -171,9 +168,6 @@ class Customers extends Component
 
         return false;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Returns a Query object prepped for retrieving customers.

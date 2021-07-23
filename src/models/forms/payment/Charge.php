@@ -24,8 +24,6 @@ class Charge extends CreditCardPaymentForm
      */
     public $customer;
 
-    // Public methods
-    // =========================================================================
     /**
      * @inheritdoc
      */

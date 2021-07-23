@@ -19,9 +19,6 @@ use craft\commerce\stripe\services\PaymentIntents;
  */
 trait Services
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * Returns the customers service
      *
@@ -51,9 +48,6 @@ trait Services
     {
         return $this->get('paymentIntents');
     }
-
-    // Private Methods
-    // =========================================================================
 
     /**
      * Set the components of the commerce plugin

@@ -19,9 +19,6 @@ use yii\base\Event;
  */
 class Receive3dsPaymentEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var Transaction The successful transaction
      */

@@ -25,9 +25,6 @@ use craft\elements\User;
  */
 class Customer extends Model
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var int Customer ID
      */
@@ -62,9 +59,6 @@ class Customer extends Model
      * @var GatewayInterface|null $_user
      */
     private $_gateway;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * Returns the customer identifier
