@@ -505,7 +505,8 @@ class PaymentIntents extends BaseGateway
                 $requestData['capture_method'] = $capture ? 'automatic' : 'manual';
                 $requestData['confirmation_method'] = 'manual';
                 $requestData['confirm'] = false;
-
+                $requestData['payment_method_types'] = ['card', 'bancontact'];
+                
                 $stripePaymentIntent = PaymentIntent::create($requestData, ['idempotency_key' => $transaction->hash]);
 
                 if ($customer) {
