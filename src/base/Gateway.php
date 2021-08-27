@@ -26,8 +26,8 @@ use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Customer;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\CardException;
-use Stripe\Exception\ExceptionInterface;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -414,7 +414,7 @@ abstract class Gateway extends BaseGateway
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
             $data['id'] = $body['error']['charge'];
-        } else if ($exception instanceof ExceptionInterface) {
+        } else if ($exception instanceof ApiErrorException) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
             $data = $body;

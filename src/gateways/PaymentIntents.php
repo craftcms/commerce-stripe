@@ -31,6 +31,8 @@ use craft\elements\User;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Stripe\Card;
+use Stripe\Charge as StripeCharge;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\Refund;
@@ -155,7 +157,6 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         $paymentIntentReference = Craft::$app->getRequest()->getParam('payment_intent');
-        /** @var PaymentIntent $paymentIntent */
         $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentReference);
 
         // Update the intent with the latest.
@@ -224,8 +225,10 @@ class PaymentIntents extends BaseGateway
         $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($transaction->reference);
 
         try {
+            /** @var StripeCharge $charge */
+            $charge = $stripePaymentIntent->charges->data[0];
             $refund = Refund::create([
-                'charge' => $stripePaymentIntent->charges->data[0]->id,
+                'charge' => $charge->id,
                 'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             ]);
 
@@ -263,7 +266,9 @@ class PaymentIntents extends BaseGateway
 
             switch ($stripeResponse->type) {
                 case 'card':
-                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($stripeResponse->card->brand), 'last4' => $stripeResponse->card->last4]);
+                    /** @var Card $card */
+                    $card = $stripeResponse->card;
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($card->brand), 'last4' => $card->last4]);
                     break;
                 default:
                     $description = $stripeResponse->type;
@@ -422,7 +427,7 @@ class PaymentIntents extends BaseGateway
     /**
      * Handle a failed invoice by updating the subscription data for the subscription it failed.
      *
-     * @param $data
+     * @param array $data
      * @throws \Throwable
      * @throws \craft\errors\ElementNotFoundException
      * @throws \yii\base\Exception
@@ -491,10 +496,11 @@ class PaymentIntents extends BaseGateway
 
         $requestData['payment_method'] = $paymentMethodId;
 
+        $paymentIntentService = $stripePlugin->getPaymentIntents();
+
         try {
             // If this is a customer that's logged in, attempt to continue the timeline
             if ($customer) {
-                $paymentIntentService = $stripePlugin->getPaymentIntents();
                 $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
             }
 
@@ -535,7 +541,7 @@ class PaymentIntents extends BaseGateway
     /**
      * Refresh a subscription's data.
      *
-     * @param $subscription
+     * @param Subscription $subscription
      * @return Subscription
      */
     protected function refreshSubscriptionData(Subscription $subscription)

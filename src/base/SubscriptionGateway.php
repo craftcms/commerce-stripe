@@ -36,6 +36,7 @@ use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
 use Stripe\Subscription as StripeSubscription;
+use Stripe\SubscriptionItem;
 
 /**
  * This class represents the abstract Stripe base gateway
@@ -143,7 +144,7 @@ abstract class SubscriptionGateway extends Gateway
     public function getNextPaymentAmount(Subscription $subscription): string
     {
         $this->configureStripeClient();
-        $data = $subscription->subscriptionData;
+        $data = $subscription->getSubscriptionData();
         $currencyCode = strtoupper($data['plan']['currency']);
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
 
@@ -368,11 +369,12 @@ abstract class SubscriptionGateway extends Gateway
         /** @var Plan $plan */
         $plan = $subscription->getPlan();
 
-        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        /** @var SubscriptionItem $item */
+        $item = $stripeSubscription->items->data[0];
         $stripeSubscription->items = [
             [
-                'id' => $stripeSubscription->items->data[0]->id,
+                'id' => $item->id,
                 'plan' => $plan->reference,
             ],
         ];
@@ -405,14 +407,16 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         /** @var SwitchPlans $parameters */
-        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        /** @var SubscriptionItem $item */
+        $item = $stripeSubscription->items->data[0];
         $stripeSubscription->items = [
             [
-                'id' => $stripeSubscription->items->data[0]->id,
+                'id' => $item->id,
                 'plan' => $plan->reference,
             ],
         ];
+        /** @phpstan-ignore-next-line */
         $stripeSubscription->prorate = (bool)$parameters->prorate;
 
         if ($parameters->billingCycleAnchor) {
@@ -420,6 +424,7 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         if ($parameters->prorationDate) {
+            /** @phpstan-ignore-next-line */
             $stripeSubscription->proration_date = $parameters->prorationDate;
         }
 
@@ -450,12 +455,13 @@ abstract class SubscriptionGateway extends Gateway
     public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
     {
         $this->configureStripeClient();
-        /** @var StripeSubscription $stripeSubscription */
         $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        /** @var SubscriptionItem $item */
+        $item = $stripeSubscription->items->data[0];
 
         $items = [
             [
-                'id' => $stripeSubscription->items->data[0]->id,
+                'id' => $item->id,
                 'plan' => $plan->reference,
             ],
         ];
@@ -743,8 +749,8 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * Save a subscription invoice.
      *
-     * @param $stripeInvoice
-     * @param $subscription
+     * @param array $stripeInvoice
+     * @param Subscription $subscription
      * @return Invoice
      */
     protected function saveSubscriptionInvoice(array $stripeInvoice, Subscription $subscription): Invoice

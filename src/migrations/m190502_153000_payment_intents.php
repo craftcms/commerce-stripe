@@ -17,7 +17,7 @@ class m190502_153000_payment_intents extends Migration
     /**
      * @inheritdoc
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
         $this->createTable('{{%stripe_paymentintents}}', [
             'id' => $this->primaryKey(),
@@ -37,12 +37,14 @@ class m190502_153000_payment_intents extends Migration
 
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId'], true);
+
+        return true;
     }
 
     /**
      * @inheritdoc
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
         echo "m190502_153000_payment_intents cannot be reverted.\n";
         return false;

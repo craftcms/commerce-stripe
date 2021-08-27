@@ -20,7 +20,7 @@ class PaymentIntentResponse implements RequestResponseInterface
     /**
      * Response constructor.
      *
-     * @param $data
+     * @param array $data
      */
     public function __construct($data)
     {

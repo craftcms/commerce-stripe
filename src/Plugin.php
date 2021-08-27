@@ -19,6 +19,7 @@ use yii\base\Event;
 /**
  * Plugin represents the Stripe integration plugin.
  *
+ * @method Settings getSettings()
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
  */

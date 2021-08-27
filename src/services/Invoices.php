@@ -87,7 +87,7 @@ class Invoices extends Component
     /**
      * Returns all invoices for a user by its id.
      *
-     * @param int $subscriptionId The subscription id.
+     * @param int $userId The user ID.
      * @return Invoice[]
      */
     public function getUserInvoices(int $userId): array

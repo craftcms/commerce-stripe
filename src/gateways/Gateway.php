@@ -163,7 +163,7 @@ class Gateway extends BaseGateway
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         $this->configureStripeClient();
-        /** @var Payment $sourceData */
+        /** @var PaymentForm $sourceData */
         $sourceData->token = $this->normalizePaymentToken((string)$sourceData->token);
 
         try {
@@ -372,7 +372,9 @@ class Gateway extends BaseGateway
 
         if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
             // This should only happen for 3D secure payments.
+            /** @var ChargeResponse $response */
             $response = $this->createPaymentResponseFromApiResource($paymentSource);
+            /** @phpstan-ignore-next-line */
             $response->setRedirectUrl($paymentSource->redirect->url);
 
             return $response;
@@ -465,6 +467,7 @@ class Gateway extends BaseGateway
         /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
 
+        /** @var ChargeResponse $response */
         $response = $this->createPaymentResponseFromApiResource($paymentSource);
         $response->setProcessing(true);
 

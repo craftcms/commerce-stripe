@@ -66,7 +66,7 @@ class PaymentIntents extends Component
     /**
      * Save a customer
      *
-     * @param Customer $customer The customer being saved.
+     * @param PaymentIntent $paymentIntent The payment intent.
      * @return bool Whether the payment source was saved successfully
      * @throws Exception if payment source not found by id.
      */

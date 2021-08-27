@@ -15,14 +15,14 @@ use yii\base\InvalidConfigException;
 class SubscriptionResponse implements SubscriptionResponseInterface
 {
     /**
-     * @var
+     * @var array
      */
     protected $data = [];
 
     /**
      * Response constructor.
      *
-     * @param $data
+     * @param array $data
      */
     public function __construct($data)
     {

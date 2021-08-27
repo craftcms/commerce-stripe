@@ -9,6 +9,7 @@ namespace craft\commerce\stripe\services;
 
 use Craft;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\stripe\base\Gateway as BaseGateway;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\models\Customer;
@@ -48,7 +49,9 @@ class Customers extends Component
             return new Customer($result);
         }
 
-        Stripe::setApiKey(Craft::parseEnv(Commerce::getInstance()->getGateways()->getGatewayById($gatewayId)->apiKey));
+        /** @var BaseGateway $gateway */
+        $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
+        Stripe::setApiKey(Craft::parseEnv($gateway->apiKey));
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
 

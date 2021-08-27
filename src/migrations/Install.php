@@ -25,7 +25,7 @@ class Install extends Migration
     /**
      * @inheritdoc
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
         // Convert any built-in Stripe gateways to ours
         $this->_convertGateways();
@@ -84,7 +84,7 @@ class Install extends Migration
     /**
      * @inheritdoc
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
 
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_invoices}}', $this);
