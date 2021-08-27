@@ -28,6 +28,7 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
@@ -166,7 +167,7 @@ class PaymentIntents extends BaseGateway
 
         // Make sure we have the payment intent before we attempt to do anything with it.
         if ($paymentIntent) {
-            $paymentIntent->intentData = $stripePaymentIntent->toArray();
+            $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
             $paymentIntentsService->savePaymentIntent($paymentIntent);
         }
 
@@ -238,7 +239,7 @@ class PaymentIntents extends BaseGateway
             if ($paymentIntent) {
                 // Fetch the new intent data
                 $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
-                $paymentIntent->intentData = $stripePaymentIntent->toArray();
+                $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
                 $paymentIntentsService->savePaymentIntent($paymentIntent);
             }
 
@@ -526,7 +527,7 @@ class PaymentIntents extends BaseGateway
 
             if ($paymentIntent) {
                 // Save data before confirming.
-                $paymentIntent->intentData = $stripePaymentIntent->toArray();
+                $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
                 $paymentIntentService->savePaymentIntent($paymentIntent);
             }
 
