@@ -65,7 +65,7 @@ class Customers extends Component
             'userId' => $user->id,
             'gatewayId' => $gatewayId,
             'reference' => $stripeCustomer->id,
-            'response' => $stripeCustomer->jsonSerialize(),
+            'response' => $stripeCustomer->toArray(),
         ]);
 
         if (!$this->saveCustomer($customer)) {

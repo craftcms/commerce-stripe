@@ -166,11 +166,11 @@ class PaymentIntents extends BaseGateway
 
         // Make sure we have the payment intent before we attempt to do anything with it.
         if ($paymentIntent) {
-            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+            $paymentIntent->intentData = $stripePaymentIntent->toArray();
             $paymentIntentsService->savePaymentIntent($paymentIntent);
         }
 
-        $intentData = $stripePaymentIntent->jsonSerialize();
+        $intentData = $stripePaymentIntent->toArray();
 
         if (!empty($intentData['payment_method'])) {
             try {
@@ -238,7 +238,7 @@ class PaymentIntents extends BaseGateway
             if ($paymentIntent) {
                 // Fetch the new intent data
                 $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
-                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntent->intentData = $stripePaymentIntent->toArray();
                 $paymentIntentsService->savePaymentIntent($paymentIntent);
             }
 
@@ -278,7 +278,7 @@ class PaymentIntents extends BaseGateway
                 'userId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->jsonSerialize(),
+                'response' => $stripeResponse->toArray(),
                 'description' => $description,
             ]);
 
@@ -466,7 +466,7 @@ class PaymentIntents extends BaseGateway
         ]);
 
         // And nonchalantly replace it, before calling parent.
-        $data['data']['object'] = $stripeSubscription->jsonSerialize();
+        $data['data']['object'] = $stripeSubscription->toArray();
 
         parent::handleSubscriptionUpdated($data);
     }
@@ -526,7 +526,7 @@ class PaymentIntents extends BaseGateway
 
             if ($paymentIntent) {
                 // Save data before confirming.
-                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntent->intentData = $stripePaymentIntent->toArray();
                 $paymentIntentService->savePaymentIntent($paymentIntent);
             }
 
@@ -552,7 +552,7 @@ class PaymentIntents extends BaseGateway
             'expand' => ['latest_invoice.payment_intent'],
         ]);
 
-        $subscription->setSubscriptionData($stripeSubscription->jsonSerialize());
+        $subscription->setSubscriptionData($stripeSubscription->toArray());
         $this->setSubscriptionStatusData($subscription);
         Craft::$app->getElements()->saveElement($subscription);
 
@@ -588,7 +588,7 @@ class PaymentIntents extends BaseGateway
                 'id' => $subscription->reference,
                 'expand' => ['latest_invoice.payment_intent'],
             ]);
-            $subscriptionData = $stripeSubscription->jsonSerialize();
+            $subscriptionData = $stripeSubscription->toArray();
             $subscription->setSubscriptionData($subscriptionData);
         }
 

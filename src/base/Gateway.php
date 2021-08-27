@@ -392,7 +392,7 @@ abstract class Gateway extends BaseGateway
     protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
         $this->configureStripeClient();
-        $data = $resource->jsonSerialize();
+        $data = $resource->toArray();
 
         return $this->getResponseModel($data);
     }

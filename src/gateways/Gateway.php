@@ -185,7 +185,7 @@ class Gateway extends BaseGateway
                 'userId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->jsonSerialize(),
+                'response' => $stripeResponse->toArray(),
                 'description' => $description,
             ]);
 

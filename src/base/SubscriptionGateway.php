@@ -226,6 +226,7 @@ abstract class SubscriptionGateway extends Gateway
         $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription['current_period_end']);
         Craft::$app->getElements()->saveElement($subscription);
 
+        /** @var StripeInvoice[] $invoices */
         $invoices = [];
         $after = false;
 
@@ -256,7 +257,7 @@ abstract class SubscriptionGateway extends Gateway
         // Save the invoices.
         if (!empty($invoices)) {
             foreach ($invoices as $invoice) {
-                $this->saveSubscriptionInvoice($invoice->jsonSerialize(), $subscription);
+                $this->saveSubscriptionInvoice($invoice->toArray(), $subscription);
             }
         }
     }
@@ -273,10 +274,10 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         $plan = StripePlan::retrieve($reference);
-        $plan = $plan->jsonSerialize();
+        $plan = $plan->toArray();
 
         $product = StripeProduct::retrieve($plan['product']);
-        $product = $product->jsonSerialize();
+        $product = $product->toArray();
 
         return Json::encode(compact('plan', 'product'));
     }
@@ -299,7 +300,7 @@ abstract class SubscriptionGateway extends Gateway
         if (\count($plans->data)) {
             foreach ($plans->data as $plan) {
                 /** @var StripePlan $plan */
-                $plan = $plan->jsonSerialize();
+                $plan = $plan->toArray();
                 $planProductMap[$plan['id']] = $plan['product'];
                 $planList[] = $plan;
             }
@@ -315,7 +316,7 @@ abstract class SubscriptionGateway extends Gateway
             if (\count($products->data)) {
                 foreach ($products->data as $product) {
                     /** @var StripeProduct $product */
-                    $product = $product->jsonSerialize();
+                    $product = $product->toArray();
                     $productList[$product['id']] = $product;
                 }
             }
@@ -539,7 +540,7 @@ abstract class SubscriptionGateway extends Gateway
     protected function createSubscriptionResponse(ApiResource $resource): SubscriptionResponseInterface
     {
         $this->configureStripeClient();
-        $data = $resource->jsonSerialize();
+        $data = $resource->toArray();
 
         return new SubscriptionResponse($data);
     }
