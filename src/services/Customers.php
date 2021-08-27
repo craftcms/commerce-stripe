@@ -9,10 +9,10 @@ namespace craft\commerce\stripe\services;
 
 use Craft;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\gateways\Gateway;
-use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\errors\CustomerException;
+use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\models\Customer;
+use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
 use craft\elements\User;
@@ -55,14 +55,14 @@ class Customers extends Component
         /** @var StripeCustomer $stripeCustomer */
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         $customer = new Customer([
             'userId' => $user->id,
             'gatewayId' => $gatewayId,
             'reference' => $stripeCustomer->id,
-            'response' => $stripeCustomer->jsonSerialize()
+            'response' => $stripeCustomer->jsonSerialize(),
         ]);
 
         if (!$this->saveCustomer($customer)) {
@@ -79,7 +79,8 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerById(int $id) {
+    public function getCustomerById(int $id)
+    {
         $customerRow = $this->_createCustomerQuery()
             ->where(['id' => $id])
             ->one();
@@ -98,7 +99,8 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerByReference(string $reference) {
+    public function getCustomerByReference(string $reference)
+    {
         $customerRow = $this->_createCustomerQuery()
             ->where(['reference' => $reference])
             ->one();

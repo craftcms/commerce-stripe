@@ -232,7 +232,7 @@ abstract class SubscriptionGateway extends Gateway
         do {
             $params = [
                 'subscription' => $reference,
-                'limit' => 50
+                'limit' => 50,
             ];
 
             // If we're paging, set the parameter
@@ -374,7 +374,7 @@ abstract class SubscriptionGateway extends Gateway
             [
                 'id' => $stripeSubscription->items->data[0]->id,
                 'plan' => $plan->reference,
-            ]
+            ],
         ];
 
         $stripeSubscription->cancel_at_period_end = false;
@@ -411,7 +411,7 @@ abstract class SubscriptionGateway extends Gateway
             [
                 'id' => $stripeSubscription->items->data[0]->id,
                 'plan' => $plan->reference,
-            ]
+            ],
         ];
         $stripeSubscription->prorate = (bool)$parameters->prorate;
 
@@ -430,7 +430,7 @@ abstract class SubscriptionGateway extends Gateway
             try {
                 StripeInvoice::create([
                     'customer' => $stripeSubscription->customer,
-                    'subscription' => $stripeSubscription->id
+                    'subscription' => $stripeSubscription->id,
                 ]);
             } catch (\Throwable $exception) {
                 // Or, maybe, Stripe already invoiced them because reasons.
@@ -517,7 +517,7 @@ abstract class SubscriptionGateway extends Gateway
             'paymentDate' => $data['created'],
             'paymentReference' => $data['charge'],
             'paid' => $data['paid'],
-            'response' => Json::encode($data)
+            'response' => Json::encode($data),
         ]);
 
         return $payment;
@@ -550,7 +550,7 @@ abstract class SubscriptionGateway extends Gateway
 
         if ($this->hasEventHandlers(self::EVENT_CREATE_INVOICE)) {
             $this->trigger(self::EVENT_CREATE_INVOICE, new CreateInvoiceEvent([
-                'invoiceData' => $stripeInvoice
+                'invoiceData' => $stripeInvoice,
             ]));
         }
 

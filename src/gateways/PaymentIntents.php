@@ -274,7 +274,7 @@ class PaymentIntents extends BaseGateway
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
                 'response' => $stripeResponse->jsonSerialize(),
-                'description' => $description
+                'description' => $description,
             ]);
 
             return $paymentSource;
@@ -305,7 +305,7 @@ class PaymentIntents extends BaseGateway
 
         if ($parameters->trialDays !== null) {
             $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
-        } elseif ($parameters->trialEnd !== null) {
+        } else if ($parameters->trialEnd !== null) {
             $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;;
         } else {
             $subscriptionParameters['trial_from_plan'] = true;
@@ -314,7 +314,7 @@ class PaymentIntents extends BaseGateway
         $subscriptionParameters['expand'] = ['latest_invoice.payment_intent'];
 
         $event = new SubscriptionRequestEvent([
-            'parameters' => $subscriptionParameters
+            'parameters' => $subscriptionParameters,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
@@ -543,7 +543,7 @@ class PaymentIntents extends BaseGateway
         $this->configureStripeClient();
         $stripeSubscription = StripeSubscription::retrieve([
             'id' => $subscription->reference,
-            'expand' => ['latest_invoice.payment_intent']
+            'expand' => ['latest_invoice.payment_intent'],
         ]);
 
         $subscription->setSubscriptionData($stripeSubscription->jsonSerialize());
@@ -562,7 +562,7 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         $stripePaymentIntent->confirm([
-            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
+            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
         ]);
     }
 
@@ -580,7 +580,7 @@ class PaymentIntents extends BaseGateway
         if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
             $stripeSubscription = StripeSubscription::retrieve([
                 'id' => $subscription->reference,
-                'expand' => ['latest_invoice.payment_intent']
+                'expand' => ['latest_invoice.payment_intent'],
             ]);
             $subscriptionData = $stripeSubscription->jsonSerialize();
             $subscription->setSubscriptionData($subscriptionData);

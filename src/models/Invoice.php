@@ -73,7 +73,7 @@ class Invoice extends Model
     public function rules()
     {
         return [
-            [['subscriptionId', 'reference', 'invoiceData'], 'required']
+            [['subscriptionId', 'reference', 'invoiceData'], 'required'],
         ];
     }
 }

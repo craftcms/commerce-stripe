@@ -88,7 +88,7 @@ abstract class Gateway extends BaseGateway
      */
     const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
-     /**
+    /**
      * string The Stripe API version to use.
      */
     const STRIPE_API_VERSION = '2019-03-14';
@@ -180,7 +180,7 @@ abstract class Gateway extends BaseGateway
 
             if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
                 $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
-                    'webhookData' => $data
+                    'webhookData' => $data,
                 ]));
             }
         } else {
@@ -357,13 +357,13 @@ abstract class Gateway extends BaseGateway
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             'currency' => $transaction->paymentCurrency,
             'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
-            'metadata' => $metadata
+            'metadata' => $metadata,
         ];
 
         $event = new BuildGatewayRequestEvent([
             'transaction' => $transaction,
             'metadata' => $metadata,
-            'request' => $request
+            'request' => $request,
         ]);
 
         // TODO provide context
@@ -472,7 +472,7 @@ abstract class Gateway extends BaseGateway
                 /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
-                    'token' => $token
+                    'token' => $token,
                 ]);
 
                 return $tokenSource->id;

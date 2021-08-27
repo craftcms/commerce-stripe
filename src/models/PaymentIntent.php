@@ -12,8 +12,8 @@ use craft\commerce\base\GatewayInterface;
 use craft\commerce\base\Model;
 use craft\commerce\elements\Order;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
 
 /**
@@ -153,7 +153,7 @@ class PaymentIntent extends Model
     {
         return [
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
-            [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId'], 'required']
+            [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId'], 'required'],
         ];
     }
 }

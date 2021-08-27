@@ -125,7 +125,7 @@ class Install extends Migration
 
             $values = [
                 'type' => Gateway::class,
-                'settings' => $settings
+                'settings' => $settings,
             ];
 
             $dbConnection->createCommand()

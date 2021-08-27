@@ -40,7 +40,7 @@ class PaymentIntents extends Component
             return new PaymentIntent($result);
         }
 
-       return null;
+        return null;
     }
 
     /**
@@ -50,7 +50,8 @@ class PaymentIntents extends Component
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntentByReference(string $reference) {
+    public function getPaymentIntentByReference(string $reference)
+    {
         $result = $this->_createIntentQuery()
             ->where(['reference' => $reference])
             ->one();
