@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
-use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\models\PaymentIntent;
 use craft\commerce\stripe\records\PaymentIntent as PaymentIntentRecord;
 use craft\db\Query;
