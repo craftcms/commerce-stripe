@@ -414,7 +414,6 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var Charge $charge */
             $charge = Charge::retrieve($reference);
             $charge->capture([], ['idempotency_key' => $reference]);
 
@@ -465,7 +464,6 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         $sourceId = Craft::$app->getRequest()->getParam('source');
-        /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
 
         /** @var ChargeResponse $response */
@@ -482,7 +480,6 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var Source $source */
             $source = Source::retrieve($token);
             $source->detach();
         } catch (Throwable $throwable) {
@@ -557,7 +554,6 @@ class Gateway extends BaseGateway
 
         if ($paymentForm->token) {
             $paymentForm->token = $this->normalizePaymentToken((string)$paymentForm->token);
-            /** @var Source $source */
             $source = Source::retrieve($paymentForm->token);
 
             // If this required 3D secure, let's set the flag for it  and repeat

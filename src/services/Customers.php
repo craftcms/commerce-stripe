@@ -56,7 +56,6 @@ class Customers extends Component
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
 
-        /** @var StripeCustomer $stripeCustomer */
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email,

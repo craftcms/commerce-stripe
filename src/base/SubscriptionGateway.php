@@ -98,7 +98,6 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         try {
-            /** @var StripeSubscription $stripeSubscription */
             $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
 
             /** @var CancelSubscription $parameters */
@@ -291,7 +290,6 @@ abstract class SubscriptionGateway extends Gateway
     public function getSubscriptionPlans(): array
     {
         $this->configureStripeClient();
-        /** @var Collection $plans */
         $plans = StripePlan::all([
             'limit' => 100,
         ]);
@@ -308,7 +306,6 @@ abstract class SubscriptionGateway extends Gateway
                 $planList[] = $plan;
             }
 
-            /** @var Collection $products */
             $products = StripeProduct::all([
                 'limit' => 100,
                 'ids' => array_values($planProductMap),
@@ -565,7 +562,6 @@ abstract class SubscriptionGateway extends Gateway
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
-            /** @var StripeInvoice $invoice */
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }

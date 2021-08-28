@@ -471,7 +471,6 @@ abstract class Gateway extends BaseGateway
         $this->configureStripeClient();
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
-                /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
                     'token' => $token,

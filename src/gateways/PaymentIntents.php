@@ -127,7 +127,6 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var PaymentIntent $intent */
             $intent = PaymentIntent::retrieve($reference);
             $intent->capture([], ['idempotency_key' => $reference]);
 
@@ -345,7 +344,6 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var PaymentMethod $paymentMethod */
             $paymentMethod = PaymentMethod::retrieve($token);
             $paymentMethod->detach();
         } catch (Throwable $throwable) {
