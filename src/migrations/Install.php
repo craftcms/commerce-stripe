@@ -63,12 +63,12 @@ class Install extends Migration
             'uid' => $this->uid(),
         ]);
 
-        $this->addForeignKey(null, '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
-        $this->addForeignKey(null, '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE', null);
-        $this->addForeignKey(null, '{{%stripe_invoices}}', 'subscriptionId', '{{%commerce_subscriptions}}', 'id', 'CASCADE', null);
-        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
-        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE', null);
-        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'orderId', '{{%commerce_orders}}', 'id', 'CASCADE', null);
+        $this->addForeignKey(null, '{{%stripe_customers}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE');
+        $this->addForeignKey(null, '{{%stripe_customers}}', 'userId', '{{%users}}', 'id', 'CASCADE');
+        $this->addForeignKey(null, '{{%stripe_invoices}}', 'subscriptionId', '{{%commerce_subscriptions}}', 'id', 'CASCADE');
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE');
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE');
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'orderId', '{{%commerce_orders}}', 'id', 'CASCADE');
 
         $this->createIndex(null, '{{%stripe_customers}}', 'gatewayId', false);
         $this->createIndex(null, '{{%stripe_customers}}', 'userId', false);
