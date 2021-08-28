@@ -677,27 +677,24 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         // See if we care about this subscription at all
-        if ($subscription) {
+        $subscription->setSubscriptionData($data['data']['object']);
 
-            $subscription->setSubscriptionData($data['data']['object']);
+        $this->setSubscriptionStatusData($subscription);
 
-            $this->setSubscriptionStatusData($subscription);
+        if (empty($data['data']['object']['plan'])) {
+            Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
+        } else {
+            $planReference = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
 
-            if (empty($data['data']['object']['plan'])) {
-                Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
+            if ($plan) {
+                $subscription->planId = $plan->id;
             } else {
-                $planReference = $data['data']['object']['plan']['id'];
-                $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
-
-                if ($plan) {
-                    $subscription->planId = $plan->id;
-                } else {
-                    Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
-                }
+                Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
             }
-
-            Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
         }
+
+        Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
     }
 
     /**
