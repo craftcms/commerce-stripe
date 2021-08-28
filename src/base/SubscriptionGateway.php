@@ -518,7 +518,7 @@ abstract class SubscriptionGateway extends Gateway
     protected function createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
     {
         $this->configureStripeClient();
-        $payment = new SubscriptionPayment([
+        return new SubscriptionPayment([
             'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
@@ -526,8 +526,6 @@ abstract class SubscriptionGateway extends Gateway
             'paid' => $data['paid'],
             'response' => Json::encode($data),
         ]);
-
-        return $payment;
     }
 
     /**
