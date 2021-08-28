@@ -310,7 +310,7 @@ class PaymentIntents extends BaseGateway
         if ($parameters->trialDays !== null) {
             $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
         } else if ($parameters->trialEnd !== null) {
-            $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;;
+            $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;
         } else {
             $subscriptionParameters['trial_from_plan'] = true;
         }
