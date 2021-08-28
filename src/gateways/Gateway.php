@@ -493,7 +493,10 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * @inheritdoc
+     * Returns whether this subscription has billing issues.
+     *
+     * @param Subscription $subscription
+     * @return bool
      */
     public function hasBillingIssue(Subscription $subscription): bool
     {
