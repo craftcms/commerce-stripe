@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "770ee85bf8f2274ac66e3cf7d3282b32",
+    "content-hash": "a81ac21300fe5f392feda56edc3a8a12",
     "packages": [
         {
             "name": "cebe/markdown",
@@ -648,16 +648,16 @@
         },
         {
             "name": "craftcms/commerce",
-            "version": "3.4.2",
+            "version": "dev-develop",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/commerce.git",
-                "reference": "376cb4da804417edb1b921ea0a6d7194d13c05ef"
+                "reference": "d6efff0bf786711f5716af8194924cf80d379d4c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/commerce/zipball/376cb4da804417edb1b921ea0a6d7194d13c05ef",
-                "reference": "376cb4da804417edb1b921ea0a6d7194d13c05ef",
+                "url": "https://api.github.com/repos/craftcms/commerce/zipball/d6efff0bf786711f5716af8194924cf80d379d4c",
+                "reference": "d6efff0bf786711f5716af8194924cf80d379d4c",
                 "shasum": ""
             },
             "require": {
@@ -677,6 +677,7 @@
                 "fzaninotto/faker": "^1.8",
                 "vlucas/phpdotenv": "^3.4"
             },
+            "default-branch": true,
             "type": "craft-plugin",
             "extra": {
                 "handle": "commerce",
@@ -712,7 +713,7 @@
                 "rss": "https://github.com/craftcms/commerce/releases.atom",
                 "source": "https://github.com/craftcms/commerce"
             },
-            "time": "2021-08-11T14:06:18+00:00"
+            "time": "2021-08-28T14:26:04+00:00"
         },
         {
             "name": "craftcms/oauth2-craftid",
@@ -6456,9 +6457,18 @@
             "time": "2021-08-21T11:55:13+00:00"
         }
     ],
-    "aliases": [],
+    "aliases": [
+        {
+            "package": "craftcms/commerce",
+            "version": "dev-develop",
+            "alias": "3.4.3",
+            "alias_normalized": "3.4.3.0"
+        }
+    ],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {
+        "craftcms/commerce": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": [],

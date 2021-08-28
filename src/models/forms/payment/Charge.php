@@ -39,9 +39,11 @@ class Charge extends CreditCardPaymentForm
     /**
      * @inheritdoc
      */
-    public function rules(): array
+    protected function defineRules(): array
     {
-        return [[['token'], 'required']];
+        return [
+            [['token'], 'required'],
+        ];
     }
 
     /**

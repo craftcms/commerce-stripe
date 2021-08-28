@@ -101,9 +101,8 @@ class Customer extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    protected function defineRules(): array
     {
-
         return [
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
             [['gatewayId', 'userId', 'reference', 'response'], 'required'],

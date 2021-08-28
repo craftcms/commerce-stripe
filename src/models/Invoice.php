@@ -70,7 +70,7 @@ class Invoice extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    protected function defineRules(): array
     {
         return [
             [['subscriptionId', 'reference', 'invoiceData'], 'required'],
