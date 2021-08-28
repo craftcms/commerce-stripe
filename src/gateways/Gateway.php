@@ -34,12 +34,15 @@ use craft\elements\User;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Exception;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Subscription as StripeSubscription;
+use Throwable;
 use yii\base\NotSupportedException;
+use function count;
 
 /**
  * This class represents the Stripe Charge gateway
@@ -188,7 +191,7 @@ class Gateway extends BaseGateway
                 'response' => $stripeResponse->toArray(),
                 'description' => $description,
             ]);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }
     }
@@ -210,7 +213,7 @@ class Gateway extends BaseGateway
 
         $sources = $stripeCustomer->sources->all();
 
-        if (\count($sources->data) === 0) {
+        if (count($sources->data) === 0) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
@@ -233,7 +236,7 @@ class Gateway extends BaseGateway
 
         try {
             $subscription = StripeSubscription::create($event->parameters);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
             throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
@@ -315,7 +318,7 @@ class Gateway extends BaseGateway
                         $charge = Charge::create($requestData, ['idempotency_key' => $childTransaction->hash]);
 
                         $stripeResponse = $this->createPaymentResponseFromApiResource($charge);
-                    } catch (\Exception $exception) {
+                    } catch (Exception $exception) {
                         $stripeResponse = $this->createPaymentResponseFromError($exception);
                     }
 
@@ -351,7 +354,7 @@ class Gateway extends BaseGateway
                     'transaction' => $childTransaction,
                 ]));
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             Craft::error('Could not process webhook ' . $data['id'] . ': ' . $exception->getMessage(), 'stripe');
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
@@ -390,7 +393,7 @@ class Gateway extends BaseGateway
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
             return $this->createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -416,7 +419,7 @@ class Gateway extends BaseGateway
             $charge->capture([], ['idempotency_key' => $reference]);
 
             return $this->createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -441,7 +444,7 @@ class Gateway extends BaseGateway
             $refund = Refund::create($request);
 
             return $this->createPaymentResponseFromApiResource($refund);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -482,7 +485,7 @@ class Gateway extends BaseGateway
             /** @var Source $source */
             $source = Source::retrieve($token);
             $source->detach();
-        } catch (\Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Assume deleted.
         }
 

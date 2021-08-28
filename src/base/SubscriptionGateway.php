@@ -37,6 +37,9 @@ use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
 use Stripe\Subscription as StripeSubscription;
 use Stripe\SubscriptionItem;
+use Throwable;
+use yii\base\InvalidConfigException;
+use function count;
 
 /**
  * This class represents the abstract Stripe base gateway
@@ -107,7 +110,7 @@ abstract class SubscriptionGateway extends Gateway
             }
 
             return $this->createSubscriptionResponse($response);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new SubscriptionException('Failed to cancel subscription: ' . $exception->getMessage());
         }
     }
@@ -297,7 +300,7 @@ abstract class SubscriptionGateway extends Gateway
         $planProductMap = [];
         $planList = [];
 
-        if (\count($plans->data)) {
+        if (count($plans->data)) {
             foreach ($plans->data as $plan) {
                 /** @var StripePlan $plan */
                 $plan = $plan->toArray();
@@ -313,7 +316,7 @@ abstract class SubscriptionGateway extends Gateway
 
             $productList = [];
 
-            if (\count($products->data)) {
+            if (count($products->data)) {
                 foreach ($products->data as $product) {
                     /** @var StripeProduct $product */
                     $product = $product->toArray();
@@ -438,7 +441,7 @@ abstract class SubscriptionGateway extends Gateway
                     'customer' => $stripeSubscription->customer,
                     'subscription' => $stripeSubscription->id,
                 ]);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 // Or, maybe, Stripe already invoiced them because reasons.
             }
         }
@@ -572,7 +575,7 @@ abstract class SubscriptionGateway extends Gateway
      * Handle a successful invoice payment event.
      *
      * @param array $data
-     * @throws \Throwable if something went wrong when processing the invoice
+     * @throws Throwable if something went wrong when processing the invoice
      */
     protected function handleInvoiceSucceededEvent(array $data)
     {
@@ -614,7 +617,7 @@ abstract class SubscriptionGateway extends Gateway
      * Handle Plan events
      *
      * @param array $data
-     * @throws \yii\base\InvalidConfigException If plan not available
+     * @throws InvalidConfigException If plan not available
      */
     protected function handlePlanEvent(array $data)
     {
@@ -636,7 +639,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @param array $data
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     protected function handleSubscriptionExpired(array $data)
     {
@@ -659,7 +662,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @param array $data
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     protected function handleSubscriptionUpdated(array $data)
     {

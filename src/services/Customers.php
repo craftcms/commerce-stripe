@@ -19,6 +19,7 @@ use craft\db\Query;
 use craft\elements\User;
 use Stripe\Customer as StripeCustomer;
 use Stripe\Stripe;
+use Throwable;
 use yii\base\Component;
 use yii\base\Exception;
 
@@ -161,7 +162,7 @@ class Customers extends Component
      * @param int $id The id
      *
      * @return bool
-     * @throws \Throwable in case something went wrong when deleting.
+     * @throws Throwable in case something went wrong when deleting.
      */
     public function deleteCustomerById($id): bool
     {

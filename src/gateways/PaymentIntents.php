@@ -28,17 +28,21 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\errors\ElementNotFoundException;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Exception;
 use Stripe\Card;
 use Stripe\Charge as StripeCharge;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
+use Throwable;
 use yii\base\NotSupportedException;
+use function count;
 
 /**
  * This class represents the Stripe Payment Intents gateway
@@ -128,7 +132,7 @@ class PaymentIntents extends BaseGateway
             $intent->capture([], ['idempotency_key' => $reference]);
 
             return $this->createPaymentResponseFromApiResource($intent);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -176,7 +180,7 @@ class PaymentIntents extends BaseGateway
         if (!empty($intentData['payment_method'])) {
             try {
                 $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 return $this->createPaymentResponseFromError($exception);
             }
         }
@@ -215,7 +219,7 @@ class PaymentIntents extends BaseGateway
                 $refund = Refund::create($request);
 
                 return $this->createPaymentResponseFromApiResource($refund);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 return $this->createPaymentResponseFromError($exception);
             }
         }
@@ -244,7 +248,7 @@ class PaymentIntents extends BaseGateway
             }
 
             return $this->createPaymentResponseFromApiResource($refund);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -282,7 +286,7 @@ class PaymentIntents extends BaseGateway
                 'response' => $stripeResponse->toArray(),
                 'description' => $description,
             ]);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }
     }
@@ -298,7 +302,7 @@ class PaymentIntents extends BaseGateway
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
         $paymentMethods = PaymentMethod::all(['customer' => $customer->reference, 'type' => 'card']);
 
-        if (\count($paymentMethods->data) === 0) {
+        if (count($paymentMethods->data) === 0) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
@@ -325,7 +329,7 @@ class PaymentIntents extends BaseGateway
 
         try {
             $subscription = StripeSubscription::create($event->parameters);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
             throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
@@ -344,7 +348,7 @@ class PaymentIntents extends BaseGateway
             /** @var PaymentMethod $paymentMethod */
             $paymentMethod = PaymentMethod::retrieve($token);
             $paymentMethod->detach();
-        } catch (\Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Assume deleted.
         }
 
@@ -427,8 +431,8 @@ class PaymentIntents extends BaseGateway
      * Handle a failed invoice by updating the subscription data for the subscription it failed.
      *
      * @param array $data
-     * @throws \Throwable
-     * @throws \craft\errors\ElementNotFoundException
+     * @throws Throwable
+     * @throws ElementNotFoundException
      * @throws \yii\base\Exception
      */
     protected function handleInvoiceFailed(array $data)
@@ -532,7 +536,7 @@ class PaymentIntents extends BaseGateway
             $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
 
             return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
