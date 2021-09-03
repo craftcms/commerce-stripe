@@ -57,6 +57,7 @@ class Install extends Migration
             'gatewayId' => $this->integer()->notNull(),
             'customerId' => $this->integer()->notNull(),
             'orderId' => $this->integer()->notNull(),
+            'transactionHash' => $this->string(),
             'intentData' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),

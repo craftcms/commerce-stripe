@@ -19,6 +19,7 @@ use yii\db\ActiveQueryInterface;
  * @property int $customerId
  * @property int $gatewayId
  * @property int $orderId
+ * @property string $transactionHash
  * @property string $reference
  * @property string $intentData
  * @property Gateway $gateway
