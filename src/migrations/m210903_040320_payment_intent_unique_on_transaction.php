@@ -23,6 +23,7 @@ class m210903_040320_payment_intent_unique_on_transaction extends Migration
             $this->addColumn('{{%stripe_paymentintents}}', 'transactionHash', $this->string()->after('orderId'));
         }
 
+        MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_paymentintents}}', $this);
         MigrationHelper::dropAllIndexesOnTable('{{%stripe_paymentintents}}', $this);
 
         $gatewayTypes = (new Query())
@@ -47,6 +48,10 @@ class m210903_040320_payment_intent_unique_on_transaction extends Migration
         foreach ($transactions as $transaction) {
             $this->update('{{%stripe_paymentintents}}', ['transactionHash' => $transaction['hash']], ['reference' => $transaction['reference']]);
         }
+
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE', null);
+        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'orderId', '{{%commerce_orders}}', 'id', 'CASCADE', null);
 
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId', 'transactionHash'], true);
