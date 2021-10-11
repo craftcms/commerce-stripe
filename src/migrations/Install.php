@@ -57,6 +57,7 @@ class Install extends Migration
             'gatewayId' => $this->integer()->notNull(),
             'customerId' => $this->integer()->notNull(),
             'orderId' => $this->integer()->notNull(),
+            'transactionHash' => $this->string()->notNull(),
             'intentData' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
@@ -76,7 +77,7 @@ class Install extends Migration
         $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', false);
         $this->createIndex(null, '{{%stripe_invoices}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
-        $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId'], true);
+        $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId', 'transactionHash'], true);
 
         return true;
     }

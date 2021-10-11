@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a PHP error that prevented multiple payments on a single order. ([#147](https://github.com/craftcms/commerce-stripe/issues/147))
+
 ## 2.3.2.1 - 2020-11-02
 
 ### Fixed
