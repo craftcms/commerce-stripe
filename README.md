@@ -101,6 +101,12 @@ For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours b
 
 This setting affects all Stripe gateways on your Commerce installation.
 
+### The `allowSubscriptionWithoutPaymentMethod` setting
+
+Normally, this plugin will not allow a subscription to be created if the customer has no payment methods in Stripe. By setting this to true in your `commerce-stripe.php` config file, a customer can create a subscription without any payment information. This is useful for trial subscription flows where you do not wish to take payment information up front.
+
+This setting affect all Stripe gateways on your Commerce installation.
+
 ## Subscriptions
 
 ### Creating a Subscription Plan
