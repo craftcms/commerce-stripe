@@ -314,7 +314,7 @@ var stripe = Stripe('{{ parseEnv(cart.gateway.publishableKey) }}');
 This expects the Stripe gateway to be set on the order. If you’re setting it on the order during the payment submission, you would need to get a reference to the gateway first:
 
 ```twig
-{% set gateway = craft.commerce.gateways.getGatewayById('YOUR_GATEWAY_ID') }
+{% set gateway = craft.commerce.gateways.getGatewayById('YOUR_GATEWAY_ID') %}
 ```
 
 Then you could instantiate the `stripe` object using `gateway.publishableKey`:
