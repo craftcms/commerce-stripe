@@ -11,9 +11,10 @@ use Craft;
 use craft\commerce\base\GatewayInterface;
 use craft\commerce\base\Model;
 use craft\commerce\elements\Order;
+use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
 
 /**
@@ -27,9 +28,6 @@ use craft\elements\User;
  */
 class PaymentIntent extends Model
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var int Payment Intent ID
      */
@@ -49,6 +47,11 @@ class PaymentIntent extends Model
      * @var int The order ID.
      */
     public $orderId;
+
+    /**
+     * @var string The Transaction Hash.
+     */
+    public $transactionHash;
 
     /**
      * @var string Reference
@@ -80,8 +83,10 @@ class PaymentIntent extends Model
      */
     private $_order;
 
-    // Public Methods
-    // =========================================================================
+    /**
+     * @var Transaction|null
+     */
+    private $_transaction;
 
     /**
      * Returns the customer identifier
@@ -94,7 +99,7 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the user element associated with this customer.
+     * Returns the user element associated with this this payment intent.
      *
      * @return User|null
      */
@@ -111,7 +116,7 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the gateway associated with this customer.
+     * Returns the gateway associated with this this payment intent.
      *
      * @return GatewayInterface|null
      */
@@ -125,7 +130,7 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the user element associated with this customer.
+     * Returns the user customer associated with this payment intent.
      *
      * @return Customer|null
      */
@@ -139,7 +144,7 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the gateway associated with this customer.
+     * Returns the gateway associated with this payment intent.
      *
      * @return Order|null
      */
@@ -153,14 +158,27 @@ class PaymentIntent extends Model
     }
 
     /**
+     * Returns the transation associated with this payment intent.
+     *
+     * @return Order|null
+     */
+    public function getTransaction()
+    {
+        if (null === $this->_tranasction) {
+            $this->_transaction = Commerce::getInstance()->getTransactions()->getTransactionByHash($this->transactionHash);
+        }
+
+        return $this->_transaction;
+    }
+
+    /**
      * @inheritdoc
      */
     public function rules()
     {
-
         return [
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
-            [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId'], 'required']
+            [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId', 'transactionHash'], 'required'],
         ];
     }
 }

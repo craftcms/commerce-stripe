@@ -17,9 +17,6 @@ use yii\base\Event;
  */
 class ReceiveWebhookEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var array The webhook data
      */

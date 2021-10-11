@@ -13,7 +13,7 @@ use craft\commerce\errors\NotImplementedException;
 class ChargeResponse implements RequestResponseInterface
 {
     /**
-     * @var
+     * @var array
      */
     protected $data = [];
 
@@ -30,9 +30,10 @@ class ChargeResponse implements RequestResponseInterface
     /**
      * Construct the response
      *
-     * @param $data
+     * @param array $data
      */
-    public function __construct($data) {
+    public function __construct($data)
+    {
         $this->data = $data;
     }
 

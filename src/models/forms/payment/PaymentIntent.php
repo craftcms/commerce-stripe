@@ -29,8 +29,6 @@ class PaymentIntent extends CreditCardPaymentForm
      */
     public $paymentMethodId;
 
-    // Public methods
-    // =========================================================================
     /**
      * @inheritdoc
      */

@@ -18,9 +18,6 @@ use craft\events\CancelableEvent;
  */
 class SaveInvoiceEvent extends CancelableEvent
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var Invoice The invoice being saved.
      */

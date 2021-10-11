@@ -26,8 +26,8 @@ use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Stripe\ApiResource;
 use Stripe\Customer;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\CardException;
-use Stripe\Exception\ExceptionInterface;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
@@ -88,7 +88,7 @@ abstract class Gateway extends BaseGateway
      */
     const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
-     /**
+    /**
      * string The Stripe API version to use.
      */
     const STRIPE_API_VERSION = '2019-03-14';
@@ -180,7 +180,7 @@ abstract class Gateway extends BaseGateway
 
             if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
                 $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
-                    'webhookData' => $data
+                    'webhookData' => $data,
                 ]));
             }
         } else {
@@ -357,13 +357,13 @@ abstract class Gateway extends BaseGateway
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             'currency' => $transaction->paymentCurrency,
             'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
-            'metadata' => $metadata
+            'metadata' => $metadata,
         ];
 
         $event = new BuildGatewayRequestEvent([
             'transaction' => $transaction,
             'metadata' => $metadata,
-            'request' => $request
+            'request' => $request,
         ]);
 
         // TODO provide context
@@ -392,7 +392,7 @@ abstract class Gateway extends BaseGateway
     protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
         $this->configureStripeClient();
-        $data = $resource->jsonSerialize();
+        $data = $resource->toArray();
 
         return $this->getResponseModel($data);
     }
@@ -414,7 +414,7 @@ abstract class Gateway extends BaseGateway
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
             $data['id'] = $body['error']['charge'];
-        } else if ($exception instanceof ExceptionInterface) {
+        } else if ($exception instanceof ApiErrorException) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
             $data = $body;
@@ -472,7 +472,7 @@ abstract class Gateway extends BaseGateway
                 /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
-                    'token' => $token
+                    'token' => $token,
                 ]);
 
                 return $tokenSource->id;

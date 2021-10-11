@@ -22,13 +22,10 @@ use craft\helpers\MigrationHelper;
  */
 class Install extends Migration
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
-    public function safeUp()
+    public function safeUp(): bool
     {
         // Convert any built-in Stripe gateways to ours
         $this->_convertGateways();
@@ -60,6 +57,7 @@ class Install extends Migration
             'gatewayId' => $this->integer()->notNull(),
             'customerId' => $this->integer()->notNull(),
             'orderId' => $this->integer()->notNull(),
+            'transactionHash' => $this->string()->notNull(),
             'intentData' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),
             'dateUpdated' => $this->dateTime()->notNull(),
@@ -79,7 +77,7 @@ class Install extends Migration
         $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', false);
         $this->createIndex(null, '{{%stripe_invoices}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
-        $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId'], true);
+        $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId', 'transactionHash'], true);
 
         return true;
     }
@@ -87,7 +85,7 @@ class Install extends Migration
     /**
      * @inheritdoc
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
 
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_invoices}}', $this);
@@ -99,9 +97,6 @@ class Install extends Migration
 
         return true;
     }
-
-    // Private Methods
-    // =========================================================================
 
     /**
      * Converts any old school Stripe gateways to this one
@@ -131,7 +126,7 @@ class Install extends Migration
 
             $values = [
                 'type' => Gateway::class,
-                'settings' => $settings
+                'settings' => $settings,
             ];
 
             $dbConnection->createCommand()
