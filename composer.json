@@ -1,7 +1,7 @@
 {
   "name": "craftcms/commerce-stripe",
-  "description": "Stripe integration for Craft Commerce 2 & 3",
-  "version": "2.3.2.2",
+  "description": "Stripe integration for Craft Commerce 4",
+  "version": "3.0",
   "type": "craft-plugin",
   "keywords": [
     "stripe",
@@ -24,8 +24,8 @@
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
   "require": {
-    "craftcms/cms": "^3.1.5",
-    "craftcms/commerce": "^2.2.0|^3.0",
+    "craftcms/cms": "^4.0",
+    "craftcms/commerce": "^4.0",
     "stripe/stripe-php": "^7.0"
   },
   "require-dev": {
