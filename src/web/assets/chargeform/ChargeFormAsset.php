@@ -7,7 +7,7 @@
 
 namespace craft\commerce\stripe\web\assets\chargeform;
 
-use craft\web\AssetBundle;
+use yii\web\AssetBundle;
 use yii\web\JqueryAsset;
 
 /**

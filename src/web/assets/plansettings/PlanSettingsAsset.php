@@ -7,7 +7,7 @@
 
 namespace craft\commerce\stripe\web\assets\plansettings;
 
-use craft\web\AssetBundle;
+use yii\web\AssetBundle;
 use yii\web\JqueryAsset;
 
 /**
