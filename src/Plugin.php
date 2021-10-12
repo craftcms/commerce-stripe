@@ -15,27 +15,28 @@ use craft\commerce\stripe\plugin\Services;
 use craft\events\RegisterComponentTypesEvent;
 use yii\base\Event;
 
-
 /**
  * Plugin represents the Stripe integration plugin.
  *
  * @method Settings getSettings()
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
+ *
+ * @property-read Settings $settings
  */
 class Plugin extends \craft\base\Plugin
 {
     /**
      * @inheritDoc
      */
-    public $schemaVersion = '2.4.0';
+    public string $schemaVersion = '2.4.0';
 
     use Services;
 
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -54,7 +55,7 @@ class Plugin extends \craft\base\Plugin
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel()
+    protected function createSettingsModel(): Settings
     {
         return new Settings();
     }

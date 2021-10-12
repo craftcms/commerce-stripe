@@ -63,7 +63,7 @@ abstract class SubscriptionGateway extends Gateway
      * });
      * ```
      */
-    const EVENT_CREATE_INVOICE = 'createInvoice';
+    public const EVENT_CREATE_INVOICE = 'createInvoice';
 
     /**
      * @event SubscriptionRequestEvent The event that is triggered when a subscription request is being built.
@@ -81,12 +81,12 @@ abstract class SubscriptionGateway extends Gateway
      * });
      * ```
      */
-    const EVENT_BEFORE_SUBSCRIBE = 'beforeSubscribe';
+    public const EVENT_BEFORE_SUBSCRIBE = 'beforeSubscribe';
 
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2019-03-14';
+    public const STRIPE_API_VERSION = '2019-03-14';
 
     /**
      * @inheritdoc
@@ -169,7 +169,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * @inheritdoc
      */
-    public function getPlanSettingsHtml(array $params = [])
+    public function getPlanSettingsHtml(array $params = []): ?string
     {
         $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
@@ -217,7 +217,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * @inheritdoc
      */
-    public function refreshPaymentHistory(Subscription $subscription)
+    public function refreshpaymenthistory(Subscription $subscription): void
     {
         $this->configureStripeClient();
         // Update the subscription period.
@@ -452,6 +452,8 @@ abstract class SubscriptionGateway extends Gateway
      * @param Subscription $subscription
      * @param BasePlan $plan
      * @return float
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \yii\base\InvalidConfigException
      */
     public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
     {
@@ -482,7 +484,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * @inheritdoc
      */
-    public function handleWebhook(array $data)
+    public function handleWebhook(array $data): void
     {
         $this->configureStripeClient();
         switch ($data['type']) {
@@ -549,8 +551,9 @@ abstract class SubscriptionGateway extends Gateway
      * Handle a created invoice.
      *
      * @param array $data
+     * @throws \Stripe\Exception\ApiErrorException
      */
-    protected function handleInvoiceCreated(array $data)
+    protected function handleInvoiceCreated(array $data): void
     {
         $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
@@ -576,7 +579,7 @@ abstract class SubscriptionGateway extends Gateway
      * @param array $data
      * @throws \Throwable if something went wrong when processing the invoice
      */
-    protected function handleInvoiceSucceededEvent(array $data)
+    protected function handleInvoiceSucceededEvent(array $data): void
     {
         $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
@@ -618,7 +621,7 @@ abstract class SubscriptionGateway extends Gateway
      * @param array $data
      * @throws \yii\base\InvalidConfigException If plan not available
      */
-    protected function handlePlanEvent(array $data)
+    protected function handlePlanEvent(array $data): void
     {
         $this->configureStripeClient();
         $planService = Commerce::getInstance()->getPlans();
@@ -640,7 +643,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @throws \Throwable
      */
-    protected function handleSubscriptionExpired(array $data)
+    protected function handleSubscriptionExpired(array $data): void
     {
         $this->configureStripeClient();
         $stripeSubscription = $data['data']['object'];
@@ -663,7 +666,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @throws \Throwable
      */
-    protected function handleSubscriptionUpdated(array $data)
+    protected function handleSubscriptionUpdated(array $data): void
     {
         $this->configureStripeClient();
         $stripeSubscription = $data['data']['object'];
@@ -703,8 +706,9 @@ abstract class SubscriptionGateway extends Gateway
      * Set the various status properties on a Subscription by the subscription data set on it.
      *
      * @param Subscription $subscription
+     * @throws \Exception
      */
-    protected function setSubscriptionStatusData(Subscription $subscription)
+    protected function setSubscriptionStatusData(Subscription $subscription): void
     {
         $this->configureStripeClient();
         $subscriptionData = $subscription->getSubscriptionData();
@@ -753,6 +757,7 @@ abstract class SubscriptionGateway extends Gateway
      * @param array $stripeInvoice
      * @param Subscription $subscription
      * @return Invoice
+     * @throws \yii\base\Exception
      */
     protected function saveSubscriptionInvoice(array $stripeInvoice, Subscription $subscription): Invoice
     {

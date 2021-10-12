@@ -58,7 +58,7 @@ class Gateway extends BaseGateway
      * ```php
      * use craft\commerce\Plugin as Commerce;
      * use craft\commerce\stripe\events\Receive3dsPaymentEvent;
-     * use use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+     * use craft\commerce\stripe\gateways\Gateway as StripeGateway;
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_RECEIVE_3DS_PAYMENT, function(Receive3dsPaymentEvent $e) {
@@ -71,32 +71,32 @@ class Gateway extends BaseGateway
      * });
      * ```
      */
-    const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
+    public const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $publishableKey;
+    public ?string $publishableKey = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $apiKey;
-
-    /**
-     * @var bool
-     */
-    public $sendReceiptEmail;
+    public ?string $apiKey = null;
 
     /**
      * @var bool
      */
-    public $enforce3dSecure;
+    public bool $sendReceiptEmail = false;
 
     /**
-     * @var string
+     * @var bool
      */
-    public $signingSecret;
+    public bool $enforce3dSecure  = false;
+
+    /**
+     * @var string|null
+     */
+    public ?string $signingSecret = null;
 
     /**
      * @inheritdoc
@@ -109,7 +109,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getPaymentFormHtml(array $params)
+    public function getPaymentFormHtml(array $params): ?string
     {
         $this->configureStripeClient();
         $defaults = [
@@ -151,7 +151,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getSettingsHtml(): ?string
     {
         $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/chargeSettings', ['gateway' => $this]);
@@ -257,7 +257,7 @@ class Gateway extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function handleWebhook(array $data)
+    public function handleWebhook(array $data): void
     {
 
         $this->configureStripeClient();
@@ -274,7 +274,7 @@ class Gateway extends BaseGateway
      * @param array $data
      * @throws TransactionException if reasons
      */
-    protected function handle3DSecureFlowEvent(array $data)
+    protected function handle3DSecureFlowEvent(array $data): void
     {
         $this->configureStripeClient();
 

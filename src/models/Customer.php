@@ -26,39 +26,39 @@ use craft\elements\User;
 class Customer extends Model
 {
     /**
-     * @var int Customer ID
+     * @var int|null Customer ID
      */
-    public $id;
+    public ?int $id = null;
 
     /**
-     * @var int The user ID
+     * @var int|null The user ID
      */
-    public $userId;
+    public ?int $userId = null;
 
     /**
-     * @var int The gateway ID.
+     * @var int|null The gateway ID.
      */
-    public $gatewayId;
+    public ?int $gatewayId = null;
 
     /**
-     * @var string Reference
+     * @var string|null Reference
      */
-    public $reference;
+    public ?string $reference = null;
 
     /**
-     * @var string Response data
+     * @var array|null Response data
      */
-    public $response;
+    public ?array $response = null;
 
     /**
      * @var User|null $_user
      */
-    private $_user;
+    private ?User $_user = null;
 
     /**
      * @var GatewayInterface|null $_user
      */
-    private $_gateway;
+    private ?GatewayInterface $_gateway = null;
 
     /**
      * Returns the customer identifier
@@ -67,7 +67,7 @@ class Customer extends Model
      */
     public function __toString()
     {
-        return $this->reference;
+        return $this->reference ?? '';
     }
 
     /**
@@ -88,6 +88,7 @@ class Customer extends Model
      * Returns the gateway associated with this customer.
      *
      * @return GatewayInterface|null
+     * @throws \yii\base\InvalidConfigException
      */
     public function getGateway()
     {
@@ -101,9 +102,8 @@ class Customer extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    public function rules(): array
     {
-
         return [
             [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
             [['gatewayId', 'userId', 'reference', 'response'], 'required'],

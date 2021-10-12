@@ -20,14 +20,14 @@ use craft\commerce\stripe\Plugin;
 class Charge extends CreditCardPaymentForm
 {
     /**
-     * @var string $customer the Stripe customer token.
+     * @var string|null $customer the Stripe customer token.
      */
-    public $customer;
+    public ?string $customer = null;
 
     /**
      * @inheritdoc
      */
-    public function setAttributes($values, $safeOnly = true)
+    public function setAttributes($values, $safeOnly = true): void
     {
         parent::setAttributes($values, $safeOnly);
 
@@ -47,7 +47,7 @@ class Charge extends CreditCardPaymentForm
     /**
      * @inheritdoc
      */
-    public function populateFromPaymentSource(PaymentSource $paymentSource)
+    public function populateFromPaymentSource(PaymentSource $paymentSource): void
     {
         $this->token = $paymentSource->token;
 

@@ -65,7 +65,7 @@ abstract class Gateway extends BaseGateway
      * ```
      *
      */
-    const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
+    public const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
 
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
@@ -86,34 +86,34 @@ abstract class Gateway extends BaseGateway
      * });
      * ```
      */
-    const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
+    public const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
     /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2019-03-14';
+    public const STRIPE_API_VERSION = '2019-03-14';
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $publishableKey;
+    public ?string $publishableKey = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $apiKey;
+    public ?string $apiKey = null;
 
     /**
      * @var bool
      */
-    public $sendReceiptEmail;
+    public bool $sendReceiptEmail = false;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $signingSecret;
+    public ?string $signingSecret = null;
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
@@ -292,9 +292,10 @@ abstract class Gateway extends BaseGateway
 
     /**
      * @return string
+     * @throws \Exception
      * @since 2.3.1
      */
-    public function getTransactionHashFromWebhook()
+    public function getTransactionHashFromWebhook(): ?string
     {
         $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
@@ -504,7 +505,7 @@ abstract class Gateway extends BaseGateway
      * @param array $data
      * @throws TransactionException
      */
-    protected function handleWebhook(array $data)
+    protected function handleWebhook(array $data): void
     {
         $this->configureStripeClient();
         // Do nothing
@@ -513,7 +514,7 @@ abstract class Gateway extends BaseGateway
     /**
      * Sets the stripe global connection to this gateway API key
      */
-    public function configureStripeClient()
+    public function configureStripeClient(): void
     {
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiKey(Craft::parseEnv($this->apiKey));

@@ -49,24 +49,24 @@ use yii\base\NotSupportedException;
 class PaymentIntents extends BaseGateway
 {
     /**
-     * @var string
+     * @var string|null
      */
-    public $publishableKey;
+    public ?string $publishableKey = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $apiKey;
+    public ?string $apiKey = null;
 
     /**
      * @var bool
      */
-    public $sendReceiptEmail;
+    public bool $sendReceiptEmail = false;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $signingSecret;
+    public ?string $signingSecret = null;
 
     /**
      * @inheritdoc
@@ -79,7 +79,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getPaymentFormHtml(array $params)
+    public function getPaymentFormHtml(array $params): ?string
     {
         $this->configureStripeClient();
         $defaults = [
@@ -187,7 +187,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getSettingsHtml(): ?string
     {
         $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/intentsSettings', ['gateway' => $this]);
@@ -413,7 +413,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function handleWebhook(array $data)
+    public function handleWebhook(array $data): void
     {
         $this->configureStripeClient();
         switch ($data['type']) {
@@ -433,7 +433,7 @@ class PaymentIntents extends BaseGateway
      * @throws \craft\errors\ElementNotFoundException
      * @throws \yii\base\Exception
      */
-    protected function handleInvoiceFailed(array $data)
+    protected function handleInvoiceFailed(array $data): void
     {
         $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
@@ -457,7 +457,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    protected function handleSubscriptionUpdated(array $data)
+    protected function handleSubscriptionUpdated(array $data): void
     {
         $this->configureStripeClient();
         // Fetch expanded data
@@ -545,8 +545,12 @@ class PaymentIntents extends BaseGateway
      *
      * @param Subscription $subscription
      * @return Subscription
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
      */
-    protected function refreshSubscriptionData(Subscription $subscription)
+    protected function refreshSubscriptionData(Subscription $subscription): Subscription
     {
         $this->configureStripeClient();
         $stripeSubscription = StripeSubscription::retrieve([
@@ -565,8 +569,10 @@ class PaymentIntents extends BaseGateway
      * Confirm a payment intent and set the return URL.
      *
      * @param PaymentIntent $stripePaymentIntent
+     * @param Transaction $transaction
+     * @throws \Stripe\Exception\ApiErrorException
      */
-    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
+    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction): void
     {
         $this->configureStripeClient();
         $stripePaymentIntent->confirm([
@@ -579,6 +585,7 @@ class PaymentIntents extends BaseGateway
      *
      * @param Subscription $subscription
      * @return array
+     * @throws \Stripe\Exception\ApiErrorException
      */
     private function _getExpandedSubscriptionData(Subscription $subscription): array
     {
