@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.4.0 - 2021-10-13
 
 ### Added
 - Added support for the `charge.refund.updated` Stripe webhook event.
