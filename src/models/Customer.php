@@ -13,6 +13,7 @@ use craft\commerce\base\Model;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
+use yii\base\InvalidConfigException;
 
 /**
  * Stripe customer model
@@ -75,7 +76,7 @@ class Customer extends Model
      *
      * @return User|null
      */
-    public function getUser()
+    public function getUser(): ?User
     {
         if (null === $this->_user) {
             $this->_user = Craft::$app->getUsers()->getUserById($this->userId);
@@ -88,9 +89,9 @@ class Customer extends Model
      * Returns the gateway associated with this customer.
      *
      * @return GatewayInterface|null
-     * @throws \yii\base\InvalidConfigException
+     * @throws InvalidConfigException
      */
-    public function getGateway()
+    public function getGateway(): ?GatewayInterface
     {
         if (null === $this->_gateway) {
             $this->_gateway = Commerce::getInstance()->getGateways()->getGatewayById($this->gatewayId);

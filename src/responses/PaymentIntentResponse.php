@@ -15,14 +15,14 @@ class PaymentIntentResponse implements RequestResponseInterface
     /**
      * @var array the response data
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * Response constructor.
      *
      * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->data = $data;
     }

@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\web\Controller as BaseController;
+use Throwable;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
@@ -25,7 +26,7 @@ class DefaultController extends BaseController
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
         $this->defaultAction = 'fetch-plans';
@@ -36,7 +37,7 @@ class DefaultController extends BaseController
      *
      * @return Response
      */
-    public function actionFetchPlans()
+    public function actionFetchPlans(): Response
     {
         $this->requirePostRequest();
         $this->requireAcceptsJson();
@@ -56,7 +57,7 @@ class DefaultController extends BaseController
             }
 
             return $this->asJson($gateway->getSubscriptionPlans());
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             return $this->asErrorJson($e->getMessage());
         }
     }

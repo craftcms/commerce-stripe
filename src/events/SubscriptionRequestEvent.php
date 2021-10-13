@@ -20,5 +20,5 @@ class SubscriptionRequestEvent extends Event
     /**
      * @var array The subscription parameters
      */
-    public $parameters;
+    public array $parameters;
 }

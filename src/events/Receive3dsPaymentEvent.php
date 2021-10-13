@@ -22,5 +22,5 @@ class Receive3dsPaymentEvent extends Event
     /**
      * @var Transaction The successful transaction
      */
-    public $transaction;
+    public Transaction $transaction;
 }

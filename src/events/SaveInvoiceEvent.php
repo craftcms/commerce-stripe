@@ -21,5 +21,5 @@ class SaveInvoiceEvent extends CancelableEvent
     /**
      * @var Invoice The invoice being saved.
      */
-    public $invoice;
+    public Invoice $invoice;
 }

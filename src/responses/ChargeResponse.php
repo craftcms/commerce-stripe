@@ -15,24 +15,24 @@ class ChargeResponse implements RequestResponseInterface
     /**
      * @var array
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * @var string
      */
-    private $_redirect = '';
+    private string $_redirect = '';
 
     /**
      * @var bool
      */
-    private $_processing = false;
+    private bool $_processing = false;
 
     /**
      * Construct the response
      *
      * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->data = $data;
     }
