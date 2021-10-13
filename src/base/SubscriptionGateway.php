@@ -19,6 +19,7 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -35,6 +36,7 @@ use Stripe\Collection;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
+use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
 use Stripe\SubscriptionItem;
 
@@ -486,6 +488,8 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         switch ($data['type']) {
+            case 'charge.refund.updated':
+                $this->handleRefundUpdated($data);
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);
@@ -543,6 +547,40 @@ abstract class SubscriptionGateway extends Gateway
         $data = $resource->toArray();
 
         return new SubscriptionResponse($data);
+    }
+
+    /**
+     * Handle an updated refund by updating the refund transaction.
+     *
+     * @param array $data
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handleRefundUpdated(array $data)
+    {
+        $stripeRefund = $data['data']['object'];
+        if ($transaction = Commerce::getInstance()->getTransactions()->getTransactionByReference($stripeRefund['id'])) {
+            $transactionRecord = TransactionRecord::findOne($transaction->id);
+            switch ($stripeRefund['status']) {
+                case Refund::STATUS_SUCCEEDED:
+                    $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                    break;
+                case Refund::STATUS_PENDING:
+                    $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+                    break;
+                case Refund::STATUS_FAILED:
+                    $transactionRecord->status = TransactionRecord::STATUS_FAILED;
+                    $transactionRecord->message = $stripeRefund['failure_reason'];
+                    break;
+                default:
+                    $transactionRecord->status = TransactionRecord::STATUS_FAILED;
+            }
+            $transactionRecord->response = $data['data'];
+            // Need to update the record directly as commerce does not allow updating a transaction normally through the service
+            $transactionRecord->save(false);
+            $transaction->getOrder()->updateOrderPaidInformation();
+        }
     }
 
     /**
