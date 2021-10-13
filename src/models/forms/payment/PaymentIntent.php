@@ -29,14 +29,14 @@ class PaymentIntent extends CreditCardPaymentForm
      */
     public $paymentMethodId;
 
-    // Public methods
-    // =========================================================================
     /**
      * @inheritdoc
      */
-    public function rules(): array
+    protected function defineRules(): array
     {
-        return [[['paymentMethodId'], 'required']];
+        return [
+            [['paymentMethodId'], 'required'],
+        ];
     }
 
     /**

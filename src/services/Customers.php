@@ -9,15 +9,17 @@ namespace craft\commerce\stripe\services;
 
 use Craft;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\gateways\Gateway;
-use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\base\Gateway as BaseGateway;
 use craft\commerce\stripe\errors\CustomerException;
+use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\models\Customer;
+use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
 use craft\elements\User;
 use Stripe\Customer as StripeCustomer;
 use Stripe\Stripe;
+use Throwable;
 use yii\base\Component;
 use yii\base\Exception;
 
@@ -29,9 +31,6 @@ use yii\base\Exception;
  */
 class Customers extends Component
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * Returns a customer by gateway and user
      *
@@ -51,21 +50,22 @@ class Customers extends Component
             return new Customer($result);
         }
 
-        Stripe::setApiKey(Craft::parseEnv(Commerce::getInstance()->getGateways()->getGatewayById($gatewayId)->apiKey));
+        /** @var BaseGateway $gateway */
+        $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
+        Stripe::setApiKey(Craft::parseEnv($gateway->apiKey));
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
 
-        /** @var StripeCustomer $stripeCustomer */
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
-            'email' => $user->email
+            'email' => $user->email,
         ]);
 
         $customer = new Customer([
             'userId' => $user->id,
             'gatewayId' => $gatewayId,
             'reference' => $stripeCustomer->id,
-            'response' => $stripeCustomer->jsonSerialize()
+            'response' => $stripeCustomer->toArray(),
         ]);
 
         if (!$this->saveCustomer($customer)) {
@@ -82,7 +82,8 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerById(int $id) {
+    public function getCustomerById(int $id)
+    {
         $customerRow = $this->_createCustomerQuery()
             ->where(['id' => $id])
             ->one();
@@ -101,7 +102,8 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerByReference(string $reference) {
+    public function getCustomerByReference(string $reference)
+    {
         $customerRow = $this->_createCustomerQuery()
             ->where(['reference' => $reference])
             ->one();
@@ -159,7 +161,7 @@ class Customers extends Component
      * @param int $id The id
      *
      * @return bool
-     * @throws \Throwable in case something went wrong when deleting.
+     * @throws Throwable in case something went wrong when deleting.
      */
     public function deleteCustomerById($id): bool
     {
@@ -171,9 +173,6 @@ class Customers extends Component
 
         return false;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Returns a Query object prepped for retrieving customers.

@@ -18,9 +18,6 @@ use craft\commerce\elements\Subscription;
  */
 class Invoice extends Model
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var int Payment source ID
      */
@@ -45,9 +42,6 @@ class Invoice extends Model
      * @var Subscription
      */
     private $_subscription;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * Returns the customer identifier
@@ -76,10 +70,10 @@ class Invoice extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    protected function defineRules(): array
     {
         return [
-            [['subscriptionId', 'reference', 'invoiceData'], 'required']
+            [['subscriptionId', 'reference', 'invoiceData'], 'required'],
         ];
     }
 }

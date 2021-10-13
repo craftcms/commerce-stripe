@@ -17,9 +17,6 @@ use yii\base\Event;
  */
 class CreateInvoiceEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var array The invoice data.
      */

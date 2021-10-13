@@ -29,18 +29,20 @@ use craft\commerce\stripe\events\Receive3dsPaymentEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\Charge as PaymentForm;
 use craft\commerce\stripe\responses\ChargeResponse;
-use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\commerce\stripe\web\assets\chargeform\ChargeFormAsset;
 use craft\elements\User;
 use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Exception;
 use Stripe\ApiResource;
 use Stripe\Charge;
 use Stripe\Refund;
 use Stripe\Source;
 use Stripe\Subscription as StripeSubscription;
+use Throwable;
 use yii\base\NotSupportedException;
+use function count;
 
 /**
  * This class represents the Stripe Charge gateway
@@ -51,9 +53,6 @@ use yii\base\NotSupportedException;
  */
 class Gateway extends BaseGateway
 {
-    // Events
-    // =========================================================================
-
     /**
      * @event Receive3dsPaymentEvent The event that is triggered when a successful 3ds payment is received.
      *
@@ -76,9 +75,6 @@ class Gateway extends BaseGateway
      * ```
      */
     const EVENT_RECEIVE_3DS_PAYMENT = 'receive3dsPayment';
-
-    // Properties
-    // =========================================================================
 
     /**
      * @var string
@@ -104,9 +100,6 @@ class Gateway extends BaseGateway
      * @var string
      */
     public $signingSecret;
-
-    // Public methods
-    // =========================================================================
 
     /**
      * @inheritdoc
@@ -173,7 +166,7 @@ class Gateway extends BaseGateway
     public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
     {
         $this->configureStripeClient();
-        /** @var Payment $sourceData */
+        /** @var PaymentForm $sourceData */
         $sourceData->token = $this->normalizePaymentToken((string)$sourceData->token);
 
         try {
@@ -191,16 +184,14 @@ class Gateway extends BaseGateway
                     $description = $stripeResponse->type;
             }
 
-            $paymentSource = new PaymentSource([
+            return new PaymentSource([
                 'userId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->jsonSerialize(),
-                'description' => $description
+                'response' => $stripeResponse->toArray(),
+                'description' => $description,
             ]);
-
-            return $paymentSource;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }
     }
@@ -222,7 +213,7 @@ class Gateway extends BaseGateway
 
         $sources = $stripeCustomer->sources->all();
 
-        if (\count($sources->data) === 0) {
+        if (count($sources->data) === 0) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
@@ -238,14 +229,14 @@ class Gateway extends BaseGateway
         }
 
         $event = new SubscriptionRequestEvent([
-            'parameters' => $subscriptionParameters
+            'parameters' => $subscriptionParameters,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
 
         try {
             $subscription = StripeSubscription::create($event->parameters);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
             throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
@@ -277,9 +268,6 @@ class Gateway extends BaseGateway
 
         parent::handleWebhook($data);
     }
-
-    // Protected methods
-    // =========================================================================
 
     /**
      * Handle a 3D Secure related event.
@@ -330,7 +318,7 @@ class Gateway extends BaseGateway
                         $charge = Charge::create($requestData, ['idempotency_key' => $childTransaction->hash]);
 
                         $stripeResponse = $this->createPaymentResponseFromApiResource($charge);
-                    } catch (\Exception $exception) {
+                    } catch (Exception $exception) {
                         $stripeResponse = $this->createPaymentResponseFromError($exception);
                     }
 
@@ -363,10 +351,10 @@ class Gateway extends BaseGateway
                 $this->hasEventHandlers(self::EVENT_RECEIVE_3DS_PAYMENT)
             ) {
                 $this->trigger(self::EVENT_RECEIVE_3DS_PAYMENT, new Receive3dsPaymentEvent([
-                    'transaction' => $childTransaction
+                    'transaction' => $childTransaction,
                 ]));
             }
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             Craft::error('Could not process webhook ' . $data['id'] . ': ' . $exception->getMessage(), 'stripe');
             $childTransaction->status = TransactionRecord::STATUS_FAILED;
             Commerce::getInstance()->getTransactions()->saveTransaction($childTransaction);
@@ -385,7 +373,9 @@ class Gateway extends BaseGateway
 
         if ($paymentSource instanceof Source && $paymentSource->status === 'pending' && $paymentSource->flow === 'redirect') {
             // This should only happen for 3D secure payments.
+            /** @var ChargeResponse $response */
             $response = $this->createPaymentResponseFromApiResource($paymentSource);
+            /** @phpstan-ignore-next-line */
             $response->setRedirectUrl($paymentSource->redirect->url);
 
             return $response;
@@ -403,7 +393,7 @@ class Gateway extends BaseGateway
             $charge = Charge::create($requestData, ['idempotency_key' => $transaction->hash]);
 
             return $this->createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -424,12 +414,11 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var Charge $charge */
             $charge = Charge::retrieve($reference);
             $charge->capture([], ['idempotency_key' => $reference]);
 
             return $this->createPaymentResponseFromApiResource($charge);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -454,7 +443,7 @@ class Gateway extends BaseGateway
             $refund = Refund::create($request);
 
             return $this->createPaymentResponseFromApiResource($refund);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -475,9 +464,9 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         $sourceId = Craft::$app->getRequest()->getParam('source');
-        /** @var Source $paymentSource */
         $paymentSource = Source::retrieve($sourceId);
 
+        /** @var ChargeResponse $response */
         $response = $this->createPaymentResponseFromApiResource($paymentSource);
         $response->setProcessing(true);
 
@@ -491,10 +480,9 @@ class Gateway extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var Source $source */
             $source = Source::retrieve($token);
             $source->detach();
-        } catch (\Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Assume deleted.
         }
 
@@ -502,7 +490,10 @@ class Gateway extends BaseGateway
     }
 
     /**
-     * @inheritdoc
+     * Returns whether this subscription has billing issues.
+     *
+     * @param Subscription $subscription
+     * @return bool
      */
     public function hasBillingIssue(Subscription $subscription): bool
     {
@@ -528,9 +519,6 @@ class Gateway extends BaseGateway
         return '';
     }
 
-    // Protected methods
-    // =========================================================================
-
     /**
      * Build a payment source for request.
      *
@@ -552,11 +540,11 @@ class Gateway extends BaseGateway
             $request['type'] = 'three_d_secure';
 
             $request['three_d_secure'] = [
-                'card' => $paymentForm->token
+                'card' => $paymentForm->token,
             ];
 
             $request['redirect'] = [
-                'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
+                'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
             ];
 
             $request['metadata']['three_d_secure_flow'] = true;
@@ -566,7 +554,6 @@ class Gateway extends BaseGateway
 
         if ($paymentForm->token) {
             $paymentForm->token = $this->normalizePaymentToken((string)$paymentForm->token);
-            /** @var Source $source */
             $source = Source::retrieve($paymentForm->token);
 
             // If this required 3D secure, let's set the flag for it  and repeat
