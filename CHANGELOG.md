@@ -5,6 +5,9 @@
 ### Added
 - Added support for the `charge.refund.updated` Stripe webhook event.
 
+### Changed
+- Stripe for Craft Commerce now requires Craft CMS 3.7.0 and Craft Commerce 3.4.5 or later.
+
 ### Fixed
 - Fixed a bug where a refund could fail asynchronously.
 
