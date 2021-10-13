@@ -6,8 +6,8 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 ## Requirements
 
-- Craft CMS 3.1.5 or later
-- Craft Commerce 2.2 or later
+- Craft CMS 3.7.0 or later
+- Craft Commerce 2.2 or later or Commerce 3.4.5 or later
 - Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
 
 ## Installation
@@ -75,6 +75,9 @@ We recommend emitting all possible events, but the required events are:
 - `source.cancelled`
 - `source.chargeable`
 - `source.failed`
+
+#### For refunds:
+- `charge.refund.updated`
 
 #### For Subscriptions
 
@@ -314,7 +317,7 @@ var stripe = Stripe('{{ parseEnv(cart.gateway.publishableKey) }}');
 This expects the Stripe gateway to be set on the order. If you’re setting it on the order during the payment submission, you would need to get a reference to the gateway first:
 
 ```twig
-{% set gateway = craft.commerce.gateways.getGatewayById('YOUR_GATEWAY_ID') }
+{% set gateway = craft.commerce.gateways.getGatewayById('YOUR_GATEWAY_ID') %}
 ```
 
 Then you could instantiate the `stripe` object using `gateway.publishableKey`:

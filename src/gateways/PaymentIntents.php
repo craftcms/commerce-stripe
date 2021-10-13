@@ -502,7 +502,7 @@ class PaymentIntents extends BaseGateway
         try {
             // If this is a customer that's logged in, attempt to continue the timeline
             if ($customer) {
-                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id, $transaction->hash);
             }
 
             // If a payment intent exists, update that.
@@ -518,6 +518,7 @@ class PaymentIntents extends BaseGateway
                 if ($customer) {
                     $paymentIntent = new PaymentIntentModel([
                         'orderId' => $transaction->orderId,
+                        'transactionHash' => $transaction->hash,
                         'customerId' => $customer->id,
                         'gatewayId' => $this->id,
                         'reference' => $stripePaymentIntent->id,
