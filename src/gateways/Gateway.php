@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\controllers\PaymentsController;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\NotImplementedException;
 use craft\commerce\errors\PaymentException;
@@ -115,6 +116,7 @@ class Gateway extends BaseGateway
         $defaults = [
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
+            'paymentFormNamespace' => sprintf('%s[%s]', PaymentsController::PAYMENT_FORM_NAMESPACE, $this->handle),
         ];
 
         $params = array_merge($defaults, $params);

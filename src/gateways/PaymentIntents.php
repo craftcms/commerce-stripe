@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\controllers\PaymentsController;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
@@ -86,6 +87,7 @@ class PaymentIntents extends BaseGateway
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
             'scenario' => 'payment',
+            'paymentFormNamespace' => sprintf('%s[%s]', PaymentsController::PAYMENT_FORM_NAMESPACE, $this->handle),
         ];
 
         $params = array_merge($defaults, $params);
@@ -114,6 +116,7 @@ class PaymentIntents extends BaseGateway
         $view->registerAssetBundle(IntentsFormAsset::class);
 
         $html = $view->renderTemplate('commerce-stripe/paymentForms/intentsForm', $params);
+
         $view->setTemplateMode($previousMode);
 
         return $html;

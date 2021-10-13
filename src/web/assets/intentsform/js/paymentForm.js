@@ -119,7 +119,7 @@ function PaymentIntents(publishableKey, container) {
           $form.data('processing', false);
         } else {
           // Add the payment source token to the form.
-          $form.append($('<input type="hidden" name="commercePaymentForm[paymentMethodId]"/>').val(result.paymentMethod.id));
+          $form.append($('<input type="hidden" name="' + this.container.data('payment-form-namespace') + '[paymentMethodId]"/>').val(result.paymentMethod.id));
           $form.get(0).submit();
         }
       }.bind(this));

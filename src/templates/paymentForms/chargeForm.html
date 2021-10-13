@@ -1,8 +1,13 @@
 <div class="stripe-charge-form"
+  data-payment-form-namespace="{{ paymentFormNamespace }}"
   data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"
   data-enforce3dsecure="{{ gateway.enforce3dSecure ?? '' }}"
 >
-  {% include 'commerce/_components/gateways/_creditCardFields' %}
+
+  {% namespace paymentFormNamespace %}
+    {% include 'commerce/_components/gateways/_creditCardFields' %}
+  {% endnamespace %}
+
   <div class="card-errors" role="alert"></div>
   {% if billingAddress is defined %}
     <div class="stripe-address hidden">

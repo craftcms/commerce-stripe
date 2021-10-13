@@ -1,11 +1,14 @@
 <div class="stripe-payment-intents-form"
+  data-payment-form-namespace="{{ paymentFormNamespace }}"
   data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"
   {% if clientSecret is defined %}data-client-secret="{{clientSecret}}" {% endif %}
   {% if scenario is defined %}data-scenario="{{scenario}}" {% endif %}
 >
 
   <div class="payment-form-fields hidden">
-    {% include 'commerce/_components/gateways/_creditCardFields' %}
+    {% namespace paymentFormNamespace %}
+      {% include 'commerce/_components/gateways/_creditCardFields' %}
+    {% endnamespace %}
   </div>
 
   <div class="card-errors" role="alert"></div>

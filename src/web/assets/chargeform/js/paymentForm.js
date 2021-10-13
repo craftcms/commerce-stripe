@@ -89,11 +89,11 @@ function initStripe() {
           } else {
             // Signal to backend that 3D secure payment is required if card or gateway options demands so.
             if (result.source.card.three_d_secure === "required" || (result.source.card.three_d_secure === "optional" && $container.data('enforce3dsecure'))) {
-              $form.append($('<input type="hidden" name="commercePaymentForm[threeDSecure]"/>').val(1));
+              $form.append($('<input type="hidden" name="' + $container.data('payment-form-namespace') + '[threeDSecure]"/>').val(1));
             }
 
             // Add the payment source token to the form.
-            $form.append($('<input type="hidden" name="commercePaymentForm[stripeToken]"/>').val(result.source.id));
+            $form.append($('<input type="hidden" name="' + $container.data('payment-form-namespace') + '[stripeToken]"/>').val(result.source.id));
             $form.get(0).submit();
           }
         });

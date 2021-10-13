@@ -47,9 +47,9 @@ class Customer extends Model
     public ?string $reference = null;
 
     /**
-     * @var array|null Response data
+     * @var mixed Response data
      */
-    public ?array $response = null;
+    public $response = null;
 
     /**
      * @var User|null $_user
