@@ -3,7 +3,8 @@
 ## Unreleased
 
 ### Fixed
-- Fixed a bug where a customer would not save after being incorrectly detected as a duplicate.
+- Fixed a bug where a customer would not save after being incorrectly detected as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
+- Fixed a bug where plugins modifying the Stripe API request would have their metadata changes ignored. ([#85](https://github.com/craftcms/commerce-stripe/issues/85)) 
 
 ## 2.4.0 - 2021-10-13
 
