@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a bug where a customer would not save after being incorrectly detected as a duplicate.
+
 ## 2.4.0 - 2021-10-13
 
 ### Added
