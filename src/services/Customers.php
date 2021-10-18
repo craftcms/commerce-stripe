@@ -140,9 +140,7 @@ class Customers extends Component
         $record->reference = $customer->reference;
         $record->response = $customer->response;
 
-        $customer->validate();
-
-        if (!$customer->hasErrors()) {
+        if ($customer->validate()) {
             // Save it!
             $record->save(false);
 
