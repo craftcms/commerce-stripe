@@ -99,9 +99,7 @@ class PaymentIntents extends Component
         $record->transactionHash = $paymentIntent->transactionHash;
         $record->intentData = $paymentIntent->intentData;
 
-        $paymentIntent->validate();
-
-        if (!$paymentIntent->hasErrors()) {
+        if ($paymentIntent->validate()) {
             // Save it!
             $record->save(false);
 
