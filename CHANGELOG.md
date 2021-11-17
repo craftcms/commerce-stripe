@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.4.1 - 2021-11-16
 
 ### Added
 - Added support for the `payment_method.detached` Stripe webhook event.
