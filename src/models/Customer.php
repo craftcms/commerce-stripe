@@ -13,6 +13,7 @@ use craft\commerce\base\Model;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
+use craft\validators\UniqueValidator;
 
 /**
  * Stripe customer model
@@ -103,9 +104,10 @@ class Customer extends Model
      */
     protected function defineRules(): array
     {
-        return [
-            [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
-            [['gatewayId', 'userId', 'reference', 'response'], 'required'],
-        ];
+        $rules = parent::defineRules();
+        $rules[] = [['gatewayId', 'reference'], UniqueValidator::class, 'targetClass' => CustomerRecord::class];
+        $rules[] = [['gatewayId', 'userId', 'reference', 'response'], 'required'];
+
+        return $rules;
     }
 }

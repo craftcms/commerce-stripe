@@ -19,6 +19,7 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\records\PaymentSource;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
@@ -488,6 +489,8 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         switch ($data['type']) {
+            case 'payment_method.detached':
+                $this->handlePaymentMethodDetached($data);
             case 'charge.refund.updated':
                 $this->handleRefundUpdated($data);
             case 'plan.deleted':
@@ -545,6 +548,22 @@ abstract class SubscriptionGateway extends Gateway
         $data = $resource->toArray();
 
         return new SubscriptionResponse($data);
+    }
+
+    /**
+     * Handle an updated refund by updating the refund transaction.
+     *
+     * @param array $data
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handlePaymentMethodDetached(array $data)
+    {
+        $stripePaymentMethod = $data['data']['object'];
+        if ($paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id)) {
+            Commerce::getInstance()->getPaymentSources()->deletePaymentSourceById($paymentSource->id);
+        }
     }
 
     /**

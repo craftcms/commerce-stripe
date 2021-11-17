@@ -14,8 +14,9 @@ use craft\commerce\elements\Order;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\commerce\stripe\records\Customer as CustomerRecord;
+use craft\commerce\stripe\records\PaymentIntent as PaymentIntentRecord;
 use craft\elements\User;
+use craft\validators\UniqueValidator;
 
 /**
  * Stripe Payment Intent model
@@ -176,9 +177,11 @@ class PaymentIntent extends Model
      */
     protected function defineRules(): array
     {
-        return [
-            [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
-            [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId', 'transactionHash'], 'required'],
-        ];
+        $rules = parent::defineRules();
+
+        $rules[] = [['gatewayId', 'reference'], UniqueValidator::class, 'targetClass' => PaymentIntentRecord::class];
+        $rules[] = [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId', 'transactionHash'], 'required'];
+
+        return $rules;
     }
 }
