@@ -9,9 +9,9 @@
 - Improved the performance of a previous migration. ([#185](https://github.com/craftcms/commerce-stripe/issues/185))
 
 ### Fixed
-- Fixed a bug where a customer would not save after being incorrectly detected as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
-- Fixed a bug where plugins modifying the Stripe API request would have their metadata changes ignored. ([#85](https://github.com/craftcms/commerce-stripe/issues/85)) 
-
+- Fixed a bug where customers could be incorrectly identified as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
+- Fixed a bug where Stripe API requests weren't including any metadata changes made via `craft\commerce\stripe\base\Gateway::EVENT_BUILD_GATEWAY_REQUEST`. ([#85](https://github.com/craftcms/commerce-stripe/issues/85))
+- 
 ## 2.4.0 - 2021-10-13
 
 ### Added
