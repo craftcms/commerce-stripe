@@ -5,6 +5,9 @@
 ### Added
 - Added support for the `payment_method.detached` Stripe webhook event.
 
+### Changed
+- Improved the performance of a previous migration. ([#185](https://github.com/craftcms/commerce-stripe/issues/185))
+
 ### Fixed
 - Fixed a bug where a customer would not save after being incorrectly detected as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
 - Fixed a bug where plugins modifying the Stripe API request would have their metadata changes ignored. ([#85](https://github.com/craftcms/commerce-stripe/issues/85)) 
