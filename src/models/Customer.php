@@ -105,7 +105,7 @@ class Customer extends Model
     protected function defineRules(): array
     {
         $rules = parent::defineRules();
-        $rules[] = [['gatewayId', 'reference'], UniqueValidator::class, 'targetClass' => CustomerRecord::class];
+        $rules[] = [['reference'], UniqueValidator::class, 'targetClass' => CustomerRecord::class];
         $rules[] = [['gatewayId', 'userId', 'reference', 'response'], 'required'];
 
         return $rules;
