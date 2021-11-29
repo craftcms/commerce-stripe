@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.4.2 - 2021-11-28
+
+### Fixed
+- Fixed a bug where it was not possible to save a Stripe customer record.  ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
+
 ## 2.4.1 - 2021-11-16
 
 ### Added

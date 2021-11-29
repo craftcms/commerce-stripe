@@ -179,7 +179,7 @@ class PaymentIntent extends Model
     {
         $rules = parent::defineRules();
 
-        $rules[] = [['gatewayId', 'reference'], UniqueValidator::class, 'targetClass' => PaymentIntentRecord::class];
+        $rules[] = [['reference'], UniqueValidator::class, 'targetClass' => PaymentIntentRecord::class];
         $rules[] = [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId', 'transactionHash'], 'required'];
 
         return $rules;
