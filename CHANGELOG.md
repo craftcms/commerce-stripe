@@ -16,7 +16,7 @@
 ### Fixed
 - Fixed a bug where customers could be incorrectly identified as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
 - Fixed a bug where Stripe API requests weren't including any metadata changes made via `craft\commerce\stripe\base\Gateway::EVENT_BUILD_GATEWAY_REQUEST`. ([#85](https://github.com/craftcms/commerce-stripe/issues/85))
-- 
+
 ## 2.4.0 - 2021-10-13
 
 ### Added
