@@ -427,6 +427,10 @@ abstract class SubscriptionGateway extends Gateway
             $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
         }
 
+        if ($parameters->quantity) {
+            $stripeSubscription->items[0]['quantity'] = $parameters->quantity;
+        }
+
         if ($parameters->prorationDate) {
             /** @phpstan-ignore-next-line */
             $stripeSubscription->proration_date = $parameters->prorationDate;

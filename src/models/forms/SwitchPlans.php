@@ -38,4 +38,9 @@ class SwitchPlans extends SwitchPlansForm
      * @var int Timestamp on which to base the proration calculation
      */
     public $prorationDate;
+
+    /**
+     * @var int Quantity of subscription
+     */
+    public $quantity;
 }
