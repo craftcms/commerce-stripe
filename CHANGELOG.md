@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a PHP error that could occur when a payment attempt failed.
+
 ## 2.4.2 - 2021-11-28
 
 ### Fixed
