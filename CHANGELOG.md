@@ -3,12 +3,13 @@
 ## Unreleased
 
 ### Fixed
-- Fixed a PHP error that could occur when a payment attempt failed.
+- Fixed a PHP error that could occur when a payment attempt failed. ([#191](https://github.com/craftcms/commerce-stripe/pull/191))
+- Fixed a bug where a subscription quantity would not be persisted when a subscription plan was switched. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
 
 ## 2.4.2 - 2021-11-28
 
 ### Fixed
-- Fixed a bug where it was not possible to save a Stripe customer record.  ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
+- Fixed a bug where it was not possible to save a Stripe customer record. ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
 
 ## 2.4.1 - 2021-11-16
 
