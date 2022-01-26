@@ -1,9 +1,17 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.4.3 - 2022-01-25
+
+### Added
+- Added `craft\commerce\stripe\models\forms\SwitchPlans::$quantity`. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
+
+### Fixed
+- Fixed a PHP error that could occur when a payment attempt failed. ([#191](https://github.com/craftcms/commerce-stripe/pull/191))
+
 ## 2.4.2 - 2021-11-28
 
 ### Fixed
-- Fixed a bug where it was not possible to save a Stripe customer record.  ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
+- Fixed a bug where it was not possible to save a Stripe customer record. ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
 
 ## 2.4.1 - 2021-11-16
 
