@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.4.3 - 2022-01-25
 
 ### Added
 - Added `craft\commerce\stripe\models\forms\SwitchPlans::$quantity`. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
