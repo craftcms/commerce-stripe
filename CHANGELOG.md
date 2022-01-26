@@ -2,9 +2,11 @@
 
 ## Unreleased
 
+### Added
+- Added `craft\commerce\stripe\models\forms\SwitchPlans::$quantity`. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
+
 ### Fixed
 - Fixed a PHP error that could occur when a payment attempt failed. ([#191](https://github.com/craftcms/commerce-stripe/pull/191))
-- Fixed a bug where a subscription quantity would not be persisted when a subscription plan was switched. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
 
 ## 2.4.2 - 2021-11-28
 
