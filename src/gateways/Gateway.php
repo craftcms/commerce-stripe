@@ -178,6 +178,7 @@ class Gateway extends BaseGateway
 
             switch ($stripeResponse->type) {
                 case 'card':
+                    /** @phpstan-ignore-next-line */
                     $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => $stripeResponse->card->brand, 'last4' => $stripeResponse->card->last4]);
                     break;
                 default:
