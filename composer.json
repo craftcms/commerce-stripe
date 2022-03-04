@@ -23,13 +23,15 @@
     "docs": "https://github.com/craftcms/commerce-stripe/blob/master/README.md",
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
     "craftcms/cms": "^3.7.0",
     "craftcms/commerce": "^3.4.5",
     "stripe/stripe-php": "^7.0"
   },
   "require-dev": {
-    "phpstan/phpstan": "^0.12.96"
+    "craftcms/phpstan": "dev-main"
   },
   "autoload": {
     "psr-4": {
@@ -43,5 +45,11 @@
     "name": "Stripe for Craft Commerce",
     "handle": "commerce-stripe",
     "documentationUrl": "https://github.com/craftcms/commerce-stripe/blob/master/README.md"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
   }
 }
