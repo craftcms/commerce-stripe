@@ -161,11 +161,11 @@ class PaymentIntent extends Model
     /**
      * Returns the transation associated with this payment intent.
      *
-     * @return Order|null
+     * @return Transaction|null
      */
     public function getTransaction()
     {
-        if (null === $this->_tranasction) {
+        if (null === $this->_transaction) {
             $this->_transaction = Commerce::getInstance()->getTransactions()->getTransactionByHash($this->transactionHash);
         }
 
