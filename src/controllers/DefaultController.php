@@ -52,7 +52,7 @@ class DefaultController extends BaseController
         try {
             $gateway = Commerce::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
 
-            if (!$gateway || !$gateway instanceof SubscriptionGateway) {
+            if (!$gateway instanceof SubscriptionGateway) {
                 throw new BadRequestHttpException('That is not a valid gateway id.');
             }
 

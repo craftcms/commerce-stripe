@@ -26,28 +26,28 @@ class m210903_040320_payment_intent_unique_on_transaction extends Migration
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_paymentintents}}', $this);
         MigrationHelper::dropAllIndexesOnTable('{{%stripe_paymentintents}}', $this);
 
-        $gatewayTypes = (new Query())
-            ->select(['id', 'type'])
-            ->from(['{{%commerce_gateways}}'])
-            ->pairs();
+        $transactionsTable = '{{%commerce_transactions}}';
+        $stripePaymentIntentsTable = '{{%stripe_paymentintents}}';
 
-        $gatewayIds = [];
-        foreach ($gatewayTypes as $id => $gatewayType) {
-            if (is_a(PaymentIntents::class, $gatewayType, true)) {
-                $gatewayIds[] = $id;
-            }
+        if ($this->db->getIsMysql()) {
+            $sql = <<<SQL
+UPDATE $stripePaymentIntentsTable [[pi]]
+INNER JOIN $transactionsTable [[t]] ON [[t.reference]] = [[pi.reference]]
+SET [[pi.transactionHash]] = [[t.hash]]
+WHERE [[pi.transactionHash]] IS NULL
+SQL;
+        } else {
+            $sql = <<<SQL
+UPDATE $stripePaymentIntentsTable [[pi]]
+SET [[transactionHash]] = [[t.hash]]
+FROM $transactionsTable [[t]]
+WHERE
+[[pi.transactionHash]] IS NULL AND
+[[t.reference]] = [[pi.reference]]
+SQL;
         }
 
-        $transactions = (new Query())
-            ->select(['reference', 'hash'])
-            ->from(['{{%commerce_transactions}}'])
-            ->where(['LIKE', 'reference', 'pi_%', false]) // they are using a payment intent identifier
-            ->andWhere(['gatewayId' => $gatewayIds])
-            ->all();
-
-        foreach ($transactions as $transaction) {
-            $this->update('{{%stripe_paymentintents}}', ['transactionHash' => $transaction['hash']], ['reference' => $transaction['reference']]);
-        }
+        $this->execute($sql);
 
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE', null);

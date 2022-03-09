@@ -76,6 +76,9 @@ We recommend emitting all possible events, but the required events are:
 - `source.chargeable`
 - `source.failed`
 
+#### For refunds:
+- `charge.refund.updated`
+
 #### For Subscriptions
 
 - `invoice.payment_succeeded`

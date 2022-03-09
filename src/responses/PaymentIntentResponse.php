@@ -9,6 +9,7 @@ namespace craft\commerce\stripe\responses;
 
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
+use Stripe\Refund;
 
 class PaymentIntentResponse implements RequestResponseInterface
 {
@@ -32,6 +33,12 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isSuccessful(): bool
     {
+        if (array_key_exists('object', $this->data) && $this->data['object'] == Refund::OBJECT_NAME) {
+            if (array_key_exists('status', $this->data) && in_array($this->data['status'], [Refund::STATUS_PENDING], true)) {
+                return false;
+            }
+        }
+
         return array_key_exists('status', $this->data) && in_array($this->data['status'], ['succeeded', 'requires_capture'], true);
     }
 
@@ -40,6 +47,12 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isProcessing(): bool
     {
+        if (array_key_exists('object', $this->data) && $this->data['object'] == Refund::OBJECT_NAME) {
+            if (array_key_exists('status', $this->data) && in_array($this->data['status'], [Refund::STATUS_PENDING], true)) {
+                return true;
+            }
+        }
+
         return false;
     }
 
@@ -116,6 +129,12 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function getMessage(): string
     {
+        if (array_key_exists('object', $this->data) && $this->data['object'] == Refund::OBJECT_NAME) {
+            if (array_key_exists('status', $this->data) && in_array($this->data['status'], [Refund::STATUS_PENDING], true)) {
+                return 'Refund processing';
+            }
+        }
+
         if (empty($this->data['message'])) {
             if (!empty($this->data['last_payment_error'])) {
                 if ($this->data['last_payment_error']['code'] === 'payment_intent_authentication_failure') {

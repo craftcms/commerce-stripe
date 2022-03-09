@@ -19,6 +19,8 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\records\PaymentSource;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -35,8 +37,12 @@ use Stripe\Collection;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
+use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
 use Stripe\SubscriptionItem;
+use Throwable;
+use yii\base\InvalidConfigException;
+use function count;
 
 /**
  * This class represents the abstract Stripe base gateway
@@ -95,7 +101,6 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         try {
-            /** @var StripeSubscription $stripeSubscription */
             $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
 
             /** @var CancelSubscription $parameters */
@@ -107,7 +112,7 @@ abstract class SubscriptionGateway extends Gateway
             }
 
             return $this->createSubscriptionResponse($response);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new SubscriptionException('Failed to cancel subscription: ' . $exception->getMessage());
         }
     }
@@ -288,7 +293,6 @@ abstract class SubscriptionGateway extends Gateway
     public function getSubscriptionPlans(): array
     {
         $this->configureStripeClient();
-        /** @var Collection $plans */
         $plans = StripePlan::all([
             'limit' => 100,
         ]);
@@ -297,7 +301,7 @@ abstract class SubscriptionGateway extends Gateway
         $planProductMap = [];
         $planList = [];
 
-        if (\count($plans->data)) {
+        if (count($plans->data)) {
             foreach ($plans->data as $plan) {
                 /** @var StripePlan $plan */
                 $plan = $plan->toArray();
@@ -305,7 +309,6 @@ abstract class SubscriptionGateway extends Gateway
                 $planList[] = $plan;
             }
 
-            /** @var Collection $products */
             $products = StripeProduct::all([
                 'limit' => 100,
                 'ids' => array_values($planProductMap),
@@ -313,7 +316,7 @@ abstract class SubscriptionGateway extends Gateway
 
             $productList = [];
 
-            if (\count($products->data)) {
+            if (count($products->data)) {
                 foreach ($products->data as $product) {
                     /** @var StripeProduct $product */
                     $product = $product->toArray();
@@ -424,6 +427,10 @@ abstract class SubscriptionGateway extends Gateway
             $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
         }
 
+        if ($parameters->quantity) {
+            $stripeSubscription->items[0]['quantity'] = $parameters->quantity;
+        }
+
         if ($parameters->prorationDate) {
             /** @phpstan-ignore-next-line */
             $stripeSubscription->proration_date = $parameters->prorationDate;
@@ -438,7 +445,7 @@ abstract class SubscriptionGateway extends Gateway
                     'customer' => $stripeSubscription->customer,
                     'subscription' => $stripeSubscription->id,
                 ]);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 // Or, maybe, Stripe already invoiced them because reasons.
             }
         }
@@ -488,6 +495,10 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         switch ($data['type']) {
+            case 'payment_method.detached':
+                $this->handlePaymentMethodDetached($data);
+            case 'charge.refund.updated':
+                $this->handleRefundUpdated($data);
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);
@@ -520,7 +531,7 @@ abstract class SubscriptionGateway extends Gateway
     protected function createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
     {
         $this->configureStripeClient();
-        $payment = new SubscriptionPayment([
+        return new SubscriptionPayment([
             'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
@@ -528,8 +539,6 @@ abstract class SubscriptionGateway extends Gateway
             'paid' => $data['paid'],
             'response' => Json::encode($data),
         ]);
-
-        return $payment;
     }
 
     /**
@@ -545,6 +554,56 @@ abstract class SubscriptionGateway extends Gateway
         $data = $resource->toArray();
 
         return new SubscriptionResponse($data);
+    }
+
+    /**
+     * Handle an updated refund by updating the refund transaction.
+     *
+     * @param array $data
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handlePaymentMethodDetached(array $data)
+    {
+        $stripePaymentMethod = $data['data']['object'];
+        if ($paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id)) {
+            Commerce::getInstance()->getPaymentSources()->deletePaymentSourceById($paymentSource->id);
+        }
+    }
+
+    /**
+     * Handle an updated refund by updating the refund transaction.
+     *
+     * @param array $data
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handleRefundUpdated(array $data)
+    {
+        $stripeRefund = $data['data']['object'];
+        if ($transaction = Commerce::getInstance()->getTransactions()->getTransactionByReference($stripeRefund['id'])) {
+            $transactionRecord = TransactionRecord::findOne($transaction->id);
+            switch ($stripeRefund['status']) {
+                case Refund::STATUS_SUCCEEDED:
+                    $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                    break;
+                case Refund::STATUS_PENDING:
+                    $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+                    break;
+                case Refund::STATUS_FAILED:
+                    $transactionRecord->status = TransactionRecord::STATUS_FAILED;
+                    $transactionRecord->message = $stripeRefund['failure_reason'];
+                    break;
+                default:
+                    $transactionRecord->status = TransactionRecord::STATUS_FAILED;
+            }
+            $transactionRecord->response = $data['data'];
+            // Need to update the record directly as commerce does not allow updating a transaction normally through the service
+            $transactionRecord->save(false);
+            $transaction->getOrder()->updateOrderPaidInformation();
+        }
     }
 
     /**
@@ -567,7 +626,6 @@ abstract class SubscriptionGateway extends Gateway
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
-            /** @var StripeInvoice $invoice */
             $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
@@ -577,7 +635,7 @@ abstract class SubscriptionGateway extends Gateway
      * Handle a successful invoice payment event.
      *
      * @param array $data
-     * @throws \Throwable if something went wrong when processing the invoice
+     * @throws Throwable if something went wrong when processing the invoice
      */
     protected function handleInvoiceSucceededEvent(array $data): void
     {
@@ -619,7 +677,7 @@ abstract class SubscriptionGateway extends Gateway
      * Handle Plan events
      *
      * @param array $data
-     * @throws \yii\base\InvalidConfigException If plan not available
+     * @throws InvalidConfigException If plan not available
      */
     protected function handlePlanEvent(array $data): void
     {
@@ -641,7 +699,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @param array $data
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     protected function handleSubscriptionExpired(array $data): void
     {
@@ -664,7 +722,7 @@ abstract class SubscriptionGateway extends Gateway
      *
      * @param array $data
      *
-     * @throws \Throwable
+     * @throws Throwable
      */
     protected function handleSubscriptionUpdated(array $data): void
     {
@@ -679,27 +737,24 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         // See if we care about this subscription at all
-        if ($subscription) {
+        $subscription->setSubscriptionData($data['data']['object']);
 
-            $subscription->setSubscriptionData($data['data']['object']);
+        $this->setSubscriptionStatusData($subscription);
 
-            $this->setSubscriptionStatusData($subscription);
+        if (empty($data['data']['object']['plan'])) {
+            Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
+        } else {
+            $planReference = $data['data']['object']['plan']['id'];
+            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
 
-            if (empty($data['data']['object']['plan'])) {
-                Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
+            if ($plan) {
+                $subscription->planId = $plan->id;
             } else {
-                $planReference = $data['data']['object']['plan']['id'];
-                $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
-
-                if ($plan) {
-                    $subscription->planId = $plan->id;
-                } else {
-                    Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
-                }
+                Craft::warning($subscription->reference . ' was switched to a plan on Stripe that does not exist on this Site. (event "' . $data['id'] . '")', 'stripe');
             }
-
-            Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
         }
+
+        Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
     }
 
     /**

@@ -1,5 +1,46 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed an error that would occur when calling `craft\commerce\stripe\models\PaymentIntent::getTransaction()`.
+
+## 2.4.3 - 2022-01-25
+
+### Added
+- Added `craft\commerce\stripe\models\forms\SwitchPlans::$quantity`. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
+
+### Fixed
+- Fixed a PHP error that could occur when a payment attempt failed. ([#191](https://github.com/craftcms/commerce-stripe/pull/191))
+
+## 2.4.2 - 2021-11-28
+
+### Fixed
+- Fixed a bug where it was not possible to save a Stripe customer record. ([#186](https://github.com/craftcms/commerce-stripe/issues/186))
+
+## 2.4.1 - 2021-11-16
+
+### Added
+- Added support for the `payment_method.detached` Stripe webhook event.
+
+### Changed
+- Improved the performance of a previous migration. ([#185](https://github.com/craftcms/commerce-stripe/issues/185))
+
+### Fixed
+- Fixed a bug where customers could be incorrectly identified as a duplicate. ([#97](https://github.com/craftcms/commerce-stripe/issues/97))
+- Fixed a bug where Stripe API requests weren't including any metadata changes made via `craft\commerce\stripe\base\Gateway::EVENT_BUILD_GATEWAY_REQUEST`. ([#85](https://github.com/craftcms/commerce-stripe/issues/85))
+
+## 2.4.0 - 2021-10-13
+
+### Added
+- Added support for the `charge.refund.updated` Stripe webhook event.
+
+### Changed
+- Stripe for Craft Commerce now requires Craft CMS 3.7.0 and Craft Commerce 3.4.5 or later.
+
+### Fixed
+- Fixed a bug where a refund could fail asynchronously.
+
 ## 2.3.2.2 - 2021-10-10
 
 ### Fixed

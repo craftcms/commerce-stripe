@@ -24,6 +24,7 @@ use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\Response;
 use craft\web\Response as WebResponse;
+use Exception;
 use Stripe\ApiResource;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
@@ -31,6 +32,7 @@ use Stripe\Exception\CardException;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
+use Throwable;
 use yii\base\NotSupportedException;
 
 /**
@@ -162,7 +164,7 @@ abstract class Gateway extends BaseGateway
         try {
             // Check the payload and signature
             Webhook::constructEvent($rawData, $stripeSignature, $secret);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             Craft::warning('Webhook signature check failed: ' . $exception->getMessage(), 'stripe');
             $response->data = 'ok';
 
@@ -174,7 +176,7 @@ abstract class Gateway extends BaseGateway
         if ($data) {
             try {
                 $this->handleWebhook($data);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 Craft::$app->getErrorHandler()->logException($exception);
             }
 
@@ -367,20 +369,22 @@ abstract class Gateway extends BaseGateway
             'request' => $request,
         ]);
 
-        // TODO provide context
         if ($this->hasEventHandlers(self::EVENT_BUILD_GATEWAY_REQUEST)) {
             $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
-            $request = array_replace_recursive($event->request, $request);
-            // TODO remove this line when the event `metadata` prop is removed
-            $request['metadata'] = array_replace_recursive($event->metadata, $request['metadata']);
+            // Do not allow these to be modified by event handlers
+            $event->request['amount'] = $request['amount'];
+            $event->request['currency'] = $request['currency'];
+
+            // TODO remove when metadata is removed from the BuildGatewayRequestEvent event
+            $event->request['metadata'] = array_replace($event->metadata, $event->request['metadata']);
         }
 
         if ($this->sendReceiptEmail) {
-            $request['receipt_email'] = $transaction->getOrder()->email;
+            $event->request['receipt_email'] = $transaction->getOrder()->email;
         }
 
-        return $request;
+        return $event->request;
     }
 
     /**
@@ -401,12 +405,12 @@ abstract class Gateway extends BaseGateway
     /**
      * Create a Response object from an Exception.
      *
-     * @param \Exception $exception
+     * @param Exception $exception
      *
      * @return RequestResponseInterface
-     * @throws \Exception if not a Stripe exception
+     * @throws Exception if not a Stripe exception
      */
-    protected function createPaymentResponseFromError(\Exception $exception): RequestResponseInterface
+    protected function createPaymentResponseFromError(Exception $exception): RequestResponseInterface
     {
         $this->configureStripeClient();
         if ($exception instanceof CardException) {
@@ -414,7 +418,9 @@ abstract class Gateway extends BaseGateway
             $data = $body;
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
-            $data['id'] = $body['error']['charge'];
+            if (isset($body['error']['charge'])) {
+                $data['id'] = $body['error']['charge'];
+            }
         } else if ($exception instanceof ApiErrorException) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
@@ -454,7 +460,7 @@ abstract class Gateway extends BaseGateway
             }
 
             return $stripeCustomer;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: ' . $exception->getMessage());
         }
     }
@@ -470,14 +476,13 @@ abstract class Gateway extends BaseGateway
         $this->configureStripeClient();
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
-                /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
                     'token' => $token,
                 ]);
 
                 return $tokenSource->id;
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 Craft::error('Unable to normalize payment token: ' . $token . ', because ' . $exception->getMessage());
             }
         }
@@ -495,7 +500,7 @@ abstract class Gateway extends BaseGateway
      * @return RequestResponseInterface
      * @throws NotSupportedException if unrecognized currency specified for transaction
      * @throws PaymentException if unexpected payment information provided.
-     * @throws \Exception if reasons
+     * @throws Exception if reasons
      */
     abstract protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface;
 
