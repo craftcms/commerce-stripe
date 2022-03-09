@@ -1,3 +1,4 @@
+{% set paymentFormNamespace = handle|commercePaymentFormNamespace %}
 <div class="stripe-payment-intents-form"
   data-payment-form-namespace="{{ paymentFormNamespace }}"
   data-publishablekey="{{ parseEnv(gateway.publishableKey) }}"

@@ -11,7 +11,6 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
-use craft\commerce\controllers\PaymentsController;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
@@ -87,17 +86,19 @@ class PaymentIntents extends BaseGateway
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
             'scenario' => 'payment',
-            'paymentFormNamespace' => sprintf('%s[%s]', PaymentsController::PAYMENT_FORM_NAMESPACE, $this->handle),
+            'handle' => $this->handle,
         ];
 
         $params = array_merge($defaults, $params);
 
         // If there's no order passed, add the current cart if we're not messing around in backend.
         if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
-            $billingAddress = Commerce::getInstance()->getCarts()->getCart()->getBillingAddress();
+            if ($cart = Commerce::getInstance()->getCarts()->getCart()) {
+                $billingAddress = $cart->getBillingAddress();
 
-            if (!$billingAddress) {
-                $billingAddress = Commerce::getInstance()->getCustomers()->getCustomer()->getPrimaryBillingAddress();
+                if (!$billingAddress && $user = $cart->getCustomer()) {
+                    $billingAddress = $user->getPrimaryBillingAddress();
+                }
             }
         } else {
             $billingAddress = $params['order']->getBillingAddress();
