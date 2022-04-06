@@ -26,7 +26,7 @@ class DefaultController extends BaseController
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
         $this->defaultAction = 'fetch-plans';
@@ -37,7 +37,7 @@ class DefaultController extends BaseController
      *
      * @return Response
      */
-    public function actionFetchPlans()
+    public function actionFetchPlans(): Response
     {
         $this->requirePostRequest();
         $this->requireAcceptsJson();

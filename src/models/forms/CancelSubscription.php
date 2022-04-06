@@ -20,5 +20,5 @@ class CancelSubscription extends BaseCancelSubscriptionForm
     /**
      * @var bool whether the subscription should be canceled immediately
      */
-    public $cancelImmediately = false;
+    public bool $cancelImmediately = false;
 }

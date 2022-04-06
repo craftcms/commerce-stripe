@@ -19,19 +19,19 @@ use craft\commerce\elements\Subscription;
 class Invoice extends Model
 {
     /**
-     * @var int Payment source ID
+     * @var int|null Payment source ID
      */
-    public $id;
+    public ?int $id = null;
 
     /**
-     * @var int The subscription Id
+     * @var int|null The subscription ID
      */
-    public $subscriptionId;
+    public ?int $subscriptionId = null;
 
     /**
-     * @var string The reference
+     * @var string|null The reference
      */
-    public $reference;
+    public ?string $reference = null;
 
     /**
      * @var mixed invoice data
@@ -39,9 +39,9 @@ class Invoice extends Model
     public $invoiceData;
 
     /**
-     * @var Subscription
+     * @var Subscription|null
      */
-    private $_subscription;
+    private ?Subscription $_subscription = null;
 
     /**
      * Returns the customer identifier
@@ -50,7 +50,7 @@ class Invoice extends Model
      */
     public function __toString()
     {
-        return $this->reference;
+        return $this->reference ?? '';
     }
 
     /**
@@ -58,7 +58,7 @@ class Invoice extends Model
      *
      * @return Subscription|null
      */
-    public function getSubscription()
+    public function getSubscription(): ?Subscription
     {
         if (null === $this->_subscription) {
             $this->_subscription = Subscription::find()->id($this->subscriptionId)->one();

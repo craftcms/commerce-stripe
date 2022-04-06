@@ -113,7 +113,7 @@ class Invoices extends Component
      * @param string $reference
      * @return Invoice|null
      */
-    public function getInvoiceByReference(string $reference)
+    public function getInvoiceByReference(string $reference): ?Invoice
     {
         $invoiceRow = $this->_createInvoiceQuery()
             ->where(['reference' => $reference])

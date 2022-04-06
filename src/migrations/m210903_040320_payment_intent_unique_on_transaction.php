@@ -56,7 +56,7 @@ SQL;
     /**
      * @inheritdoc
      */
-    public function safeDown()
+    public function safeDown(): bool
     {
         echo "m210903_040320_payment_intent_unique_on_transaction cannot be reverted.\n";
         return false;

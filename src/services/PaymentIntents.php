@@ -29,7 +29,7 @@ class PaymentIntents extends Component
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntent(int $gatewayId, $orderId, $customerId, $transactionHash = null)
+    public function getPaymentIntent(int $gatewayId, $orderId, $customerId, $transactionHash = null): ?PaymentIntent
     {
         // The `orderId` is not unique across multiple payments (the new partial payment feature) on the same order.
         // We have added `transactionHash` in commerce-stripe 2.4 to solve this.
@@ -59,7 +59,7 @@ class PaymentIntents extends Component
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntentByReference(string $reference)
+    public function getPaymentIntentByReference(string $reference): ?PaymentIntent
     {
         $result = $this->_createIntentQuery()
             ->where(['reference' => $reference])
