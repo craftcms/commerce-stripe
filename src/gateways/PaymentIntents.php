@@ -316,7 +316,7 @@ class PaymentIntents extends BaseGateway
 
         if ($parameters->trialDays !== null) {
             $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
-        } else if ($parameters->trialEnd !== null) {
+        } elseif ($parameters->trialEnd !== null) {
             $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;
         } else {
             $subscriptionParameters['trial_from_plan'] = true;
@@ -494,7 +494,7 @@ class PaymentIntents extends BaseGateway
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
             $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
-        } else if ($user = $transaction->getOrder()->getUser()) {
+        } elseif ($user = $transaction->getOrder()->getUser()) {
             $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
             $requestData['customer'] = $customer->reference;
         }

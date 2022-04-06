@@ -131,5 +131,4 @@ class PaymentIntents extends Component
             ])
             ->from(['{{%stripe_paymentintents}}']);
     }
-
 }

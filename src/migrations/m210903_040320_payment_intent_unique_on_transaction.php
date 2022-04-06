@@ -2,12 +2,8 @@
 
 namespace craft\commerce\stripe\migrations;
 
-use Craft;
-use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\db\Migration;
-use craft\db\Query;
 use craft\helpers\MigrationHelper;
-use yii\db\Expression;
 
 /**
  * m210903_040320_payment_intent_unique_on_transaction migration.

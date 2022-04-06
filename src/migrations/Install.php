@@ -87,7 +87,6 @@ class Install extends Migration
      */
     public function safeDown(): bool
     {
-
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_invoices}}', $this);
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_customers}}', $this);
         MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_paymentintents}}', $this);
@@ -112,7 +111,6 @@ class Install extends Migration
         $dbConnection = Craft::$app->getDb();
 
         foreach ($gateways as $gateway) {
-
             $settings = Json::decodeIfJson($gateway['settings']);
 
             if ($settings && isset($settings['includeReceiptEmailInRequests'])) {

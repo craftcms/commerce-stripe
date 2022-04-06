@@ -193,5 +193,4 @@ class Invoices extends Component
             ])
             ->from(['{{%stripe_invoices}} invoices']);
     }
-
 }

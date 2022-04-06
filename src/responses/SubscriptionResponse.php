@@ -7,7 +7,6 @@
 
 namespace craft\commerce\stripe\responses;
 
-
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\helpers\DateTimeHelper;
 use DateTime;

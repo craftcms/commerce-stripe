@@ -189,5 +189,4 @@ class Customers extends Component
             ])
             ->from(['{{%stripe_customers}}']);
     }
-
 }
