@@ -50,7 +50,7 @@ class Customer extends Model
     /**
      * @var mixed Response data
      */
-    public $response = null;
+    public mixed $response = null;
 
     /**
      * @var User|null $_user

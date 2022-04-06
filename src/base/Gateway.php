@@ -424,7 +424,7 @@ abstract class Gateway extends BaseGateway
      *
      * @return RequestResponseInterface
      */
-    abstract public function getResponseModel($data): RequestResponseInterface;
+    abstract public function getResponseModel(mixed $data): RequestResponseInterface;
 
     /**
      * Build the request data array.
@@ -434,7 +434,7 @@ abstract class Gateway extends BaseGateway
      * @return array
      * @throws NotSupportedException
      */
-    protected function buildRequestData(Transaction $transaction, $context = 'charge'): array
+    protected function buildRequestData(Transaction $transaction): array
     {
         $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);

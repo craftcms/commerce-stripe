@@ -42,5 +42,5 @@ class SwitchPlans extends SwitchPlansForm
     /**
      * @var int Quantity of subscription
      */
-    public $quantity;
+    public int $quantity;
 }

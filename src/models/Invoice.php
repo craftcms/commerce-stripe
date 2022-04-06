@@ -36,7 +36,7 @@ class Invoice extends Model
     /**
      * @var mixed invoice data
      */
-    public $invoiceData;
+    public mixed $invoiceData;
 
     /**
      * @var Subscription|null

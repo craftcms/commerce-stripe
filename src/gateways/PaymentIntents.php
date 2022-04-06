@@ -140,7 +140,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getResponseModel($data): RequestResponseInterface
+    public function getResponseModel(mixed $data): RequestResponseInterface
     {
         $this->configureStripeClient();
         return new PaymentIntentResponse($data);
