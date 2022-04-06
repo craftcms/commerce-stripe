@@ -15,7 +15,6 @@ use craft\commerce\stripe\plugin\Services;
 use craft\events\RegisterComponentTypesEvent;
 use yii\base\Event;
 
-
 /**
  * Plugin represents the Stripe integration plugin.
  *
