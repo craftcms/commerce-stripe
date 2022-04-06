@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "1f52abc38a0cd0c90ddaaa1c9b97f496",
+    "content-hash": "ae57bf9873ddee92c12190fb0c6d4e59",
     "packages": [
         {
             "name": "cebe/markdown",
@@ -676,16 +676,16 @@
         },
         {
             "name": "craftcms/cms",
-            "version": "4.0.0-beta.3",
+            "version": "4.0.0-beta.4",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/cms.git",
-                "reference": "e8bf3d348fac4cf1a2999ff09b1317ff4f1cd5f7"
+                "reference": "867af8684b1cc90c9b0bb0a6fb8e4f2a369b45de"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/cms/zipball/e8bf3d348fac4cf1a2999ff09b1317ff4f1cd5f7",
-                "reference": "e8bf3d348fac4cf1a2999ff09b1317ff4f1cd5f7",
+                "url": "https://api.github.com/repos/craftcms/cms/zipball/867af8684b1cc90c9b0bb0a6fb8e4f2a369b45de",
+                "reference": "867af8684b1cc90c9b0bb0a6fb8e4f2a369b45de",
                 "shasum": ""
             },
             "require": {
@@ -754,6 +754,7 @@
                 "vlucas/phpdotenv": "^5.4.1"
             },
             "suggest": {
+                "ext-exif": "Adds support for parsing image EXIF data.",
                 "ext-iconv": "Adds support for more character encodings than PHP’s built-in mb_convert_encoding() function, which Craft will take advantage of when converting strings to UTF-8.",
                 "ext-imagick": "Adds support for more image processing formats and options."
             },
@@ -761,7 +762,6 @@
             "autoload": {
                 "psr-4": {
                     "craft\\": "src/",
-                    "crafttests\\fixtures\\": "tests/fixtures/",
                     "yii2tech\\ar\\softdelete\\": "lib/ar-softdelete/src/"
                 }
             },
@@ -790,24 +790,24 @@
                 "rss": "https://github.com/craftcms/cms/releases.atom",
                 "source": "https://github.com/craftcms/cms"
             },
-            "time": "2022-03-22T16:31:09+00:00"
+            "time": "2022-04-06T18:49:33+00:00"
         },
         {
             "name": "craftcms/commerce",
-            "version": "4.0.0-beta.1",
+            "version": "4.0.0-beta.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/commerce.git",
-                "reference": "ea56f80fcaf461fe9ca48c94b899cc668ad23df9"
+                "reference": "5f3fda8d269b228c533d8bd145e5769f87854349"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/commerce/zipball/ea56f80fcaf461fe9ca48c94b899cc668ad23df9",
-                "reference": "ea56f80fcaf461fe9ca48c94b899cc668ad23df9",
+                "url": "https://api.github.com/repos/craftcms/commerce/zipball/5f3fda8d269b228c533d8bd145e5769f87854349",
+                "reference": "5f3fda8d269b228c533d8bd145e5769f87854349",
                 "shasum": ""
             },
             "require": {
-                "craftcms/cms": "^4.0.0-beta.2",
+                "craftcms/cms": "^4.0.0-beta.4",
                 "dompdf/dompdf": "^1.0.2",
                 "ibericode/vat": "^1.1.2",
                 "iio/libmergepdf": "^4.0",
@@ -860,7 +860,7 @@
                 "rss": "https://github.com/craftcms/commerce/releases.atom",
                 "source": "https://github.com/craftcms/commerce"
             },
-            "time": "2022-03-16T19:16:10+00:00"
+            "time": "2022-04-06T19:14:41+00:00"
         },
         {
             "name": "craftcms/oauth2-craftid",
@@ -7279,7 +7279,9 @@
     },
     "prefer-stable": true,
     "prefer-lowest": false,
-    "platform": [],
+    "platform": {
+        "php": "^8.0.2"
+    },
     "platform-dev": [],
     "plugin-api-version": "2.2.0"
 }
