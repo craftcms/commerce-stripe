@@ -14,5 +14,5 @@ return static function(ContainerConfigurator $containerConfigurator): void {
         __FILE__,
     ]);
 
-    $containerConfigurator->import(SetList::CRAFT_CMS_3); // for Craft 3 projects
+    $containerConfigurator->import(SetList::CRAFT_CMS_4); // for Craft 3 projects
 };
