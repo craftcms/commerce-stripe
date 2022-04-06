@@ -44,7 +44,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
     /**
      * @inheritdoc
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }

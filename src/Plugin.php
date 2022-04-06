@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe;
 
 use craft\commerce\services\Gateways;
-use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
@@ -29,7 +28,7 @@ class Plugin extends \craft\base\Plugin
     /**
      * @inheritDoc
      */
-    public string $schemaVersion = '2.4.1';
+    public string $schemaVersion = '3.0.0';
 
     use Services;
 
@@ -46,7 +45,6 @@ class Plugin extends \craft\base\Plugin
             Gateways::class,
             Gateways::EVENT_REGISTER_GATEWAY_TYPES,
             function(RegisterComponentTypesEvent $event) {
-                $event->types[] = Gateway::class;
                 $event->types[] = PaymentIntents::class;
             }
         );

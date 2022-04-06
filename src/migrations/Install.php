@@ -7,11 +7,7 @@
 
 namespace craft\commerce\stripe\migrations;
 
-use Craft;
-use craft\commerce\stripe\gateways\Gateway;
 use craft\db\Migration;
-use craft\db\Query;
-use craft\helpers\Json;
 use craft\helpers\MigrationHelper;
 
 /**
@@ -27,9 +23,6 @@ class Install extends Migration
      */
     public function safeUp(): bool
     {
-        // Convert any built-in Stripe gateways to ours
-        $this->_convertGateways();
-
         $this->createTable('{{%stripe_customers}}', [
             'id' => $this->primaryKey(),
             'userId' => $this->integer()->notNull(),
@@ -95,41 +88,5 @@ class Install extends Migration
         $this->dropTable('{{%stripe_paymentintents}}');
 
         return true;
-    }
-
-    /**
-     * Converts any old school Stripe gateways to this one
-     */
-    private function _convertGateways()
-    {
-        $gateways = (new Query())
-            ->select(['id', 'settings'])
-            ->where(['type' => 'craft\\commerce\\gateways\\Stripe'])
-            ->from(['{{%commerce_gateways}}'])
-            ->all();
-
-        $dbConnection = Craft::$app->getDb();
-
-        foreach ($gateways as $gateway) {
-            $settings = Json::decodeIfJson($gateway['settings']);
-
-            if ($settings && isset($settings['includeReceiptEmailInRequests'])) {
-                $settings['sendReceiptEmail'] = $settings['includeReceiptEmailInRequests'];
-                unset($settings['includeReceiptEmailInRequests']);
-            } else {
-                $settings = [];
-            }
-
-            $settings = Json::encode($settings);
-
-            $values = [
-                'type' => Gateway::class,
-                'settings' => $settings,
-            ];
-
-            $dbConnection->createCommand()
-                ->update('{{%commerce_gateways}}', $values, ['id' => $gateway['id']])
-                ->execute();
-        }
     }
 }

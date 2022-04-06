@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\PlanInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\elements\db\SubscriptionQuery;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\Currency;
@@ -728,7 +729,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $this->configureStripeClient();
         $stripeSubscription = $data['data']['object'];
-        $subscription = Subscription::find()->anyStatus()->reference($stripeSubscription['id'])->one();
+        $subscription = Subscription::find()->status(null)->reference($stripeSubscription['id'])->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “' . $stripeSubscription['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');

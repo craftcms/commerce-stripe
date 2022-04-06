@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\behaviors\CustomerBehavior;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
@@ -47,31 +48,16 @@ use function count;
 /**
  * This class represents the Stripe Payment Intents gateway
  *
+ * @property-read null|string $settingsHtml
+ * @property bool $sendReceiptEmail
+ * @property string $apiKey
+ * @property string $publishableKey
+ * @property string $signingSecret
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 2.0
  **/
 class PaymentIntents extends BaseGateway
 {
-    /**
-     * @var string|null
-     */
-    public ?string $publishableKey = null;
-
-    /**
-     * @var string|null
-     */
-    public ?string $apiKey = null;
-
-    /**
-     * @var bool
-     */
-    public bool $sendReceiptEmail = false;
-
-    /**
-     * @var string|null
-     */
-    public ?string $signingSecret = null;
-
     /**
      * @inheritdoc
      */
@@ -100,7 +86,9 @@ class PaymentIntents extends BaseGateway
             if ($cart = Commerce::getInstance()->getCarts()->getCart()) {
                 $billingAddress = $cart->getBillingAddress();
 
-                if (!$billingAddress && $user = $cart->getCustomer()) {
+                /** @var User|CustomerBehavior|null $user */
+                $user = $cart->getCustomer();
+                if (!$billingAddress && $user) {
                     $billingAddress = $user->getPrimaryBillingAddress();
                 }
             }
@@ -449,7 +437,7 @@ class PaymentIntents extends BaseGateway
 
         $subscriptionReference = $stripeInvoice['subscription'] ?? null;
 
-        if (!$subscriptionReference || !($subscription = Subscription::find()->anyStatus()->reference($subscriptionReference)->one())) {
+        if (!$subscriptionReference || !($subscription = Subscription::find()->status(null)->reference($subscriptionReference)->one())) {
             Craft::warning('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id'], 'stripe');
 
             return;

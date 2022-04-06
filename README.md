@@ -245,7 +245,7 @@ Plugins get a chance to do something whenever a successful 3D Secure payment is 
 ```php
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
-use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+use craft\commerce\stripe\gateways\PaymentIntents as StripeGateway;
 use yii\base\Event;
 
 Event::on(

@@ -13,8 +13,8 @@ use craft\commerce\base\Model;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
-use yii\base\InvalidConfigException;
 use craft\validators\UniqueValidator;
+use yii\base\InvalidConfigException;
 
 /**
  * Stripe customer model
