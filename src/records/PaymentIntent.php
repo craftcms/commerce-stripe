@@ -66,5 +66,4 @@ class PaymentIntent extends ActiveRecord
     {
         return $this->hasOne(Customer::class, ['customerId' => 'id']);
     }
-
 }

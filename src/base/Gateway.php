@@ -420,7 +420,7 @@ abstract class Gateway extends BaseGateway
             if (isset($body['error']['charge'])) {
                 $data['id'] = $body['error']['charge'];
             }
-        } else if ($exception instanceof ApiErrorException) {
+        } elseif ($exception instanceof ApiErrorException) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
             $data = $body;

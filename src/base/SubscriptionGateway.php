@@ -19,7 +19,6 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\records\PaymentSource;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
@@ -33,7 +32,6 @@ use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\web\View;
 use Stripe\ApiResource;
-use Stripe\Collection;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
@@ -495,8 +493,10 @@ abstract class SubscriptionGateway extends Gateway
         switch ($data['type']) {
             case 'payment_method.detached':
                 $this->handlePaymentMethodDetached($data);
+                // no break
             case 'charge.refund.updated':
                 $this->handleRefundUpdated($data);
+                // no break
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);

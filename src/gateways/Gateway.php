@@ -261,7 +261,6 @@ class Gateway extends BaseGateway
      */
     public function handleWebhook(array $data)
     {
-
         $this->configureStripeClient();
         if (!empty($data['data']['object']['metadata']['three_d_secure_flow'])) {
             $this->handle3DSecureFlowEvent($data);

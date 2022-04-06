@@ -157,5 +157,4 @@ class PaymentIntentResponse implements RequestResponseInterface
     {
         throw new NotImplementedException('Redirecting directly is not implemented for this gateway.');
     }
-
 }
