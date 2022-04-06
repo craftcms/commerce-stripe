@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 3.0.0-beta.1
+## 3.0.0-beta.1 - 2022-04-06
 
 ### Added
 - Added Craft CMS 4 and Craft Commerce 4 compatibility.
