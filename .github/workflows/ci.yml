@@ -1,0 +1,34 @@
+name: ci
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - develop
+  pull_request:
+    branches:
+      - develop
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  ecs:
+    name: ECS
+    uses: craftcms/.github/.github/workflows/ecs.yml@v1
+    with:
+      php_version: '7.2'
+  phpstan:
+    name: PHPStan
+    uses: craftcms/.github/.github/workflows/phpstan.yml@v1
+    with:
+      php_version: '7.2'
+  notify-slack:
+    name: Notify Slack
+    needs: [ ecs, phpstan ]
+    if: ${{ always() }}
+    uses: craftcms/.github/.github/workflows/notify-slack.yml@v1
+    with:
+      success: ${{ needs.ecs.result == 'success' && needs.phpstan.result == 'success' }}
+      failure_text_prefix: <!subteam^S01CWPYH9D5>
+    secrets:
+      token: ${{ secrets.GITHUB_TOKEN }}
+      slack_webhook_url: ${{ secrets.SLACK_COMMERCE_WEBHOOK_URL }}
