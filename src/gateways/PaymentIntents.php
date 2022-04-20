@@ -279,10 +279,10 @@ class PaymentIntents extends BaseGateway
             }
 
             return new PaymentSource([
-                'userId' => $userId,
+                'customerId' => $userId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->toArray(),
+                'response' => $stripeResponse->toJson(),
                 'description' => $description,
             ]);
         } catch (Throwable $exception) {
