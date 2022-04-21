@@ -1,5 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+### Fixed
+- Fixed a PHP error that occurred when creating a payment source. ([#201](https://github.com/craftcms/commerce-stripe/issues/201))
+
 ## 3.0.0-beta.1 - 2022-04-06
 
 ### Added
