@@ -247,12 +247,12 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
+    public function createPaymentSource(BasePaymentForm $sourceData, int $customerId): PaymentSource
     {
         $this->configureStripeClient();
         /** @var PaymentForm $sourceData */
         try {
-            $stripeCustomer = $this->getStripeCustomer($userId);
+            $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = PaymentMethod::retrieve($sourceData->paymentMethodId);
             $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
 
@@ -271,7 +271,7 @@ class PaymentIntents extends BaseGateway
             }
 
             return new PaymentSource([
-                'userId' => $userId,
+                'customerId' => $customerId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
                 'response' => $stripeResponse->toArray(),
