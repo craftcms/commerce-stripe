@@ -270,11 +270,13 @@ class PaymentIntents extends BaseGateway
                     $description = $stripeResponse->type;
             }
 
+            $response = $stripeResponse->toJSON();
+
             return new PaymentSource([
                 'customerId' => $customerId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->toArray(),
+                'response' => $response ?: '',
                 'description' => $description,
             ]);
         } catch (Throwable $exception) {
