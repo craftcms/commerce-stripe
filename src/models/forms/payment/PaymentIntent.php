@@ -46,7 +46,7 @@ class PaymentIntent extends CreditCardPaymentForm
     {
         $this->paymentMethodId = $paymentSource->token;
 
-        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getUser());
+        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getCustomer());
         $this->customer = $customer->reference;
     }
 }
