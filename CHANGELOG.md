@@ -1,19 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 3.0.0-RC1 - 2022-05-04
-
-### Changed
-- Stripe for Craft Commerce now requires Craft Commerce 4.0.0-RC1 or later.
-
-### Fixed
-- Fixed a PHP error that occurred when creating a payment source. ([#201](https://github.com/craftcms/commerce-stripe/issues/201))
-
-## 3.0.0-beta.1 - 2022-04-06
+## 3.0.0 - 2022-05-04
 
 ### Added
 - Added Craft CMS 4 and Craft Commerce 4 compatibility.
-
-### Changed
 - Payment Intents gateway settings now support environment variables.
 
 ### Removed
