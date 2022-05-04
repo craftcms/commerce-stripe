@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "01c1ef288d8eb94d692e6ea797e3e68b",
+    "content-hash": "67ccb56d229003a45ca095d8fdf82b50",
     "packages": [
         {
             "name": "cebe/markdown",
@@ -678,16 +678,16 @@
         },
         {
             "name": "craftcms/cms",
-            "version": "4.0.0-RC3",
+            "version": "4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/cms.git",
-                "reference": "94310672c2ed1f6b43b8a602c17b4acd675a1da6"
+                "reference": "982efcd14d7e93a1a54f0905b61f242de6b53d8a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/cms/zipball/94310672c2ed1f6b43b8a602c17b4acd675a1da6",
-                "reference": "94310672c2ed1f6b43b8a602c17b4acd675a1da6",
+                "url": "https://api.github.com/repos/craftcms/cms/zipball/982efcd14d7e93a1a54f0905b61f242de6b53d8a",
+                "reference": "982efcd14d7e93a1a54f0905b61f242de6b53d8a",
                 "shasum": ""
             },
             "require": {
@@ -792,20 +792,20 @@
                 "rss": "https://github.com/craftcms/cms/releases.atom",
                 "source": "https://github.com/craftcms/cms"
             },
-            "time": "2022-05-03T19:19:29+00:00"
+            "time": "2022-05-04T17:13:57+00:00"
         },
         {
             "name": "craftcms/commerce",
-            "version": "4.0.0-RC1",
+            "version": "4.0.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/commerce.git",
-                "reference": "23326a08ff4981c13423dcba2e5c1ca9f6afa02a"
+                "reference": "03fe68b8a09d05b028c510411b55af6cea6a089a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/commerce/zipball/23326a08ff4981c13423dcba2e5c1ca9f6afa02a",
-                "reference": "23326a08ff4981c13423dcba2e5c1ca9f6afa02a",
+                "url": "https://api.github.com/repos/craftcms/commerce/zipball/03fe68b8a09d05b028c510411b55af6cea6a089a",
+                "reference": "03fe68b8a09d05b028c510411b55af6cea6a089a",
                 "shasum": ""
             },
             "require": {
@@ -862,7 +862,7 @@
                 "rss": "https://github.com/craftcms/commerce/releases.atom",
                 "source": "https://github.com/craftcms/commerce"
             },
-            "time": "2022-05-02T18:50:03+00:00"
+            "time": "2022-05-04T17:10:32+00:00"
         },
         {
             "name": "craftcms/oauth2-craftid",
