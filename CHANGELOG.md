@@ -1,6 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 3.0.0-RC1 - 2022-05-04
+
+### Changed
+- Stripe for Craft Commerce now requires Craft Commerce 4.0.0-RC1 or later.
 
 ### Fixed
 - Fixed a PHP error that occurred when creating a payment source. ([#201](https://github.com/craftcms/commerce-stripe/issues/201))

@@ -26,8 +26,8 @@
   "prefer-stable": true,
   "require": {
     "php": "^8.0.2",
-    "craftcms/cms": "^4.0.0-beta.3",
-    "craftcms/commerce": "^4.0.0-beta.2",
+    "craftcms/cms": "^4.0.0-RC3",
+    "craftcms/commerce": "^4.0.0-RC1",
     "stripe/stripe-php": "^7.0"
   },
   "require-dev": {
@@ -53,6 +53,9 @@
     "allow-plugins": {
       "yiisoft/yii2-composer": true,
       "craftcms/plugin-installer": true
+    },
+    "platform": {
+      "php": "8.0.2"
     }
   }
 }
