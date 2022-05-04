@@ -30,64 +30,64 @@ use craft\validators\UniqueValidator;
 class PaymentIntent extends Model
 {
     /**
-     * @var int Payment Intent ID
+     * @var int|null Payment Intent ID
      */
-    public $id;
+    public ?int $id = null;
 
     /**
-     * @var int The Stripe Customer ID
+     * @var int|null The Stripe Customer ID
      */
-    public $customerId;
+    public ?int $customerId = null;
 
     /**
-     * @var int The gateway ID.
+     * @var int|null The gateway ID.
      */
-    public $gatewayId;
+    public ?int $gatewayId = null;
 
     /**
-     * @var int The order ID.
+     * @var int|null The order ID.
      */
-    public $orderId;
+    public ?int $orderId = null;
 
     /**
-     * @var string The Transaction Hash.
+     * @var string|null The Transaction Hash.
      */
-    public $transactionHash;
+    public ?string $transactionHash = null;
 
     /**
-     * @var string Reference
+     * @var string|null Reference
      */
-    public $reference;
+    public ?string $reference = null;
 
     /**
-     * @var string Response data
+     * @var string|null Response data
      */
-    public $intentData;
+    public ?string $intentData = null;
 
     /**
      * @var User|null
      */
-    private $_user;
+    private ?User $_user = null;
 
     /**
      * @var GatewayInterface|null
      */
-    private $_gateway;
+    private ?GatewayInterface $_gateway = null;
 
     /**
      * @var Customer|null
      */
-    private $_customer;
+    private ?Customer $_customer = null;
 
     /**
      * @var Order|null
      */
-    private $_order;
+    private ?Order $_order = null;
 
     /**
      * @var Transaction|null
      */
-    private $_transaction;
+    private ?Transaction $_transaction = null;
 
     /**
      * Returns the customer identifier
@@ -96,15 +96,15 @@ class PaymentIntent extends Model
      */
     public function __toString()
     {
-        return $this->reference;
+        return $this->reference ?? '';
     }
 
     /**
-     * Returns the user element associated with this this payment intent.
+     * Returns the user element associated with this payment intent.
      *
      * @return User|null
      */
-    public function getUser()
+    public function getUser(): ?User
     {
         if (null === $this->_user) {
             $customer = $this->getCustomer();
@@ -117,11 +117,12 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the gateway associated with this this payment intent.
+     * Returns the gateway associated with this payment intent.
      *
      * @return GatewayInterface|null
+     * @throws \yii\base\InvalidConfigException
      */
-    public function getGateway()
+    public function getGateway(): ?GatewayInterface
     {
         if (null === $this->_gateway) {
             $this->_gateway = Commerce::getInstance()->getGateways()->getGatewayById($this->gatewayId);
@@ -135,7 +136,7 @@ class PaymentIntent extends Model
      *
      * @return Customer|null
      */
-    public function getCustomer()
+    public function getCustomer(): ?Customer
     {
         if (null === $this->_customer) {
             $this->_customer = StripePlugin::getInstance()->getCustomers()->getCustomerById($this->customerId);
@@ -148,8 +149,9 @@ class PaymentIntent extends Model
      * Returns the gateway associated with this payment intent.
      *
      * @return Order|null
+     * @throws \yii\base\InvalidConfigException
      */
-    public function getOrder()
+    public function getOrder(): ?Order
     {
         if (null === $this->_order) {
             $this->_order = Commerce::getInstance()->getOrders()->getOrderById($this->orderId);
@@ -159,11 +161,12 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the transation associated with this payment intent.
+     * Returns the transaction associated with this payment intent.
      *
      * @return Transaction|null
+     * @throws \yii\base\InvalidConfigException
      */
-    public function getTransaction()
+    public function getTransaction(): ?Transaction
     {
         if (null === $this->_transaction) {
             $this->_transaction = Commerce::getInstance()->getTransactions()->getTransactionByHash($this->transactionHash);

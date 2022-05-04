@@ -1,4 +1,4 @@
-{% from "_includes/forms" import textField, lightswitchField, autosuggestField %}
+{% from "_includes/forms" import autosuggestField, booleanMenuField %}
 
 {{ autosuggestField({
   label: "Publishable API Key"|t('commerce-stripe'),
@@ -7,7 +7,7 @@
   class: 'ltr',
   name: 'publishableKey',
   suggestEnvVars: true,
-  value: gateway.publishableKey,
+  value: gateway.getPublishableKey(false),
   errors: gateway.getErrors('publishableKey')
 }) }}
 
@@ -18,7 +18,7 @@
   class: 'ltr',
   name: 'apiKey',
   suggestEnvVars: true,
-  value: gateway.apiKey,
+  value: gateway.getApiKey(false),
   errors: gateway.getErrors('apiKey')
 }) }}
 
@@ -29,13 +29,14 @@
   name: 'signingSecret',
   class: 'ltr',
   suggestEnvVars: true,
-  value: gateway.signingSecret,
+  value: gateway.getSigningSecret(false),
   errors: gateway.getErrors('signingSecret')
 }) }}
 
-{{ lightswitchField({
+{{ booleanMenuField({
   label: "Send Stripe's receipt email?"|t('commerce-stripe'),
   name: 'sendReceiptEmail',
-  on: gateway.sendReceiptEmail,
+  value: gateway.getSendReceiptEmail(false),
+  includeEnvVars: true,
   errors: gateway.getErrors('sendReceiptEmail'),
 }) }}

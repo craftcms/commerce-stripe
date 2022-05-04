@@ -16,14 +16,14 @@ class PaymentIntentResponse implements RequestResponseInterface
     /**
      * @var array the response data
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * Response constructor.
      *
      * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->data = $data;
     }
@@ -119,7 +119,7 @@ class PaymentIntentResponse implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }
@@ -153,7 +153,7 @@ class PaymentIntentResponse implements RequestResponseInterface
     /**
      * @inheritdoc
      */
-    public function redirect()
+    public function redirect(): void
     {
         throw new NotImplementedException('Redirecting directly is not implemented for this gateway.');
     }

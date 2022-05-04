@@ -6,8 +6,8 @@ This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Comm
 
 ## Requirements
 
-- Craft CMS 3.7.0 or later
-- Craft Commerce 3.4.5 or later
+- Craft CMS 4.0 or later
+- Craft Commerce 4.0 or later
 - Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
 
 ## Installation
@@ -245,7 +245,7 @@ Plugins get a chance to do something whenever a successful 3D Secure payment is 
 ```php
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\events\Receive3dsPaymentEvent;
-use craft\commerce\stripe\gateways\Gateway as StripeGateway;
+use craft\commerce\stripe\gateways\PaymentIntents as StripeGateway;
 use yii\base\Event;
 
 Event::on(

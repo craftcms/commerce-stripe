@@ -1,6 +1,13 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 3.0.0 - 2022-05-04
+
+### Added
+- Added Craft CMS 4 and Craft Commerce 4 compatibility.
+- Payment Intents gateway settings now support environment variables.
+
+### Removed
+- Removed the Charge gateway.
 
 ### Fixed
 - Fixed an error that would occur when calling `craft\commerce\stripe\models\PaymentIntent::getTransaction()`.

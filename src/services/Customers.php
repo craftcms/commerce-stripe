@@ -10,8 +10,8 @@ namespace craft\commerce\stripe\services;
 use Craft;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\Gateway as BaseGateway;
+use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\errors\CustomerException;
-use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
@@ -52,9 +52,9 @@ class Customers extends Component
 
         /** @var BaseGateway $gateway */
         $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
-        Stripe::setApiKey(Craft::parseEnv($gateway->apiKey));
+        Stripe::setApiKey($gateway->getApiKey());
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiVersion(Gateway::STRIPE_API_VERSION);
+        Stripe::setApiVersion(SubscriptionGateway::STRIPE_API_VERSION);
 
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
@@ -82,7 +82,7 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerById(int $id)
+    public function getCustomerById(int $id): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
             ->where(['id' => $id])
@@ -102,7 +102,7 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerByReference(string $reference)
+    public function getCustomerByReference(string $reference): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
             ->where(['reference' => $reference])
@@ -161,7 +161,7 @@ class Customers extends Component
      * @return bool
      * @throws Throwable in case something went wrong when deleting.
      */
-    public function deleteCustomerById($id): bool
+    public function deleteCustomerById(int $id): bool
     {
         $record = CustomerRecord::findOne($id);
 

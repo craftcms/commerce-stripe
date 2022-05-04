@@ -41,7 +41,7 @@ class Invoices extends Component
      * });
      * ```
      */
-    const EVENT_BEFORE_SAVE_INVOICE = 'beforeSaveInvoice';
+    public const EVENT_BEFORE_SAVE_INVOICE = 'beforeSaveInvoice';
 
     /**
      * @event SaveInvoiceEvent The event that is triggered when an invoice is saved.
@@ -59,7 +59,7 @@ class Invoices extends Component
      * });
      * ```
      */
-    const EVENT_SAVE_INVOICE = 'afterSaveInvoice';
+    public const EVENT_SAVE_INVOICE = 'afterSaveInvoice';
 
     /**
      * Returns all invoices for a subscription by its id.
@@ -113,7 +113,7 @@ class Invoices extends Component
      * @param string $reference
      * @return Invoice|null
      */
-    public function getInvoiceByReference(string $reference)
+    public function getInvoiceByReference(string $reference): ?Invoice
     {
         $invoiceRow = $this->_createInvoiceQuery()
             ->where(['reference' => $reference])

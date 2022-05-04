@@ -1,7 +1,6 @@
 {
   "name": "craftcms/commerce-stripe",
-  "description": "Stripe integration for Craft Commerce 2 & 3",
-  "version": "2.4.3",
+  "description": "Stripe integration for Craft Commerce 4.0+",
   "type": "craft-plugin",
   "keywords": [
     "stripe",
@@ -26,8 +25,9 @@
   "minimum-stability": "dev",
   "prefer-stable": true,
   "require": {
-    "craftcms/cms": "^3.7.0",
-    "craftcms/commerce": "^3.4.5",
+    "php": "^8.0.2",
+    "craftcms/cms": "^4.0.0-RC3",
+    "craftcms/commerce": "^4.0.0-RC1",
     "stripe/stripe-php": "^7.0"
   },
   "require-dev": {
@@ -53,6 +53,9 @@
     "allow-plugins": {
       "yiisoft/yii2-composer": true,
       "craftcms/plugin-installer": true
+    },
+    "platform": {
+      "php": "8.0.2"
     }
   }
 }

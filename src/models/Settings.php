@@ -22,5 +22,5 @@ class Settings extends Model
     /**
      * @var bool Whether to attempt to charge any created invoice immediately instead of waiting 1-2 hours.
      */
-    public $chargeInvoicesImmediately = false;
+    public bool $chargeInvoicesImmediately = false;
 }
