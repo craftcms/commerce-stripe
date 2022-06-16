@@ -1,6 +1,7 @@
 function PaymentIntents(publishableKey, container) {
   this.container = container;
   this.stripeInstance = Stripe(publishableKey);
+  this.paymentFormNamespace = this.container.data('payment-form-namespace');
 
   this.perform3dsAuthentication = function(card)  {
 
@@ -86,11 +87,11 @@ function PaymentIntents(publishableKey, container) {
 
       if ($('.stripe-address', $form).length > 0) {
         ownerAddress = {
-          'line1': $('input[name=stripe-line1]', $form).val(),
-          'city': $('input[name=stripe-city]', $form).val(),
-          'postal_code': $('input[name=stripe-postal-code]', $form).val(),
-          'country': $('input[name=stripe-country]', $form).val(),
-          'state': $('input[name=stripe-state]', $form).val(),
+          'line1': $(`input[name="${this.paymentFormNamespace}[stripe-line1]"]`, $form).val(),
+          'city': $(`input[name="${this.paymentFormNamespace}[stripe-city]"]`, $form).val(),
+          'postal_code': $(`input[name="${this.paymentFormNamespace}[stripe-postal-code]"]`, $form).val(),
+          'country': $(`input[name="${this.paymentFormNamespace}[stripe-country]"]`, $form).val(),
+          'state': $(`input[name="${this.paymentFormNamespace}[stripe-state]"]`, $form).val(),
         };
       }
 

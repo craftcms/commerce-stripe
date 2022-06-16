@@ -1,5 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 3.0.1 - 2022-06-16
+
+### Fixed
+- Fixed a bug where billing address wasn’t being sent to Stripe.
+- Fixed incorrect type on `craft\commerce\stripe\models\forms\SwitchPlans::$billingCycleAnchor`.
+
 ## 3.0.0 - 2022-05-04
 
 ### Added
