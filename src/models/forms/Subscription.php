@@ -22,5 +22,5 @@ class Subscription extends SubscriptionForm
      *
      * @var int
      */
-    public $trialEnd;
+    public int $trialEnd;
 }

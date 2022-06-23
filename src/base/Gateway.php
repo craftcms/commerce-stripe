@@ -19,23 +19,30 @@ use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\helpers\App;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\Response;
 use craft\web\Response as WebResponse;
+use Exception;
 use Stripe\ApiResource;
 use Stripe\Customer;
+use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\CardException;
-use Stripe\Exception\ExceptionInterface;
 use Stripe\Source;
 use Stripe\Stripe;
 use Stripe\Webhook;
+use Throwable;
 use yii\base\NotSupportedException;
 
 /**
  * This class represents the abstract Stripe base gateway
  *
+ * @property bool $sendReceiptEmail
+ * @property string $apiKey
+ * @property string $publishableKey
+ * @property string $signingSecret
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
  */
@@ -65,7 +72,7 @@ abstract class Gateway extends BaseGateway
      * ```
      *
      */
-    const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
+    public const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
 
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
@@ -86,38 +93,132 @@ abstract class Gateway extends BaseGateway
      * });
      * ```
      */
-    const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
+    public const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
 
-     /**
+    /**
      * string The Stripe API version to use.
      */
-    const STRIPE_API_VERSION = '2019-03-14';
+    public const STRIPE_API_VERSION = '2019-03-14';
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $publishableKey;
+    private ?string $_publishableKey = null;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $apiKey;
+    private ?string $_apiKey = null;
 
     /**
-     * @var bool
+     * @var bool|string
      */
-    public $sendReceiptEmail;
+    private bool|string $_sendReceiptEmail = false;
 
     /**
-     * @var string
+     * @var string|null
      */
-    public $signingSecret;
+    private ?string $_signingSecret = null;
 
-    public function init()
+    public function init(): void
     {
         parent::init();
 
         $this->configureStripeClient();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getSettings(): array
+    {
+        $settings = parent::getSettings();
+        $settings['sendReceiptEmail'] = $this->getSendReceiptEmail(false);
+        $settings['apiKey'] = $this->getApiKey(false);
+        $settings['publishableKey'] = $this->getPublishableKey(false);
+        $settings['signingSecret'] = $this->getSigningSecret(false);
+
+        return $settings;
+    }
+
+    /**
+     * @param string|null $apiKey
+     * @return void
+     * @since 3.0.0
+     */
+    public function setApiKey(?string $apiKey): void
+    {
+        $this->_apiKey = $apiKey;
+    }
+
+    /**
+     * @param bool $parse
+     * @return string|null
+     * @since 3.0.0
+     */
+    public function getApiKey(bool $parse = true): ?string
+    {
+        return $parse ? App::parseEnv($this->_apiKey) : $this->_apiKey;
+    }
+
+    /**
+     * @param string|null $signingSecret
+     * @return void
+     * @since 3.0.0
+     */
+    public function setSigningSecret(?string $signingSecret): void
+    {
+        $this->_signingSecret = $signingSecret;
+    }
+
+    /**
+     * @param bool $parse
+     * @return string|null
+     * @since 3.0.0
+     */
+    public function getSigningSecret(bool $parse = true): ?string
+    {
+        return $parse ? App::parseEnv($this->_signingSecret) : $this->_signingSecret;
+    }
+
+    /**
+     * @param string|null $publishableKey
+     * @return void
+     * @since 3.0.0
+     */
+    public function setPublishableKey(?string $publishableKey): void
+    {
+        $this->_publishableKey = $publishableKey;
+    }
+
+    /**
+     * @param bool $parse
+     * @return string|null
+     * @since 3.0.0
+     */
+    public function getPublishableKey(bool $parse = true): ?string
+    {
+        return $parse ? App::parseEnv($this->_publishableKey) : $this->_publishableKey;
+    }
+
+    /**
+     * @param bool|string $sendReceiptEmail
+     * @return void
+     * @since 3.0.0
+     */
+    public function setSendReceiptEmail(bool|string $sendReceiptEmail): void
+    {
+        $this->_sendReceiptEmail = $sendReceiptEmail;
+    }
+
+    /**
+     * @param bool $parse
+     * @return bool|string
+     * @since 3.0.0
+     */
+    public function getSendReceiptEmail(bool $parse = true): bool|string
+    {
+        return $parse ? App::parseBooleanEnv($this->_sendReceiptEmail) : $this->_sendReceiptEmail;
     }
 
     /**
@@ -149,7 +250,7 @@ abstract class Gateway extends BaseGateway
         $response = Craft::$app->getResponse();
         $response->format = Response::FORMAT_RAW;
 
-        $secret = Craft::parseEnv($this->signingSecret);
+        $secret = $this->getSigningSecret();
         $stripeSignature = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
         if (!$secret || !$stripeSignature) {
@@ -162,7 +263,7 @@ abstract class Gateway extends BaseGateway
         try {
             // Check the payload and signature
             Webhook::constructEvent($rawData, $stripeSignature, $secret);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             Craft::warning('Webhook signature check failed: ' . $exception->getMessage(), 'stripe');
             $response->data = 'ok';
 
@@ -174,13 +275,13 @@ abstract class Gateway extends BaseGateway
         if ($data) {
             try {
                 $this->handleWebhook($data);
-            } catch (\Throwable $exception) {
+            } catch (Throwable $exception) {
                 Craft::$app->getErrorHandler()->logException($exception);
             }
 
             if ($this->hasEventHandlers(self::EVENT_RECEIVE_WEBHOOK)) {
                 $this->trigger(self::EVENT_RECEIVE_WEBHOOK, new ReceiveWebhookEvent([
-                    'webhookData' => $data
+                    'webhookData' => $data,
                 ]));
             }
         } else {
@@ -292,9 +393,10 @@ abstract class Gateway extends BaseGateway
 
     /**
      * @return string
+     * @throws \Exception
      * @since 2.3.1
      */
-    public function getTransactionHashFromWebhook()
+    public function getTransactionHashFromWebhook(): ?string
     {
         $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
@@ -322,7 +424,7 @@ abstract class Gateway extends BaseGateway
      *
      * @return RequestResponseInterface
      */
-    abstract public function getResponseModel($data): RequestResponseInterface;
+    abstract public function getResponseModel(mixed $data): RequestResponseInterface;
 
     /**
      * Build the request data array.
@@ -332,7 +434,7 @@ abstract class Gateway extends BaseGateway
      * @return array
      * @throws NotSupportedException
      */
-    protected function buildRequestData(Transaction $transaction, $context = 'charge'): array
+    protected function buildRequestData(Transaction $transaction): array
     {
         $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
@@ -357,29 +459,31 @@ abstract class Gateway extends BaseGateway
             'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             'currency' => $transaction->paymentCurrency,
             'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
-            'metadata' => $metadata
+            'metadata' => $metadata,
         ];
 
         $event = new BuildGatewayRequestEvent([
             'transaction' => $transaction,
             'metadata' => $metadata,
-            'request' => $request
+            'request' => $request,
         ]);
 
-        // TODO provide context
         if ($this->hasEventHandlers(self::EVENT_BUILD_GATEWAY_REQUEST)) {
             $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
 
-            $request = array_replace_recursive($event->request, $request);
-            // TODO remove this line when the event `metadata` prop is removed
-            $request['metadata'] = array_replace_recursive($event->metadata, $request['metadata']);
+            // Do not allow these to be modified by event handlers
+            $event->request['amount'] = $request['amount'];
+            $event->request['currency'] = $request['currency'];
+
+            // TODO remove when metadata is removed from the BuildGatewayRequestEvent event
+            $event->request['metadata'] = array_replace($event->metadata, $event->request['metadata']);
         }
 
         if ($this->sendReceiptEmail) {
-            $request['receipt_email'] = $transaction->getOrder()->email;
+            $event->request['receipt_email'] = $transaction->getOrder()->email;
         }
 
-        return $request;
+        return $event->request;
     }
 
     /**
@@ -392,7 +496,7 @@ abstract class Gateway extends BaseGateway
     protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
         $this->configureStripeClient();
-        $data = $resource->jsonSerialize();
+        $data = $resource->toArray();
 
         return $this->getResponseModel($data);
     }
@@ -400,12 +504,12 @@ abstract class Gateway extends BaseGateway
     /**
      * Create a Response object from an Exception.
      *
-     * @param \Exception $exception
+     * @param Exception $exception
      *
      * @return RequestResponseInterface
-     * @throws \Exception if not a Stripe exception
+     * @throws Exception if not a Stripe exception
      */
-    protected function createPaymentResponseFromError(\Exception $exception): RequestResponseInterface
+    protected function createPaymentResponseFromError(Exception $exception): RequestResponseInterface
     {
         $this->configureStripeClient();
         if ($exception instanceof CardException) {
@@ -413,8 +517,10 @@ abstract class Gateway extends BaseGateway
             $data = $body;
             $data['code'] = $body['error']['code'];
             $data['message'] = $body['error']['message'];
-            $data['id'] = $body['error']['charge'];
-        } else if ($exception instanceof ExceptionInterface) {
+            if (isset($body['error']['charge'])) {
+                $data['id'] = $body['error']['charge'];
+            }
+        } elseif ($exception instanceof ApiErrorException) {
             // So it's not a card being declined but something else. ¯\_(ツ)_/¯
             $body = $exception->getJsonBody();
             $data = $body;
@@ -453,7 +559,7 @@ abstract class Gateway extends BaseGateway
             }
 
             return $stripeCustomer;
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: ' . $exception->getMessage());
         }
     }
@@ -469,14 +575,13 @@ abstract class Gateway extends BaseGateway
         $this->configureStripeClient();
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
-                /** @var Source $tokenSource */
                 $tokenSource = Source::create([
                     'type' => 'card',
-                    'token' => $token
+                    'token' => $token,
                 ]);
 
                 return $tokenSource->id;
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 Craft::error('Unable to normalize payment token: ' . $token . ', because ' . $exception->getMessage());
             }
         }
@@ -494,7 +599,7 @@ abstract class Gateway extends BaseGateway
      * @return RequestResponseInterface
      * @throws NotSupportedException if unrecognized currency specified for transaction
      * @throws PaymentException if unexpected payment information provided.
-     * @throws \Exception if reasons
+     * @throws Exception if reasons
      */
     abstract protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface;
 
@@ -504,7 +609,7 @@ abstract class Gateway extends BaseGateway
      * @param array $data
      * @throws TransactionException
      */
-    protected function handleWebhook(array $data)
+    protected function handleWebhook(array $data): void
     {
         $this->configureStripeClient();
         // Do nothing
@@ -513,10 +618,10 @@ abstract class Gateway extends BaseGateway
     /**
      * Sets the stripe global connection to this gateway API key
      */
-    public function configureStripeClient()
+    public function configureStripeClient(): void
     {
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey(Craft::parseEnv($this->apiKey));
+        Stripe::setApiKey($this->getApiKey());
         Stripe::setApiVersion(self::STRIPE_API_VERSION);
     }
 }

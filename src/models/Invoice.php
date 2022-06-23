@@ -18,36 +18,30 @@ use craft\commerce\elements\Subscription;
  */
 class Invoice extends Model
 {
-    // Properties
-    // =========================================================================
+    /**
+     * @var int|null Payment source ID
+     */
+    public ?int $id = null;
 
     /**
-     * @var int Payment source ID
+     * @var int|null The subscription ID
      */
-    public $id;
+    public ?int $subscriptionId = null;
 
     /**
-     * @var int The subscription Id
+     * @var string|null The reference
      */
-    public $subscriptionId;
-
-    /**
-     * @var string The reference
-     */
-    public $reference;
+    public ?string $reference = null;
 
     /**
      * @var mixed invoice data
      */
-    public $invoiceData;
+    public mixed $invoiceData;
 
     /**
-     * @var Subscription
+     * @var Subscription|null
      */
-    private $_subscription;
-
-    // Public Methods
-    // =========================================================================
+    private ?Subscription $_subscription = null;
 
     /**
      * Returns the customer identifier
@@ -56,7 +50,7 @@ class Invoice extends Model
      */
     public function __toString()
     {
-        return $this->reference;
+        return $this->reference ?? '';
     }
 
     /**
@@ -64,7 +58,7 @@ class Invoice extends Model
      *
      * @return Subscription|null
      */
-    public function getSubscription()
+    public function getSubscription(): ?Subscription
     {
         if (null === $this->_subscription) {
             $this->_subscription = Subscription::find()->id($this->subscriptionId)->one();
@@ -76,10 +70,10 @@ class Invoice extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    protected function defineRules(): array
     {
         return [
-            [['subscriptionId', 'reference', 'invoiceData'], 'required']
+            [['subscriptionId', 'reference', 'invoiceData'], 'required'],
         ];
     }
 }

@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\services;
 
 use Craft;
-use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\models\PaymentIntent;
 use craft\commerce\stripe\records\PaymentIntent as PaymentIntentRecord;
 use craft\db\Query;
@@ -23,9 +22,6 @@ use yii\base\Exception;
  */
 class PaymentIntents extends Component
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * Returns a payment intent by gateway, order id and stripe plugin customer id
      *
@@ -33,17 +29,27 @@ class PaymentIntents extends Component
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntent(int $gatewayId, $orderId, $customerId)
+    public function getPaymentIntent(int $gatewayId, $orderId, $customerId, $transactionHash = null): ?PaymentIntent
     {
-        $result = $this->_createIntentQuery()
-            ->where(['orderId' => $orderId, 'gatewayId' => $gatewayId, 'customerId' => $customerId])
-            ->one();
+        // The `orderId` is not unique across multiple payments (the new partial payment feature) on the same order.
+        // We have added `transactionHash` in commerce-stripe 2.4 to solve this.
+        // TODO make transactionHash required in next major release. Could also drop `orderId`
+        if ($transactionHash) {
+            $result = $this->_createIntentQuery()
+                ->where(['orderId' => $orderId, 'gatewayId' => $gatewayId, 'customerId' => $customerId, 'transactionHash' => $transactionHash])
+                ->one();
+        } else {
+            // This is just in case 3rd party code is calling this method.
+            $result = $this->_createIntentQuery()
+                ->where(['orderId' => $orderId, 'gatewayId' => $gatewayId, 'customerId' => $customerId, 'transactionHash' => null])
+                ->one();
+        }
 
         if ($result !== null) {
             return new PaymentIntent($result);
         }
 
-       return null;
+        return null;
     }
 
     /**
@@ -53,7 +59,8 @@ class PaymentIntents extends Component
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntentByReference(string $reference) {
+    public function getPaymentIntentByReference(string $reference): ?PaymentIntent
+    {
         $result = $this->_createIntentQuery()
             ->where(['reference' => $reference])
             ->one();
@@ -68,7 +75,7 @@ class PaymentIntents extends Component
     /**
      * Save a customer
      *
-     * @param Customer $customer The customer being saved.
+     * @param PaymentIntent $paymentIntent The payment intent.
      * @return bool Whether the payment source was saved successfully
      * @throws Exception if payment source not found by id.
      */
@@ -89,11 +96,10 @@ class PaymentIntents extends Component
         $record->gatewayId = $paymentIntent->gatewayId;
         $record->customerId = $paymentIntent->customerId;
         $record->orderId = $paymentIntent->orderId;
+        $record->transactionHash = $paymentIntent->transactionHash;
         $record->intentData = $paymentIntent->intentData;
 
-        $paymentIntent->validate();
-
-        if (!$paymentIntent->hasErrors()) {
+        if ($paymentIntent->validate()) {
             // Save it!
             $record->save(false);
 
@@ -105,9 +111,6 @@ class PaymentIntents extends Component
 
         return false;
     }
-
-    // Private methods
-    // =========================================================================
 
     /**
      * Returns a Query object prepped for retrieving customers.
@@ -123,9 +126,9 @@ class PaymentIntents extends Component
                 'customerId',
                 'reference',
                 'orderId',
+                'transactionHash',
                 'intentData',
             ])
             ->from(['{{%stripe_paymentintents}}']);
     }
-
 }

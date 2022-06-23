@@ -20,33 +20,33 @@ use craft\commerce\stripe\Plugin;
 class PaymentIntent extends CreditCardPaymentForm
 {
     /**
-     * @var string $customer the Stripe customer token.
+     * @var string|null $customer the Stripe customer token.
      */
-    public $customer;
+    public ?string $customer = null;
 
     /**
-     * @var string $customer the Stripe payment method id.
+     * @var string|null $paymentMethodId the Stripe payment method id.
      */
-    public $paymentMethodId;
+    public ?string $paymentMethodId = null;
 
-    // Public methods
-    // =========================================================================
     /**
      * @inheritdoc
      */
-    public function rules(): array
+    protected function defineRules(): array
     {
-        return [[['paymentMethodId'], 'required']];
+        return [
+            [['paymentMethodId'], 'required'],
+        ];
     }
 
     /**
      * @inheritdoc
      */
-    public function populateFromPaymentSource(PaymentSource $paymentSource)
+    public function populateFromPaymentSource(PaymentSource $paymentSource): void
     {
         $this->paymentMethodId = $paymentSource->token;
 
-        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getUser());
+        $customer = Plugin::getInstance()->getCustomers()->getCustomer($paymentSource->gatewayId, $paymentSource->getCustomer());
         $this->customer = $customer->reference;
     }
 }

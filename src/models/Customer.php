@@ -13,6 +13,8 @@ use craft\commerce\base\Model;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\elements\User;
+use craft\validators\UniqueValidator;
+use yii\base\InvalidConfigException;
 
 /**
  * Stripe customer model
@@ -25,46 +27,40 @@ use craft\elements\User;
  */
 class Customer extends Model
 {
-    // Properties
-    // =========================================================================
+    /**
+     * @var int|null Customer ID
+     */
+    public ?int $id = null;
 
     /**
-     * @var int Customer ID
+     * @var int|null The user ID
      */
-    public $id;
+    public ?int $userId = null;
 
     /**
-     * @var int The user ID
+     * @var int|null The gateway ID.
      */
-    public $userId;
+    public ?int $gatewayId = null;
 
     /**
-     * @var int The gateway ID.
+     * @var string|null Reference
      */
-    public $gatewayId;
+    public ?string $reference = null;
 
     /**
-     * @var string Reference
+     * @var mixed Response data
      */
-    public $reference;
-
-    /**
-     * @var string Response data
-     */
-    public $response;
+    public mixed $response = null;
 
     /**
      * @var User|null $_user
      */
-    private $_user;
+    private ?User $_user = null;
 
     /**
      * @var GatewayInterface|null $_user
      */
-    private $_gateway;
-
-    // Public Methods
-    // =========================================================================
+    private ?GatewayInterface $_gateway = null;
 
     /**
      * Returns the customer identifier
@@ -73,7 +69,7 @@ class Customer extends Model
      */
     public function __toString()
     {
-        return $this->reference;
+        return $this->reference ?? '';
     }
 
     /**
@@ -81,7 +77,7 @@ class Customer extends Model
      *
      * @return User|null
      */
-    public function getUser()
+    public function getUser(): ?User
     {
         if (null === $this->_user) {
             $this->_user = Craft::$app->getUsers()->getUserById($this->userId);
@@ -94,8 +90,9 @@ class Customer extends Model
      * Returns the gateway associated with this customer.
      *
      * @return GatewayInterface|null
+     * @throws InvalidConfigException
      */
-    public function getGateway()
+    public function getGateway(): ?GatewayInterface
     {
         if (null === $this->_gateway) {
             $this->_gateway = Commerce::getInstance()->getGateways()->getGatewayById($this->gatewayId);
@@ -107,12 +104,12 @@ class Customer extends Model
     /**
      * @inheritdoc
      */
-    public function rules()
+    protected function defineRules(): array
     {
+        $rules = parent::defineRules();
+        $rules[] = [['reference'], UniqueValidator::class, 'targetClass' => CustomerRecord::class];
+        $rules[] = [['gatewayId', 'userId', 'reference', 'response'], 'required'];
 
-        return [
-            [['reference'], 'unique', 'targetAttribute' => ['gatewayId', 'reference'], 'targetClass' => CustomerRecord::class],
-            [['gatewayId', 'userId', 'reference', 'response'], 'required']
-        ];
+        return $rules;
     }
 }
