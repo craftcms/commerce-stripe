@@ -9,13 +9,14 @@ namespace craft\commerce\stripe\responses;
 
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
+use yii\base\Exception;
 
-class CheckoutResponse implements RequestResponseInterface
+class CheckoutSessionResponse implements RequestResponseInterface
 {
     /**
      * @var array the response data
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * Response constructor.
@@ -32,7 +33,7 @@ class CheckoutResponse implements RequestResponseInterface
      */
     public function isSuccessful(): bool
     {
-        return array_key_exists('status', $this->data) && in_array($this->data['status'], ['succeeded', 'requires_capture'], true);
+        return false; // always redirect
     }
 
     /**
@@ -49,7 +50,6 @@ class CheckoutResponse implements RequestResponseInterface
     public function isRedirect(): bool
     {
         return true;
-//        return array_key_exists('next_action', $this->data) && is_array($this->data['next_action']) && array_key_exists('redirect_to_url', $this->data['next_action']);
     }
 
     /**
@@ -73,7 +73,11 @@ class CheckoutResponse implements RequestResponseInterface
      */
     public function getRedirectUrl(): string
     {
-        return $this->data['next_action']['redirect_to_url']['url'] ?? '';
+        if (!isset($this->data['url'])) {
+            throw new Exception('No url found in checkout session to redirect to');
+        }
+
+        return (string)$this->data['url'];
     }
 
     /**
@@ -81,8 +85,8 @@ class CheckoutResponse implements RequestResponseInterface
      */
     public function getTransactionReference(): string
     {
-        if (empty($this->data)) {
-            return '';
+        if (!isset($this->data['id'])) {
+            throw new Exception('No checkout session ID found');
         }
 
         return (string)$this->data['id'];
@@ -93,21 +97,13 @@ class CheckoutResponse implements RequestResponseInterface
      */
     public function getCode(): string
     {
-        if (empty($this->data['code'])) {
-            if (!empty($this->data['last_payment_error'])) {
-                return $this->data['last_payment_error']['code'];
-            }
-
-            return '';
-        }
-
-        return $this->data['code'];
+        return '';
     }
 
     /**
      * @inheritdoc
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }
@@ -117,27 +113,14 @@ class CheckoutResponse implements RequestResponseInterface
      */
     public function getMessage(): string
     {
-        if (empty($this->data['message'])) {
-            if (!empty($this->data['last_payment_error'])) {
-                if ($this->data['last_payment_error']['code'] === 'payment_intent_authentication_failure') {
-                    return 'The provided payment method has failed authentication.';
-                }
-
-                return $this->data['last_payment_error']['message'];
-            }
-
-            return '';
-        }
-
-        return $this->data['message'];
+        return '';
     }
 
     /**
      * @inheritdoc
      */
-    public function redirect()
+    public function redirect(): void
     {
-        throw new NotImplementedException('Redirecting directly is not implemented for this gateway.');
     }
 
 }

@@ -58,7 +58,11 @@ class Customers extends Component
 
         $stripeCustomer = StripeCustomer::create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
+            'name' => $user->fullName,
             'email' => $user->email,
+            'metadata' => [
+                'craft_user_id' => $user->id,
+            ]
         ]);
 
         $customer = new Customer([

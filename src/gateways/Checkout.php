@@ -8,33 +8,22 @@
 namespace craft\commerce\stripe\gateways;
 
 use Craft;
-use craft\commerce\base\Model;
-use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
-use craft\commerce\base\SubscriptionResponseInterface;
-use craft\commerce\elements\Subscription;
-use craft\commerce\errors\SubscriptionException;
+use craft\commerce\errors\NotImplementedException;
 use craft\commerce\models\payments\BasePaymentForm;
-use craft\commerce\models\PaymentSource;
-use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\errors\PaymentSourceException;
-use craft\commerce\stripe\events\SubscriptionRequestEvent;
-use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
-use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
-use craft\commerce\stripe\models\PaymentIntent as PaymentIntentModel;
+use craft\commerce\stripe\models\forms\payment\Checkout as CheckoutForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\responses\CheckoutSessionResponse;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
-use craft\elements\User;
-use craft\helpers\StringHelper;
+use craft\helpers\App;
+use craft\helpers\Json;
 use craft\helpers\UrlHelper;
 use craft\web\View;
 use Stripe\PaymentIntent;
-use Stripe\PaymentMethod;
-use Stripe\Refund;
-use Stripe\Subscription as StripeSubscription;
-use yii\base\NotSupportedException;
+use Stripe\Stripe;
+use Stripe\StripeClient;
 
 /**
  * This class represents the Stripe Checkout gateway
@@ -53,12 +42,24 @@ class Checkout extends PaymentIntents
     }
 
     /**
+     * @return StripeClient
+     */
+    public function getStripeClient(): StripeClient
+    {
+        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
+        Stripe::setApiKey($this->getApiKey());
+        Stripe::setApiVersion(self::STRIPE_API_VERSION);
+
+        return new StripeClient([
+            'api_key' => $this->getApiKey()
+        ]);
+    }
+
+    /**
      * @inheritdoc
      */
-    public function getPaymentFormHtml(array $params)
+    public function getPaymentFormHtml(array $params): ?string
     {
-        $this->configureStripeClient();
-
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
@@ -66,11 +67,7 @@ class Checkout extends PaymentIntents
 
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
-        // Not needed at the moment
-        // $view->registerAssetBundle(IntentsFormAsset::class);
-
-        $params = array_merge([],$params);
-        $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);
+        $html = '';
         $view->setTemplateMode($previousMode);
 
         return $html;
@@ -81,42 +78,7 @@ class Checkout extends PaymentIntents
      */
     public function getPaymentFormModel(): BasePaymentForm
     {
-        $this->configureStripeClient();
-        return new Model(); // nothing specific to checkout in a model at the moment
-    }
-
-    /**
-     * @inheritdoc
-     */
-    public function completePurchase(Transaction $transaction): RequestResponseInterface
-    {
-        $this->configureStripeClient();
-        $paymentIntentReference = Craft::$app->getRequest()->getParam('payment_intent');
-        /** @var PaymentIntent $paymentIntent */
-        $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentReference);
-
-        // Update the intent with the latest.
-        $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
-
-        $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($paymentIntentReference);
-
-        // Make sure we have the payment intent before we attempt to do anything with it.
-        if ($paymentIntent) {
-            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
-            $paymentIntentsService->savePaymentIntent($paymentIntent);
-        }
-
-        $intentData = $stripePaymentIntent->jsonSerialize();
-
-        if (!empty($intentData['payment_method'])) {
-            try {
-                $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
-            } catch (\Exception $exception) {
-                return $this->createPaymentResponseFromError($exception);
-            }
-        }
-
-        return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
+        return new CheckoutForm();
     }
 
     /**
@@ -124,124 +86,72 @@ class Checkout extends PaymentIntents
      */
     protected function authorizeOrPurchase(Transaction $transaction, BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
-        $this->configureStripeClient();
-        /** @var PaymentForm $form */
-        $requestData = $this->buildRequestData($transaction);
-        $paymentMethodId = $form->paymentMethodId;
+        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
-        $customer = null;
-        $paymentIntent = null;
+        $metadata = [
+            'order_id' => $transaction->getOrder()->id,
+            'order_number' => $transaction->getOrder()->number,
+            'transaction_id' => $transaction->id,
+            'transaction_reference' => $transaction->hash,
+        ];
+        $lineItems = [];
+        $lineItems[] = [
+            'price_data' => [
+                'currency' => $transaction->paymentCurrency,
+                'unit_amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+                'tax_behavior' => 'inclusive',
+                'product_data' => [
+                    'name' => Craft::$app->getSites()->getCurrentSite()->name. ' Order #'.$transaction->getOrder()->shortNumber,
+                    'metadata' => [
+                        'order_id' => $transaction->getOrder()->id,
+                        'order_number' => $transaction->getOrder()->number,
+                        'order_short_number' => $transaction->getOrder()->shortNumber,
+                    ]
+                ]
+            ],
+            'adjustable_quantity' => [
+                'enabled' => false
+            ],
+            'quantity' => 1,
+        ];
 
-        $stripePlugin = StripePlugin::getInstance();
+        $paymentIntentData = [
+            'setup_future_usage' => 'on_session'
+        ];
 
-        if ($form->customer) {
-            $requestData['customer'] = $form->customer;
-            $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
-        } else if ($user = $transaction->getOrder()->getUser()) {
-            $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
-            $requestData['customer'] = $customer->reference;
-        }
+        $data = [
+            'cancel_url' => $transaction->getOrder()->cancelUrl,
+            'success_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
+            'mode' => 'payment',
+            'client_reference_id' => $transaction->hash,
+            'customer' => StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $transaction->getOrder()->getCustomer())->reference,
+            'line_items' => $lineItems,
+            'metadata' => $metadata,
+            'allow_promotion_codes' => false,
+            'payment_intent_data' => $paymentIntentData,
+        ];
 
-        $requestData['payment_method'] = $paymentMethodId;
-
-        try {
-            // If this is a customer that's logged in, attempt to continue the timeline
-            if ($customer) {
-                $paymentIntentService = $stripePlugin->getPaymentIntents();
-                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
-            }
-
-            // If a payment intent exists, update that.
-            if ($paymentIntent) {
-                $stripePaymentIntent = PaymentIntent::update($paymentIntent->reference, $requestData, ['idempotency_key' => $transaction->hash]);
-            } else {
-                $requestData['capture_method'] = $capture ? 'automatic' : 'manual';
-                $requestData['confirmation_method'] = 'manual';
-                $requestData['confirm'] = false;
-
-                $stripePaymentIntent = PaymentIntent::create($requestData, ['idempotency_key' => $transaction->hash]);
-
-                if ($customer) {
-                    $paymentIntent = new PaymentIntentModel([
-                        'orderId' => $transaction->orderId,
-                        'customerId' => $customer->id,
-                        'gatewayId' => $this->id,
-                        'reference' => $stripePaymentIntent->id,
-                    ]);
-                }
-            }
-
-            if ($paymentIntent) {
-                // Save data before confirming.
-                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
-                $paymentIntentService->savePaymentIntent($paymentIntent);
-            }
-
-            $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
-
-            return $this->createPaymentResponsocartconeFromApiResource($stripePaymentIntent);
-        } catch (\Exception $exception) {
-            return $this->createPaymentResponseFromError($exception);
-        }
+        $session = $this->getStripeClient()->checkout->sessions->create($data);
+        return new CheckoutSessionResponse($session->toArray());
     }
 
     /**
-     * Refresh a subscription's data.
-     *
-     * @param $subscription
-     * @return Subscription
+     * @inheritdoc
      */
-    protected function refreshSubscriptionData(Subscription $subscription)
+    public function completePurchase(Transaction $transaction): RequestResponseInterface
     {
-        $this->configureStripeClient();
-        $stripeSubscription = StripeSubscription::retrieve([
-            'id' => $subscription->reference,
-            'expand' => ['latest_invoice.payment_intent']
-        ]);
+        $data = Json::decodeIfJson($transaction->response);
+        $session = $this->getStripeClient()->checkout->sessions->retrieve($data['id']);
+        $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['payment_intent']);
 
-        $subscription->setSubscriptionData($stripeSubscription->jsonSerialize());
-        $this->setSubscriptionStatusData($subscription);
-        Craft::$app->getElements()->saveElement($subscription);
-
-        return $subscription;
-    }
-
-    // Private methods
-    // =========================================================================
-
-    /**
-     * Confirm a payment intent and set the return URL.
-     *
-     * @param PaymentIntent $stripePaymentIntent
-     */
-    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
-    {
-        $this->configureStripeClient();
-        $stripePaymentIntent->confirm([
-            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
-        ]);
+        return new PaymentIntentResponse($paymentIntent->toArray());
     }
 
     /**
-     * Get the expanded subscription data, including payment intent for latest invoice.
-     *
-     * @param Subscription $subscription
-     * @return array
+     * @return bool
      */
-    private function _getExpandedSubscriptionData(Subscription $subscription): array
+    public function supportsPaymentSources(): bool
     {
-        $this->configureStripeClient();
-        $subscriptionData = $subscription->getSubscriptionData();
-
-        if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
-            $stripeSubscription = StripeSubscription::retrieve([
-                'id' => $subscription->reference,
-                'expand' => ['latest_invoice.payment_intent']
-            ]);
-            $subscriptionData = $stripeSubscription->jsonSerialize();
-            $subscription->setSubscriptionData($subscriptionData);
-        }
-
-        return $subscriptionData;
+        return false;
     }
 }
