@@ -118,7 +118,7 @@ class Checkout extends PaymentIntents
         $paymentIntentData = [
             'setup_future_usage' => 'on_session'
         ];
-        
+
         $data = [
             'cancel_url' => $transaction->getOrder()->cancelUrl,
             'success_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
@@ -135,7 +135,7 @@ class Checkout extends PaymentIntents
         if($user && $orderCustomer && $user->id == $orderCustomer->id){
             $data['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $transaction->getOrder()->getCustomer())->reference;
         }else{
-            $data['email'] = $transaction->getOrder()->getEmail();
+            $data['customer_email'] = $transaction->getOrder()->getEmail();
         }
 
         $session = $this->getStripeClient()->checkout->sessions->create($data);
