@@ -8,10 +8,15 @@
 namespace craft\commerce\stripe\controllers;
 
 use Craft;
+use craft\commerce\Plugin;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway;
+use craft\commerce\stripe\gateways\Checkout;
+use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\helpers\UrlHelper;
 use craft\web\Controller as BaseController;
 use Throwable;
+use yii\helpers\Url;
 use yii\web\BadRequestHttpException;
 use yii\web\Response;
 
@@ -23,15 +28,6 @@ use yii\web\Response;
  */
 class DefaultController extends BaseController
 {
-    /**
-     * @inheritdoc
-     */
-    public function init(): void
-    {
-        parent::init();
-        $this->defaultAction = 'fetch-plans';
-    }
-
     /**
      * Load Stripe Subscription plans for a gateway.
      *
@@ -61,4 +57,36 @@ class DefaultController extends BaseController
             return $this->asErrorJson($e->getMessage());
         }
     }
+
+    /**
+     * @return void
+     * @throws BadRequestHttpException
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function actionBillingPortal(): Response
+    {
+        $this->requirePostRequest();
+        $redirect = $this->getPostedRedirectUrl();
+
+        if ($currentUser = Craft::$app->getUser()->getIdentity()) {
+            $gatewayHandle = Craft::$app->getRequest()->getRequiredParam('gatewayHandle');
+            if ($gateway = Plugin::getInstance()->getGateways()->getGatewayByHandle($gatewayHandle)) {
+                if ($gateway instanceof Checkout) {
+                    $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($gateway->id, $currentUser);
+
+                    $portal = $gateway->getStripeClient()->billingPortal->sessions->create([
+                        'customer' => $customer->reference,
+                        'return_url' => UrlHelper::siteUrl($redirect),
+                    ]);
+
+                    return $this->redirect($portal->url);
+                }
+            }
+        }
+
+
+
+        return $this->asFailure('Can not create billing portal link.');
+    }
+
 }

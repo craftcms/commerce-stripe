@@ -14,7 +14,7 @@ $stripeButton.on('click', function(ev) {
     gatewayId: gatewayId
   };
   
-  Craft.postActionRequest('commerce-stripe', data, function(response, textStatus) {
+  Craft.postActionRequest('commerce-stripe/fetch-plans', data, function(response, textStatus) {
     $stripeButton.removeClass('disabled').siblings('.spinner').addClass('hidden');
     
     if (textStatus === 'success') {
