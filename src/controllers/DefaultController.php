@@ -66,7 +66,7 @@ class DefaultController extends BaseController
     public function actionBillingPortal(): Response
     {
         $this->requirePostRequest();
-        $redirect = $this->getPostedRedirectUrl();
+        $redirect = $this->getPostedRedirectUrl() ?? Craft::$app->getRequest()->pathInfo;
 
         if ($currentUser = Craft::$app->getUser()->getIdentity()) {
             $gatewayHandle = Craft::$app->getRequest()->getRequiredParam('gatewayHandle');
