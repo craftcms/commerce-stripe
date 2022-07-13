@@ -484,7 +484,7 @@ class PaymentIntents extends BaseGateway
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
             $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
-        } elseif ($user = $transaction->getOrder()->getUser()) {
+        } elseif ($user = $transaction->getOrder()->getCustomer()) {
             $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
             $requestData['customer'] = $customer->reference;
         }
