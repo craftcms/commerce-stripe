@@ -22,7 +22,7 @@ class SwitchPlans extends SwitchPlansForm
      *
      * @var bool
      */
-    public bool $prorate = false;
+    public ?bool $prorate = false;
 
     /**
      * @var bool Whether the plan change should be billed immediately.
@@ -35,12 +35,12 @@ class SwitchPlans extends SwitchPlansForm
     public string|int $billingCycleAnchor;
 
     /**
-     * @var int Timestamp on which to base the proration calculation
+     * @var int|null Timestamp on which to base the proration calculation
      */
-    public int $prorationDate;
+    public ?int $prorationDate = null;
 
     /**
-     * @var int Quantity of subscription
+     * @var int|null Quantity of subscription
      */
-    public int $quantity;
+    public ?int $quantity = null;
 }
