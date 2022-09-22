@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+
+### Fixed
+- Fixed a bug where switching subscription plan throws a type property initialization error.
+
 ## 3.0.1 - 2022-06-16
 
 ### Fixed
