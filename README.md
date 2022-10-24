@@ -266,7 +266,7 @@ Event::on(
 
 ## Creating a Stripe Payment Form for the Payment Intents Gateway
 
-You can output a standard form quickly using `order.gateway.getPaymentFormHtml()` or `gateway.getPaymentFormHtml()`, but you can take a little bit more time to follow these steps and have more control over the resulting template.
+You can output a standard form quickly using `order.gateway.getPaymentFormHtml()` or `gateway.getPaymentFormHtml()`, but you can take a little more time to follow these steps and have more control over the resulting template.
 
 ### 1. Include Stripe’s JavaScript on your payment page.
 
@@ -291,16 +291,18 @@ Replace the `YOUR_GATEWAY_ID` below with your Stripe Payment Intents gateway ID.
     {{ hiddenInput('gatewayId', 'YOUR_GATEWAY_ID') }}
     {{ csrfInput() }}
 
-    <div class="form-row">
-        <label for="card-element">
-            Credit or debit card input fields
-        </label>
-        <div id="card-element">
-            {# Stripe’s JavaScript will insert Stripe Elements here #}
+    {% namespace cart.gateway.handle|commercePaymentFormNamespace %}        
+        <div class="form-row">
+            <label for="card-element">
+                Credit or debit card input fields
+            </label>
+            <div id="card-element">
+                {# Stripe’s JavaScript will insert Stripe Elements here #}
+            </div>
+            {# Used to display form errors #}
+            <div id="card-errors" role="alert"></div>
         </div>
-        {# Used to display form errors #}
-        <div id="card-errors" role="alert"></div>
-    </div>
+    {% endnamespace %}
 
     <button id="submit-button" type="submit">Submit Payment</button>
 </form>
