@@ -42,6 +42,7 @@ use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
 use Throwable;
 use yii\base\NotSupportedException;
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
 use function count;
 
 /**
@@ -71,6 +72,11 @@ class PaymentIntents extends BaseGateway
      * @var string
      */
     public $signingSecret;
+
+    /**
+     * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
+     */
+    const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
 
     /**
      * @inheritdoc
@@ -569,9 +575,18 @@ class PaymentIntents extends BaseGateway
     private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
     {
         $this->configureStripeClient();
-        $stripePaymentIntent->confirm([
+
+        $parameters = [
             'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
+        ];
+
+        $event = new PaymentIntentConfirmationEvent([
+            'parameters' => $parameters
         ]);
+
+        $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $event);
+
+        $stripePaymentIntent->confirm($event->parameters);
     }
 
     /**
