@@ -581,7 +581,7 @@ class PaymentIntents extends BaseGateway
         ];
 
         $event = new PaymentIntentConfirmationEvent([
-            'parameters' => $parameters
+            'parameters' => $parameters ?? [],
         ]);
 
         $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $event);

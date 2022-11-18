@@ -159,7 +159,7 @@ class PaymentIntent extends Model
     }
 
     /**
-     * Returns the transation associated with this payment intent.
+     * Returns the transaction associated with this payment intent.
      *
      * @return Order|null
      */
