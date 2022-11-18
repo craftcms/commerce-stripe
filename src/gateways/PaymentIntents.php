@@ -21,6 +21,7 @@ use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -43,7 +44,6 @@ use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
 use Throwable;
 use yii\base\NotSupportedException;
-use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
 use function count;
 
 /**
@@ -62,7 +62,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
      */
-    const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
+    public const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
 
     /**
      * @inheritdoc
