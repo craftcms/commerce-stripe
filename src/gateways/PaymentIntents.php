@@ -21,6 +21,7 @@ use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -58,6 +59,11 @@ use function count;
  **/
 class PaymentIntents extends BaseGateway
 {
+    /**
+     * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
+     */
+    public const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
+
     /**
      * @inheritdoc
      */
@@ -484,7 +490,7 @@ class PaymentIntents extends BaseGateway
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
             $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
-        } elseif ($user = $transaction->getOrder()->getUser()) {
+        } elseif ($user = $transaction->getOrder()->getCustomer()) {
             $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
             $requestData['customer'] = $customer->reference;
         }
@@ -569,9 +575,18 @@ class PaymentIntents extends BaseGateway
     private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction): void
     {
         $this->configureStripeClient();
-        $stripePaymentIntent->confirm([
+
+        $parameters = [
             'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
+        ];
+
+        $event = new PaymentIntentConfirmationEvent([
+            'parameters' => $parameters,
         ]);
+
+        $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $event);
+
+        $stripePaymentIntent->confirm($event->parameters);
     }
 
     /**
