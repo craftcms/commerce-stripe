@@ -51,6 +51,8 @@ SQL;
 
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId', 'transactionHash'], true);
+
+        return true;
     }
 
     /**

@@ -26,6 +26,11 @@
 ## 2.4.3 - 2022-01-25
 
 ### Added
+- Added `craft\commerce\stripe\gateways\PaymentIntents::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT`. ([#221](https://github.com/craftcms/commerce-stripe/pull/221))
+
+## 2.4.3 - 2022-01-25
+
+### Added
 - Added `craft\commerce\stripe\models\forms\SwitchPlans::$quantity`. ([#189](https://github.com/craftcms/commerce-stripe/pull/189))
 
 ### Fixed
