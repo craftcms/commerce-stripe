@@ -43,5 +43,11 @@
     "name": "Stripe for Craft Commerce",
     "handle": "commerce-stripe",
     "documentationUrl": "https://github.com/craftcms/commerce-stripe/blob/master/README.md"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    }
   }
 }
