@@ -30,9 +30,9 @@ class SwitchPlans extends SwitchPlansForm
     public bool $billImmediately = false;
 
     /**
-     * @var string|int The billing cycle anchor. Can be set to `now` or `unchanged` (default).
+     * @var string|int|null The billing cycle anchor. Can be set to `now` or `unchanged` (default).
      */
-    public string|int $billingCycleAnchor;
+    public string|int|null $billingCycleAnchor = null;
 
     /**
      * @var int|null Timestamp on which to base the proration calculation
