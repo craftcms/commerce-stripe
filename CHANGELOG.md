@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+
+### Fixed
+- Fixed a bug where switching subscription plan throws a $billingCycleAnchor type property initialization error. ([#3035](https://github.com/craftcms/commerce/issues/3035))
+
 ## 3.0.2 - 2022-11-17
 
 ### Added
