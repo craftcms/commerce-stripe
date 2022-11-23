@@ -3,7 +3,7 @@
 ## Unreleased
 
 ### Fixed
-- Fixed a PHP error when switching a subscription’s plan. ([#3035](https://github.com/craftcms/commerce/issues/3035))
+- Fixed a PHP error that occurred when switching a subscription’s plan. ([#3035](https://github.com/craftcms/commerce/issues/3035))
 
 ## 3.0.2 - 2022-11-17
 
