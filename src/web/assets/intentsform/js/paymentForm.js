@@ -3,20 +3,23 @@ function PaymentIntents(publishableKey, container) {
   this.stripeInstance = Stripe(publishableKey);
   this.paymentFormNamespace = this.container.data('payment-form-namespace');
 
-  this.perform3dsAuthentication = function(card)  {
-
+  this.perform3dsAuthentication = function (card) {
     this.displayMessage('Please wait, processing payment...');
-    this.stripeInstance.handleCardPayment(this.container.data('client-secret'), card).then(function(result) {
-      if (result.error) {
-        this.displayMessage(result.error.message);
-        this.displayPaymentForm();
-      } else {
-        location.reload();
-      }
-    }.bind(this));
+    this.stripeInstance
+      .handleCardPayment(this.container.data('client-secret'), card)
+      .then(
+        function (result) {
+          if (result.error) {
+            this.displayMessage(result.error.message);
+            this.displayPaymentForm();
+          } else {
+            location.reload();
+          }
+        }.bind(this)
+      );
   };
 
-  this.displayStripeMessage = function(event) {
+  this.displayStripeMessage = function (event) {
     if (event.error) {
       this.displayMessage(event.error.message);
     } else {
@@ -24,7 +27,7 @@ function PaymentIntents(publishableKey, container) {
     }
   };
 
-  this.displayMessage = function(message) {
+  this.displayMessage = function (message) {
     var messageContainer = $('.card-errors', this.container).get(0);
     messageContainer.textContent = message;
 
@@ -33,7 +36,7 @@ function PaymentIntents(publishableKey, container) {
     }
   };
 
-  this.displayPaymentForm = function() {
+  this.displayPaymentForm = function () {
     $('.payment-form-fields').removeClass('hidden');
 
     var elements = this.stripeInstance.elements();
@@ -42,16 +45,15 @@ function PaymentIntents(publishableKey, container) {
       base: {
         // Add your base input styles here. For example:
         fontSize: '16px',
-        lineHeight: '21px'
-      }
+        lineHeight: '21px',
+      },
     };
 
     // Create an instance of the card Element
     var card = elements.create('card', {
       style: style,
-      hidePostalCode: true
-    }
-    );
+      hidePostalCode: true,
+    });
 
     card.addEventListener('change', this.displayStripeMessage.bind(this));
 
@@ -68,79 +70,113 @@ function PaymentIntents(publishableKey, container) {
     $form.off('submit');
     $form.data('processing', false);
 
-    $form.on('submit', function(ev) {
-      ev.preventDefault();
+    $form.on(
+      'submit',
+      function (ev) {
+        ev.preventDefault();
 
-      // If form submitted already, disregard.
-      if ($form.data('processing')) {
-        return false;
-      }
+        // If form submitted already, disregard.
+        if ($form.data('processing')) {
+          return false;
+        }
 
-      $form.data('processing', true);
+        $form.data('processing', true);
 
-      // Compose card holder info
-      var cardHolderName, orderEmail, ownerAddress;
+        // Compose card holder info
+        var cardHolderName, orderEmail, ownerAddress;
 
-      if ($('.card-holder-first-name', $form).length > 0 && $('.card-holder-last-name', $form).length > 0) {
-        cardHolderName = $('.card-holder-first-name', $form).val() + ' ' + $('.card-holder-last-name', $form).val();
-      }
+        if (
+          $('.card-holder-first-name', $form).length > 0 &&
+          $('.card-holder-last-name', $form).length > 0
+        ) {
+          cardHolderName =
+            $('.card-holder-first-name', $form).val() +
+            ' ' +
+            $('.card-holder-last-name', $form).val();
+        }
 
-      if ($('.stripe-address', $form).length > 0) {
-        ownerAddress = {
-          'line1': $(`input[name="${this.paymentFormNamespace}[stripe-line1]"]`, $form).val(),
-          'city': $(`input[name="${this.paymentFormNamespace}[stripe-city]"]`, $form).val(),
-          'postal_code': $(`input[name="${this.paymentFormNamespace}[stripe-postal-code]"]`, $form).val(),
-          'country': $(`input[name="${this.paymentFormNamespace}[stripe-country]"]`, $form).val(),
-          'state': $(`input[name="${this.paymentFormNamespace}[stripe-state]"]`, $form).val(),
+        if ($('.stripe-address', $form).length > 0) {
+          ownerAddress = {
+            line1: $(
+              `input[name="${this.paymentFormNamespace}[stripe-line1]"]`,
+              $form
+            ).val(),
+            city: $(
+              `input[name="${this.paymentFormNamespace}[stripe-city]"]`,
+              $form
+            ).val(),
+            postal_code: $(
+              `input[name="${this.paymentFormNamespace}[stripe-postal-code]"]`,
+              $form
+            ).val(),
+            country: $(
+              `input[name="${this.paymentFormNamespace}[stripe-country]"]`,
+              $form
+            ).val(),
+            state: $(
+              `input[name="${this.paymentFormNamespace}[stripe-state]"]`,
+              $form
+            ).val(),
+          };
+        }
+
+        // If client secret is present, that's a pretty good indicator that things should be handled on page.
+        if (this.container.data('client-secret')) {
+          this.perform3dsAuthentication(card);
+
+          return;
+        }
+
+        // This section is for handling things on server end
+        orderEmail = $('input[name=orderEmail]').val();
+        var paymentData = {
+          billing_details: {
+            name: cardHolderName,
+            email: orderEmail,
+            address: ownerAddress,
+          },
         };
-      }
 
-
-      // If client secret is present, that's a pretty good indicator that things should be handled on page.
-      if (this.container.data('client-secret')) {
-        this.perform3dsAuthentication(card);
-
-        return;
-      }
-
-      // This section is for handling things on server end
-      orderEmail = $('input[name=orderEmail]').val();
-      var paymentData = {
-        billing_details: {
-          name: cardHolderName,
-          email: orderEmail,
-          address: ownerAddress
-        }
-      };
-
-      // Tokenize the credit card details and create a payment source
-      this.stripeInstance.createPaymentMethod('card', card, paymentData).then(function(result) {
-        if (result.error) {
-          this.displayMessage(result.error.message);
-          $form.data('processing', false);
-        } else {
-          // Add the payment source token to the form.
-          $form.append($('<input type="hidden" name="' + this.container.data('payment-form-namespace') + '[paymentMethodId]"/>').val(result.paymentMethod.id));
-          $form.get(0).submit();
-        }
-      }.bind(this));
-    }.bind(this));
+        // Tokenize the credit card details and create a payment source
+        this.stripeInstance.createPaymentMethod('card', card, paymentData).then(
+          function (result) {
+            if (result.error) {
+              this.displayMessage(result.error.message);
+              $form.data('processing', false);
+            } else {
+              // Add the payment source token to the form.
+              $form.append(
+                $(
+                  '<input type="hidden" name="' +
+                    this.container.data('payment-form-namespace') +
+                    '[paymentMethodId]"/>'
+                ).val(result.paymentMethod.id)
+              );
+              $form.get(0).submit();
+            }
+          }.bind(this)
+        );
+      }.bind(this)
+    );
 
     if ($('.modal').data('modal')) {
       $('.modal').data('modal').updateSizeAndPosition();
     }
   };
-};
+}
 
 function initStripe() {
   // Because this might get executed before Stripe is loaded.
-  if (typeof Stripe === "undefined") {
+  if (typeof Stripe === 'undefined') {
     setTimeout(initStripe, 200);
   } else {
-    $('.stripe-payment-intents-form').each(function() {
+    $('.stripe-payment-intents-form').each(function () {
       $container = $(this);
 
-      var handlerInstance = new PaymentIntents($container.data('publishablekey'), $container);
+      var handlerInstance = new PaymentIntents(
+        $container.data('publishablekey'),
+        $container
+      );
       $container.data('handlerInstance', handlerInstance);
 
       if ($container.data('scenario') == 'payment') {
@@ -150,7 +186,6 @@ function initStripe() {
       if ($container.data('scenario') == '3ds') {
         handlerInstance.perform3dsAuthentication();
       }
-
     });
   }
 }
