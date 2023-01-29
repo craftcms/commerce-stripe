@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 3.1.0 - 2022-01-29
 
 - Added the `commerce-stripe/reset-data` command.
 
