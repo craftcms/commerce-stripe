@@ -20,5 +20,5 @@ class PaymentIntentConfirmationEvent extends Event
     /**
      * @var array The parameters passed to the PaymentIntent.
      */
-    public array $parameters;
+    public $parameters;
 }
