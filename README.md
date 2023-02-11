@@ -280,15 +280,16 @@ You can output a standard form quickly using `order.gateway.getPaymentFormHtml()
 
 We only need a few specific IDs in our markup, and Stripe’s JavaScript will take care of the rest by inserting and managing form inputs.
 
-Replace the `YOUR_GATEWAY_ID` below with your Stripe Payment Intents gateway ID.
-(You can omit the `gatewayId` input if the gateway is already saved to the cart.)
+The following example is based on the gateway having already been set on the cart in a previous step.
 
 ```twig
-<form method="post" action="" id="payment-form">
+<form method="post" action="" id="payment-form"
+    data-payment-form-namespace="{{ cart.gateway.handle|commercePaymentFormNamespace }}"
+>
     {{ actionInput('commerce/payments/pay') }}
     {{ redirectInput(siteUrl('shop/customer/order', { number: cart.number, success: 'true' })) }}
     {{ hiddenInput('cancelUrl', siteUrl('shop/checkout/payment')|hash) }}
-    {{ hiddenInput('gatewayId', 'YOUR_GATEWAY_ID') }}
+    {{ hiddenInput('gatewayId', cart.gateway.id) }}
     {{ csrfInput() }}
 
     {% namespace cart.gateway.handle|commercePaymentFormNamespace %}        
@@ -387,6 +388,7 @@ Finally, add a form listener that uses the submitted card details to [create a p
 
 ```javascript
 var form = document.getElementById('payment-form');
+var paymentFormNamespace = form.data('payment-form-namespace');
 
 form.addEventListener('submit', function(event) {
     event.preventDefault();
@@ -407,7 +409,7 @@ form.addEventListener('submit', function(event) {
             var form = document.getElementById('payment-form');
             var hiddenInput = document.createElement('input');
             hiddenInput.setAttribute('type', 'hidden');
-            hiddenInput.setAttribute('name', 'paymentMethodId'); // Craft Commerce only needs this
+            hiddenInput.setAttribute('name', paymentFormNamespace + '[paymentMethodId]'); // Craft Commerce only needs this
             hiddenInput.setAttribute('value', result.paymentMethod.id);
             form.appendChild(hiddenInput);
 
