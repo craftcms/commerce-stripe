@@ -42,20 +42,6 @@ class Checkout extends PaymentIntents
     }
 
     /**
-     * @return StripeClient
-     */
-    public function getStripeClient(): StripeClient
-    {
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey($this->getApiKey());
-        Stripe::setApiVersion(self::STRIPE_API_VERSION);
-
-        return new StripeClient([
-            'api_key' => $this->getApiKey()
-        ]);
-    }
-
-    /**
      * @inheritdoc
      */
     public function getPaymentFormHtml(array $params): ?string
