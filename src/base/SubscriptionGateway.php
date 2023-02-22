@@ -90,7 +90,7 @@ abstract class SubscriptionGateway extends Gateway
     /**
      * string The Stripe API version to use.
      */
-    public const STRIPE_API_VERSION = '2019-03-14';
+    public const STRIPE_API_VERSION = '2022-11-15';
 
     /**
      * @inheritdoc
