@@ -303,7 +303,7 @@ class PaymentIntents extends BaseGateway
     {
         /** @var SubscriptionForm $parameters */
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
-        $paymentMethods = $this->getStripeClient()->paymentIntents->all(['customer' => $customer->reference, 'type' => 'card']);
+        $paymentMethods = $this->getStripeClient()->paymentMethods->all(['customer' => $customer->reference, 'type' => 'card']);
 
         if (count($paymentMethods->data) === 0) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
