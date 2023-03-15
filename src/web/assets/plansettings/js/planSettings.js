@@ -21,14 +21,23 @@ $stripeButton.on('click', function (ev) {
                 if (response.error) {
                     alert(response.error);
                 } else if (response.length > 0) {
+
                     let currentPlan = $planSelect.val(),
                         currentPlanStillExists = false;
 
                     $planSelect.empty();
 
                     for (var i = 0; i < response.length; i++) {
-                        if (response[i].reference === currentPlan) {
+                        if (response[i].reference == currentPlan) {
                             currentPlanStillExists = true;
+                            $planSelect.append(
+                                '<option value="' +
+                                response[i].reference +
+                                '">' +
+                                response[i].name +
+                                '</option>'
+                            );
+                        } else {
                             $planSelect.append(
                                 '<option value="' +
                                 response[i].reference +

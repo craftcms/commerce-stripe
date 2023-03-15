@@ -14,10 +14,12 @@ use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\Currency;
+use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
+use craft\commerce\Plugin;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
@@ -36,7 +38,6 @@ use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
 use Stripe\Product as StripeProduct;
 use Stripe\Refund;
-use Stripe\Subscription as StripeSubscription;
 use Stripe\SubscriptionItem;
 use Throwable;
 use yii\base\InvalidConfigException;
@@ -97,9 +98,8 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function cancelSubscription(Subscription $subscription, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
     {
-        $this->configureStripeClient();
         try {
-            $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+            $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
 
             /** @var CancelSubscription $parameters */
             if ($parameters->cancelImmediately) {
@@ -120,7 +120,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getCancelSubscriptionFormHtml(Subscription $subscription): string
     {
-        $this->configureStripeClient();
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
@@ -137,7 +136,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getCancelSubscriptionFormModel(): BaseCancelSubscriptionForm
     {
-        $this->configureStripeClient();
         return new CancelSubscription();
     }
 
@@ -146,7 +144,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getNextPaymentAmount(Subscription $subscription): string
     {
-        $this->configureStripeClient();
         $data = $subscription->getSubscriptionData();
         $currencyCode = strtoupper($data['plan']['currency']);
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
@@ -165,7 +162,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getPlanModel(): BasePlan
     {
-        $this->configureStripeClient();
         return new Plan();
     }
 
@@ -174,7 +170,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getPlanSettingsHtml(array $params = []): ?string
     {
-        $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
     }
 
@@ -183,7 +178,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionFormModel(): BaseSubscriptionForm
     {
-        $this->configureStripeClient();
         return new SubscriptionForm();
     }
 
@@ -192,7 +186,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionPayments(Subscription $subscription): array
     {
-        $this->configureStripeClient();
         $payments = [];
 
         $invoices = StripePlugin::getInstance()->getInvoices()->getSubscriptionInvoices($subscription->id);
@@ -222,10 +215,9 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function refreshpaymenthistory(Subscription $subscription): void
     {
-        $this->configureStripeClient();
         // Update the subscription period.
         $reference = $subscription->reference;
-        $stripeSubscription = StripeSubscription::retrieve($reference);
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($reference);
         $subscription->nextPaymentDate = DateTimeHelper::toDateTime($stripeSubscription['current_period_end']);
         Craft::$app->getElements()->saveElement($subscription);
 
@@ -245,7 +237,7 @@ abstract class SubscriptionGateway extends Gateway
                 $params['starting_after'] = $after;
             }
 
-            $list = StripeInvoice::all($params);
+            $list = $this->getStripeClient()->invoices->all($params);
 
             if (isset($list['data'])) {
                 $data = $list['data'];
@@ -271,15 +263,14 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionPlanByReference(string $reference): string
     {
-        $this->configureStripeClient();
         if (empty($reference)) {
             return '';
         }
 
-        $plan = StripePlan::retrieve($reference);
+        $plan = $this->getStripeClient()->plans->retrieve($reference);
         $plan = $plan->toArray();
 
-        $product = StripeProduct::retrieve($plan['product']);
+        $product = $this->getStripeClient()->products->retrieve($plan['product']);
         $product = $product->toArray();
 
         return Json::encode(compact('plan', 'product'));
@@ -290,8 +281,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionPlans(): array
     {
-        $this->configureStripeClient();
-        $plans = StripePlan::all([
+        $plans = $this->getStripeClient()->plans->all([
             'limit' => 100,
         ]);
         $output = [];
@@ -307,7 +297,7 @@ abstract class SubscriptionGateway extends Gateway
                 $planList[] = $plan;
             }
 
-            $products = StripeProduct::all([
+            $products = $this->getStripeClient()->products->all([
                 'limit' => 100,
                 'ids' => array_values($planProductMap),
             ]);
@@ -337,7 +327,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSwitchPlansFormHtml(PlanInterface $originalPlan, PlanInterface $targetPlan): string
     {
-        $this->configureStripeClient();
         $view = Craft::$app->getView();
 
         $previousMode = $view->getTemplateMode();
@@ -358,7 +347,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSwitchPlansFormModel(): SwitchPlansForm
     {
-        $this->configureStripeClient();
         return new SwitchPlans();
     }
 
@@ -367,11 +355,10 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function reactivateSubscription(Subscription $subscription): SubscriptionResponseInterface
     {
-        $this->configureStripeClient();
         /** @var Plan $plan */
         $plan = $subscription->getPlan();
 
-        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
         /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
         $stripeSubscription->items = [
@@ -407,9 +394,8 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function switchSubscriptionPlan(Subscription $subscription, BasePlan $plan, SwitchPlansForm $parameters): SubscriptionResponseInterface
     {
-        $this->configureStripeClient();
         /** @var SwitchPlans $parameters */
-        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
         /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
         $stripeSubscription->items = [
@@ -418,6 +404,7 @@ abstract class SubscriptionGateway extends Gateway
                 'plan' => $plan->reference,
             ],
         ];
+
         /** @phpstan-ignore-next-line */
         $stripeSubscription->prorate = (bool)$parameters->prorate;
 
@@ -439,7 +426,7 @@ abstract class SubscriptionGateway extends Gateway
         // Bill immediately only for non-trials
         if (!$subscription->getIsOnTrial() && $parameters->billImmediately) {
             try {
-                StripeInvoice::create([
+                $this->getStripeClient()->invoices->create([
                     'customer' => $stripeSubscription->customer,
                     'subscription' => $stripeSubscription->id,
                 ]);
@@ -462,8 +449,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
     {
-        $this->configureStripeClient();
-        $stripeSubscription = StripeSubscription::retrieve($subscription->reference);
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
         /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
 
@@ -474,7 +460,7 @@ abstract class SubscriptionGateway extends Gateway
             ],
         ];
 
-        $invoice = StripeInvoice::upcoming([
+        $invoice = $this->getStripeClient()->invoices->upcoming([
             'customer' => $stripeSubscription->customer,
             'subscription' => $subscription->reference,
             'subscription_items' => $items,
@@ -491,14 +477,18 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function handleWebhook(array $data): void
     {
-        $this->configureStripeClient();
         switch ($data['type']) {
+            case 'payment_method.attached':
+            case 'payment_method.updated':
+            case 'payment_method.automatically_updated':
+                $this->handlePaymentMethodUpdated($data['data']['object']);
+            // no break
             case 'payment_method.detached':
                 $this->handlePaymentMethodDetached($data);
-                // no break
+            // no break
             case 'charge.refund.updated':
                 $this->handleRefundUpdated($data);
-                // no break
+            // no break
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);
@@ -530,7 +520,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
     {
-        $this->configureStripeClient();
         return new SubscriptionPayment([
             'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
             'paymentCurrency' => $currency,
@@ -550,7 +539,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function createSubscriptionResponse(ApiResource $resource): SubscriptionResponseInterface
     {
-        $this->configureStripeClient();
         $data = $resource->toArray();
 
         return new SubscriptionResponse($data);
@@ -568,7 +556,58 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripePaymentMethod = $data['data']['object'];
         if ($paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id)) {
+            // We don’t care if it does not exist, just try to delete it
             Commerce::getInstance()->getPaymentSources()->deletePaymentSourceById($paymentSource->id);
+        }
+    }
+
+    /**
+     * @param array $data
+     * @return void
+     * @throws InvalidConfigException
+     */
+    public function handlePaymentMethodUpdated(array $data)
+    {
+        $stripePaymentMethod = $data;
+        $user = null;
+
+        // We only care about payment methods that have a customer at the moment
+        if ($stripePaymentMethod['customer']) {
+
+            $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripePaymentMethod['customer']);
+
+            // Get the Craft user/customer account for this stripe customer
+            $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
+            $metaData = $stripeCustomer->metadata->toArray();
+            if (isset($metaData['craft_user_id'])) {
+                $user = Craft::$app->getUsers()->getUserById($metaData['craft_user_id']);
+            }
+
+            // See if we have a Commerce payment source for this stripe payment method already or create one
+            $paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id);
+            if ($paymentSource) {
+                $user = Craft::$app->getUsers()->getUserById($paymentSource->customerId);
+            } else {
+                $paymentSource = new PaymentSource();
+            }
+
+            if (!$user) {
+                $user = Craft::$app->getUsers()->ensureUserByEmail($stripeCustomer->email);
+                $stripeCustomer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
+            }
+
+            if ($user && $stripeCustomer) {
+                $paymentSource->gatewayId = $this->id;
+                $paymentSource->token = $stripePaymentMethod['id'];
+                $paymentSource->customerId = $user->id;
+                $paymentSource->response = Json::encode($stripePaymentMethod);
+
+                if ($stripePaymentMethod['card']['brand'] && $stripePaymentMethod['card']['last4']) {
+                    $paymentSource->description = $stripePaymentMethod['card']['brand'] . ' ending in ' . $stripePaymentMethod['card']['last4'];
+                }
+
+                Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+            }
         }
     }
 
@@ -614,7 +653,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleInvoiceCreated(array $data): void
     {
-        $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
 
         if ($this->hasEventHandlers(self::EVENT_CREATE_INVOICE)) {
@@ -626,7 +664,7 @@ abstract class SubscriptionGateway extends Gateway
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
-            $invoice = StripeInvoice::retrieve($stripeInvoice['id']);
+            $invoice = $this->getStripeClient()->invoices->retrieve($stripeInvoice['id']);
             $invoice->pay();
         }
     }
@@ -639,7 +677,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleInvoiceSucceededEvent(array $data): void
     {
-        $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
 
         // Sanity check
@@ -667,7 +704,7 @@ abstract class SubscriptionGateway extends Gateway
         $invoice = $this->saveSubscriptionInvoice($stripeInvoice, $subscription);
 
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($stripeInvoice['currency']));
-        $stripeSubscription = StripeSubscription::retrieve($subscriptionReference);
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscriptionReference);
         $payment = $this->createSubscriptionPayment($invoice->invoiceData, $currency);
 
         Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($stripeSubscription['current_period_end']));
@@ -681,7 +718,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handlePlanEvent(array $data): void
     {
-        $this->configureStripeClient();
         $planService = Commerce::getInstance()->getPlans();
 
         if ($data['type'] == 'plan.deleted') {
@@ -703,10 +739,9 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleSubscriptionExpired(array $data): void
     {
-        $this->configureStripeClient();
         $stripeSubscription = $data['data']['object'];
 
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->anyStatus()->one();
+        $subscription = Subscription::find()->reference($stripeSubscription['id'])->status(null)->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “' . $stripeSubscription['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
@@ -726,7 +761,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleSubscriptionUpdated(array $data): void
     {
-        $this->configureStripeClient();
         $stripeSubscription = $data['data']['object'];
         $subscription = Subscription::find()->status(null)->reference($stripeSubscription['id'])->one();
 
@@ -765,7 +799,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function setSubscriptionStatusData(Subscription $subscription): void
     {
-        $this->configureStripeClient();
         $subscriptionData = $subscription->getSubscriptionData();
         $canceledAt = $subscriptionData['canceled_at'];
         $endedAt = $subscriptionData['ended_at'];
@@ -776,7 +809,6 @@ abstract class SubscriptionGateway extends Gateway
             case 'incomplete_expired':
                 $subscription->isExpired = true;
                 $subscription->dateExpired = $endedAt ? DateTimeHelper::toDateTime($endedAt) : null;
-                $subscription->isCanceled = false;
                 $subscription->dateCanceled = null;
                 $subscription->nextPaymentDate = null;
                 break;
@@ -816,7 +848,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function saveSubscriptionInvoice(array $stripeInvoice, Subscription $subscription): Invoice
     {
-        $this->configureStripeClient();
         $invoiceService = StripePlugin::getInstance()->getInvoices();
         $invoice = $invoiceService->getInvoiceByReference($stripeInvoice['id']) ?: new Invoice();
         $invoice->subscriptionId = $subscription->id;

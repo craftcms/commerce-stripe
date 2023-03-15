@@ -1,0 +1,14 @@
+{% from "_includes/forms" import selectField %}
+
+{{ selectField({
+    label: "Default form type"|t('commerce-stripe'),
+    name: 'formType',
+    options: {
+        'elements': "Stripe Elements"|t('commerce-stripe'),
+        'checkout': "Stripe Checkout"|t('commerce-stripe'),
+    },
+    value: gateway.getFormType(),
+    errors: gateway.getErrors('formType'),
+}) }}
+
+{% include 'commerce-stripe/gatewaySettings/intentsSettings' %}

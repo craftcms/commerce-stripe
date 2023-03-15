@@ -1,0 +1,16 @@
+<div id="payment-form"
+     class="stripe-payment-elements-form hidden"
+     data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
+     data-complete-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
+     data-payment-form-namespace="{{ handle|commercePaymentFormNamespace }}"
+     data-appearance="{{ appearance|json_encode }}"
+     data-layout="{{ layout|json_encode }}"
+>
+    <div class="form-fields">
+        <div class="stripe-payment-element">
+            <!-- Elements will create form elements here -->
+        </div>
+
+        <button class="stripe-payment-elements-submit-button">Submit</button>
+    </div>
+</div>

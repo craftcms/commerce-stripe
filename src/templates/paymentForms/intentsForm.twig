@@ -1,25 +1,25 @@
 {% set paymentFormNamespace = handle|commercePaymentFormNamespace %}
 <div class="stripe-payment-intents-form"
-  data-payment-form-namespace="{{ paymentFormNamespace }}"
-  data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
-  {% if clientSecret is defined %}data-client-secret="{{clientSecret}}" {% endif %}
-  {% if scenario is defined %}data-scenario="{{scenario}}" {% endif %}
+     data-payment-form-namespace="{{ paymentFormNamespace }}"
+     data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
+     {% if clientSecret is defined %}data-client-secret="{{ clientSecret }}" {% endif %}
+        {% if scenario is defined %}data-scenario="{{ scenario }}" {% endif %}
 >
 
-  <div class="payment-form-fields hidden">
-    {% namespace paymentFormNamespace %}
-      {% include 'commerce/_components/gateways/_creditCardFields' %}
-    {% endnamespace %}
-  </div>
-
-  <div class="card-errors" role="alert"></div>
-  {% if billingAddress is defined %}
-    <div class="stripe-address hidden">
-      <input type="hidden" name="stripe-line1" value="{{ billingAddress.addressLine1 }}" />
-      <input type="hidden" name="stripe-postal-code" value="{{ billingAddress.getPostalCode() }}" />
-      <input type="hidden" name="stripe-city" value="{{ billingAddress.getLocality() }}" />
-      <input type="hidden" name="stripe-country" value="{{ billingAddress.getCountryCode() }}" />
-      <input type="hidden" name="stripe-state" value="{{ billingAddress.getAdministrativeArea() }}" />
+    <div class="payment-form-fields hidden">
+        {% namespace paymentFormNamespace %}
+            {% include 'commerce/_components/gateways/_creditCardFields' %}
+        {% endnamespace %}
     </div>
-  {% endif %}
+
+    <div class="card-errors" role="alert"></div>
+    {% if billingAddress is defined %}
+        <div class="stripe-address hidden">
+            <input type="hidden" name="stripe-line1" value="{{ billingAddress.addressLine1 }}"/>
+            <input type="hidden" name="stripe-postal-code" value="{{ billingAddress.getPostalCode() }}"/>
+            <input type="hidden" name="stripe-city" value="{{ billingAddress.getLocality() }}"/>
+            <input type="hidden" name="stripe-country" value="{{ billingAddress.getCountryCode() }}"/>
+            <input type="hidden" name="stripe-state" value="{{ billingAddress.getAdministrativeArea() }}"/>
+        </div>
+    {% endif %}
 </div>

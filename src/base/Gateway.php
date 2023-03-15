@@ -30,8 +30,8 @@ use Stripe\ApiResource;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\CardException;
-use Stripe\Source;
 use Stripe\Stripe;
+use Stripe\StripeClient;
 use Stripe\Webhook;
 use Throwable;
 use yii\base\NotSupportedException;
@@ -98,7 +98,7 @@ abstract class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    public const STRIPE_API_VERSION = '2019-03-14';
+    public const STRIPE_API_VERSION = '2022-11-15';
 
     /**
      * @var string|null
@@ -123,8 +123,20 @@ abstract class Gateway extends BaseGateway
     public function init(): void
     {
         parent::init();
+    }
 
-        $this->configureStripeClient();
+    /**
+     * @return StripeClient
+     */
+    public function getStripeClient(): StripeClient
+    {
+        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
+        Stripe::setApiKey($this->getApiKey());
+        Stripe::setApiVersion(self::STRIPE_API_VERSION);
+
+        return new StripeClient([
+            'api_key' => $this->getApiKey(),
+        ]);
     }
 
     /**
@@ -226,7 +238,6 @@ abstract class Gateway extends BaseGateway
      */
     public function authorize(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        $this->configureStripeClient();
         return $this->authorizeOrPurchase($transaction, $form, false);
     }
 
@@ -235,8 +246,6 @@ abstract class Gateway extends BaseGateway
      */
     public function completeAuthorize(Transaction $transaction): RequestResponseInterface
     {
-        // It's exactly the same thing,
-        $this->configureStripeClient();
         return $this->completePurchase($transaction);
     }
 
@@ -245,7 +254,6 @@ abstract class Gateway extends BaseGateway
      */
     public function processWebHook(): WebResponse
     {
-        $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
         $response = Craft::$app->getResponse();
         $response->format = Response::FORMAT_RAW;
@@ -298,7 +306,6 @@ abstract class Gateway extends BaseGateway
      */
     public function purchase(Transaction $transaction, BasePaymentForm $form): RequestResponseInterface
     {
-        $this->configureStripeClient();
         return $this->authorizeOrPurchase($transaction, $form);
     }
 
@@ -398,7 +405,6 @@ abstract class Gateway extends BaseGateway
      */
     public function getTransactionHashFromWebhook(): ?string
     {
-        $this->configureStripeClient();
         $rawData = Craft::$app->getRequest()->getRawBody();
         if (!$rawData) {
             return null;
@@ -436,7 +442,6 @@ abstract class Gateway extends BaseGateway
      */
     protected function buildRequestData(Transaction $transaction): array
     {
-        $this->configureStripeClient();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
@@ -495,7 +500,6 @@ abstract class Gateway extends BaseGateway
      */
     protected function createPaymentResponseFromApiResource(ApiResource $resource): RequestResponseInterface
     {
-        $this->configureStripeClient();
         $data = $resource->toArray();
 
         return $this->getResponseModel($data);
@@ -511,7 +515,6 @@ abstract class Gateway extends BaseGateway
      */
     protected function createPaymentResponseFromError(Exception $exception): RequestResponseInterface
     {
-        $this->configureStripeClient();
         if ($exception instanceof CardException) {
             $body = $exception->getJsonBody();
             $data = $body;
@@ -544,18 +547,17 @@ abstract class Gateway extends BaseGateway
      */
     protected function getStripeCustomer(int $userId): Customer
     {
-        $this->configureStripeClient();
         try {
             $user = Craft::$app->getUsers()->getUserById($userId);
             $customers = StripePlugin::getInstance()->getCustomers();
             $customer = $customers->getCustomer($this->id, $user);
-            $stripeCustomer = Customer::retrieve($customer->reference);
+            $stripeCustomer = $this->getStripeClient()->customers->retrieve($customer->reference);
 
             if (!empty($stripeCustomer->deleted)) {
                 // Okay, retry one time.
                 $customers->deleteCustomerById($customer->id);
                 $customer = $customers->getCustomer($this->id, $user);
-                $stripeCustomer = Customer::retrieve($customer->reference);
+                $stripeCustomer = $this->getStripeClient()->customers->retrieve($customer->reference);
             }
 
             return $stripeCustomer;
@@ -572,10 +574,9 @@ abstract class Gateway extends BaseGateway
      */
     protected function normalizePaymentToken(string $token = ''): string
     {
-        $this->configureStripeClient();
         if (StringHelper::substr($token, 0, 4) === 'tok_') {
             try {
-                $tokenSource = Source::create([
+                $tokenSource = $this->getStripeClient()->sources->create([
                     'type' => 'card',
                     'token' => $token,
                 ]);
@@ -611,17 +612,6 @@ abstract class Gateway extends BaseGateway
      */
     protected function handleWebhook(array $data): void
     {
-        $this->configureStripeClient();
         // Do nothing
-    }
-
-    /**
-     * Sets the stripe global connection to this gateway API key
-     */
-    public function configureStripeClient(): void
-    {
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey($this->getApiKey());
-        Stripe::setApiVersion(self::STRIPE_API_VERSION);
     }
 }

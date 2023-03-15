@@ -9,15 +9,13 @@ namespace craft\commerce\stripe\services;
 
 use Craft;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\base\Gateway as BaseGateway;
-use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\models\Customer;
-use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
 use craft\elements\User;
-use Stripe\Customer as StripeCustomer;
 use Stripe\Stripe;
 use Throwable;
 use yii\base\Component;
@@ -52,17 +50,14 @@ class Customers extends Component
 
         /** @var BaseGateway $gateway */
         $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
-        Stripe::setApiKey($gateway->getApiKey());
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiVersion(SubscriptionGateway::STRIPE_API_VERSION);
 
-        $stripeCustomer = StripeCustomer::create([
+        $stripeCustomer = $gateway->getStripeClient()->customers->create([
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'name' => $user->fullName,
             'email' => $user->email,
             'metadata' => [
                 'craft_user_id' => $user->id,
-            ]
+            ],
         ]);
 
         $customer = new Customer([
@@ -109,7 +104,9 @@ class Customers extends Component
     public function getCustomerByReference(string $reference): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
-            ->where(['reference' => $reference])
+            ->where([
+                'reference' => $reference,
+            ])
             ->one();
 
         if ($customerRow) {

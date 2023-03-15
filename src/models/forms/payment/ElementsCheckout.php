@@ -16,8 +16,13 @@ use craft\commerce\models\PaymentSource;
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 4.0
  */
-class Checkout extends BasePaymentForm
+class ElementsCheckout extends BasePaymentForm
 {
+    /**
+     * @var string
+     */
+    public string $paymentFormType = 'elements';
+
     /**
      * @inheritdoc
      */

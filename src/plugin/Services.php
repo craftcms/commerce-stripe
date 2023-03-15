@@ -10,6 +10,7 @@ namespace craft\commerce\stripe\plugin;
 use craft\commerce\stripe\services\Customers;
 use craft\commerce\stripe\services\Invoices;
 use craft\commerce\stripe\services\PaymentIntents;
+use craft\commerce\stripe\services\PaymentMethods;
 
 /**
  * Trait Services
@@ -50,6 +51,16 @@ trait Services
     }
 
     /**
+     * Returns the payment methods service
+     *
+     * @return PaymentMethods The payment sources service
+     */
+    public function getPaymentMethods(): PaymentMethods
+    {
+        return $this->get('paymentMethods');
+    }
+
+    /**
      * Set the components of the commerce plugin
      */
     private function _setPluginComponents()
@@ -58,6 +69,7 @@ trait Services
             'customers' => Customers::class,
             'invoices' => Invoices::class,
             'paymentIntents' => PaymentIntents::class,
+            'paymentMethods' => PaymentMethods::class,
         ]);
     }
 }

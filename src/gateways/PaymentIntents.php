@@ -37,10 +37,7 @@ use craft\helpers\UrlHelper;
 use craft\web\View;
 use Exception;
 use Stripe\Card;
-use Stripe\Charge as StripeCharge;
 use Stripe\PaymentIntent;
-use Stripe\Stripe;
-use Stripe\StripeClient;
 use Throwable;
 use yii\base\NotSupportedException;
 use function count;
@@ -68,21 +65,7 @@ class PaymentIntents extends BaseGateway
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce-stripe', 'Stripe');
-    }
-
-    /**
-     * @return StripeClient
-     */
-    public function getStripeClient(): StripeClient
-    {
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey($this->getApiKey());
-        Stripe::setApiVersion(self::STRIPE_API_VERSION);
-
-        return new StripeClient([
-            'api_key' => $this->getApiKey()
-        ]);
+        return Craft::t('commerce-stripe', 'Stripe (Legacy Card)');
     }
 
     /**
@@ -230,30 +213,20 @@ class PaymentIntents extends BaseGateway
         $stripePaymentIntent = $this->getStripeClient()->paymentIntents->retrieve($transaction->reference);
         $paymentIntentsService = StripePlugin::getInstance()->getPaymentIntents();
 
-        $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($transaction->reference);
-
         try {
-            /** @var StripeCharge $charge */
-            $charge = $stripePaymentIntent->charges->data[0];
-            $refund = $this->getStripeClient()->refunds->create([
-                'charge' => $charge->id,
-                'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
-            ]);
+            if ($stripePaymentIntent->status == 'succeeded') {
+                $refund = $this->getStripeClient()->refunds->create([
+                    'payment_intent' => $stripePaymentIntent->id,
+                    'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+                ]);
 
-            // Entirely possible there's no payment intent stored locally.
-            // Most likely case being a guest user purchase for which we're unable
-            // to keep track of Stripe customer.
-            if ($paymentIntent) {
-                // Fetch the new intent data
-                $stripePaymentIntent = $this->getStripeClient()->paymentIntents->retrieve($transaction->reference);
-                $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
-                $paymentIntentsService->savePaymentIntent($paymentIntent);
+                return $this->createPaymentResponseFromApiResource($refund);
             }
-
-            return $this->createPaymentResponseFromApiResource($refund);
         } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
+
+        return $this->createPaymentResponseFromError(new Exception('Unable to refund payment intent.'));
     }
 
     /**

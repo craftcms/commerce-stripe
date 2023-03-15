@@ -8,7 +8,6 @@
 namespace craft\commerce\stripe\responses;
 
 use craft\commerce\base\RequestResponseInterface;
-use craft\commerce\errors\NotImplementedException;
 use yii\base\Exception;
 
 class CheckoutSessionResponse implements RequestResponseInterface
@@ -122,5 +121,4 @@ class CheckoutSessionResponse implements RequestResponseInterface
     public function redirect(): void
     {
     }
-
 }
