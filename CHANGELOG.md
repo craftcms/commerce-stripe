@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 2.4.4.1 - 2023-03-19
 
 - Fixed a PHP error that could occur when making a payment. ([#226](https://github.com/craftcms/commerce-stripe/issues/226))
 
