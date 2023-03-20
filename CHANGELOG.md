@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Fixed a bug where submitting a payment throws a type hint error. ([#226](https://github.com/craftcms/commerce-stripe/issues/226))
+- Fixed a PHP error that could occur when making a payment. ([#226](https://github.com/craftcms/commerce-stripe/issues/226))
 
 ## 2.4.4 - 2022-01-25
 
