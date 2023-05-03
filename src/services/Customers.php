@@ -96,6 +96,26 @@ class Customers extends Component
     }
 
     /**
+     * Return a customer by its user ID.
+     *
+     * @param int $id
+     *
+     * @return Customer|null
+     */
+    public function getCustomerByUserId(int $id): ?Customer
+    {
+        $customerRow = $this->_createCustomerQuery()
+            ->where(['userId' => $id])
+            ->one();
+
+        if ($customerRow) {
+            return new Customer($customerRow);
+        }
+
+        return null;
+    }
+
+    /**
      * Return a customer by its reference.
      *
      * @param string $reference
