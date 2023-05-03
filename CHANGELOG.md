@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Added the `craft\commerce\stripe\services\Customers::EVENT_BEFORE_CREATE_CUSTOMER` event. ([#233](https://github.com/craftcms/commerce-stripe/pull/233))
+
 ## 3.1.0 - 2022-01-29
 
 - Added the `commerce-stripe/reset-data` command.
