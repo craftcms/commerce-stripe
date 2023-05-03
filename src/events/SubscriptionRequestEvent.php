@@ -18,9 +18,6 @@ use yii\base\Event;
  */
 class SubscriptionRequestEvent extends Event
 {
-    // Properties
-    // =========================================================================
-
     /**
      * @var Plan The subscription plan
      */
@@ -29,5 +26,5 @@ class SubscriptionRequestEvent extends Event
     /**
      * @var array The subscription parameters
      */
-    public $parameters;
+    public array $parameters;
 }

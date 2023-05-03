@@ -1,7 +1,6 @@
 {
   "name": "craftcms/commerce-stripe",
-  "description": "Stripe integration for Craft Commerce 2 & 3",
-  "version": "2.3.2.1",
+  "description": "Stripe integration for Craft Commerce 4.0+",
   "type": "craft-plugin",
   "keywords": [
     "stripe",
@@ -23,19 +22,40 @@
     "docs": "https://github.com/craftcms/commerce-stripe/blob/master/README.md",
     "rss": "https://github.com/craftcms/commerce-stripe/commits/master.atom"
   },
+  "minimum-stability": "dev",
+  "prefer-stable": true,
   "require": {
-    "craftcms/cms": "^3.1.5",
-    "craftcms/commerce": "^2.2.0|^3.0",
+    "php": "^8.0.2",
+    "craftcms/cms": "^4.0.0",
+    "craftcms/commerce": "^4.0.0",
     "stripe/stripe-php": "^7.0"
+  },
+  "require-dev": {
+    "craftcms/phpstan": "dev-main",
+    "craftcms/ecs": "dev-main"
   },
   "autoload": {
     "psr-4": {
       "craft\\commerce\\stripe\\": "src/"
     }
   },
+  "scripts": {
+    "phpstan": "phpstan --memory-limit=1G",
+    "check-cs": "ecs check --ansi",
+    "fix-cs": "ecs check --ansi --fix"
+  },
   "extra": {
     "name": "Stripe for Craft Commerce",
     "handle": "commerce-stripe",
     "documentationUrl": "https://github.com/craftcms/commerce-stripe/blob/master/README.md"
+  },
+  "config": {
+    "allow-plugins": {
+      "yiisoft/yii2-composer": true,
+      "craftcms/plugin-installer": true
+    },
+    "platform": {
+      "php": "8.0.2"
+    }
   }
 }

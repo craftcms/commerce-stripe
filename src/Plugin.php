@@ -8,57 +8,52 @@
 namespace craft\commerce\stripe;
 
 use craft\commerce\services\Gateways;
-use craft\commerce\stripe\gateways\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
 use craft\events\RegisterComponentTypesEvent;
 use yii\base\Event;
 
-
 /**
  * Plugin represents the Stripe integration plugin.
  *
+ * @method Settings getSettings()
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 1.0
+ *
+ * @property-read Settings $settings
  */
 class Plugin extends \craft\base\Plugin
 {
-    // Public Properties
-    // =========================================================================
-
     /**
      * @inheritDoc
      */
-    public $schemaVersion = '2.2.0';
-
-    // Traits
-    // =========================================================================
+    public string $schemaVersion = '3.0.0';
 
     use Services;
-
-    // Public Methods
-    // =========================================================================
 
     /**
      * @inheritdoc
      */
-    public function init()
+    public function init(): void
     {
         parent::init();
 
         $this->_setPluginComponents();
 
-        Event::on(Gateways::class, Gateways::EVENT_REGISTER_GATEWAY_TYPES, function(RegisterComponentTypesEvent $event) {
-            $event->types[] = Gateway::class;
-            $event->types[] = PaymentIntents::class;
-        });
+        Event::on(
+            Gateways::class,
+            Gateways::EVENT_REGISTER_GATEWAY_TYPES,
+            function(RegisterComponentTypesEvent $event) {
+                $event->types[] = PaymentIntents::class;
+            }
+        );
     }
 
     /**
      * @inheritdoc
      */
-    protected function createSettingsModel()
+    protected function createSettingsModel(): Settings
     {
         return new Settings();
     }

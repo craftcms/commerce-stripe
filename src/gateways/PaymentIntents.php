@@ -11,6 +11,7 @@ use Craft;
 use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
+use craft\commerce\behaviors\CustomerBehavior;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
@@ -20,6 +21,7 @@ use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentForm;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -28,48 +30,39 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\errors\ElementNotFoundException;
+use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
 use craft\web\View;
+use Exception;
+use Stripe\Card;
+use Stripe\Charge as StripeCharge;
 use Stripe\PaymentIntent;
 use Stripe\PaymentMethod;
 use Stripe\Refund;
 use Stripe\Subscription as StripeSubscription;
+use Throwable;
 use yii\base\NotSupportedException;
+use function count;
 
 /**
  * This class represents the Stripe Payment Intents gateway
  *
+ * @property-read null|string $settingsHtml
+ * @property bool $sendReceiptEmail
+ * @property string $apiKey
+ * @property string $publishableKey
+ * @property string $signingSecret
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 2.0
  **/
 class PaymentIntents extends BaseGateway
 {
-    // Properties
-    // =========================================================================
-
     /**
-     * @var string
+     * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
      */
-    public $publishableKey;
-
-    /**
-     * @var string
-     */
-    public $apiKey;
-
-    /**
-     * @var bool
-     */
-    public $sendReceiptEmail;
-
-    /**
-     * @var string
-     */
-    public $signingSecret;
-
-    // Public methods
-    // =========================================================================
+    public const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
 
     /**
      * @inheritdoc
@@ -82,23 +75,28 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getPaymentFormHtml(array $params)
+    public function getPaymentFormHtml(array $params): ?string
     {
         $this->configureStripeClient();
         $defaults = [
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
             'scenario' => 'payment',
+            'handle' => $this->handle,
         ];
 
         $params = array_merge($defaults, $params);
 
         // If there's no order passed, add the current cart if we're not messing around in backend.
         if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
-            $billingAddress = Commerce::getInstance()->getCarts()->getCart()->getBillingAddress();
+            if ($cart = Commerce::getInstance()->getCarts()->getCart()) {
+                $billingAddress = $cart->getBillingAddress();
 
-            if (!$billingAddress) {
-                $billingAddress = Commerce::getInstance()->getCustomers()->getCustomer()->getPrimaryBillingAddress();
+                /** @var User|CustomerBehavior|null $user */
+                $user = $cart->getCustomer();
+                if (!$billingAddress && $user) {
+                    $billingAddress = $user->getPrimaryBillingAddress();
+                }
             }
         } else {
             $billingAddress = $params['order']->getBillingAddress();
@@ -117,6 +115,7 @@ class PaymentIntents extends BaseGateway
         $view->registerAssetBundle(IntentsFormAsset::class);
 
         $html = $view->renderTemplate('commerce-stripe/paymentForms/intentsForm', $params);
+
         $view->setTemplateMode($previousMode);
 
         return $html;
@@ -126,12 +125,11 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var PaymentIntent $intent */
             $intent = PaymentIntent::retrieve($reference);
             $intent->capture([], ['idempotency_key' => $reference]);
 
             return $this->createPaymentResponseFromApiResource($intent);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -148,7 +146,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getResponseModel($data): RequestResponseInterface
+    public function getResponseModel(mixed $data): RequestResponseInterface
     {
         $this->configureStripeClient();
         return new PaymentIntentResponse($data);
@@ -161,7 +159,6 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         $paymentIntentReference = Craft::$app->getRequest()->getParam('payment_intent');
-        /** @var PaymentIntent $paymentIntent */
         $stripePaymentIntent = PaymentIntent::retrieve($paymentIntentReference);
 
         // Update the intent with the latest.
@@ -171,16 +168,16 @@ class PaymentIntents extends BaseGateway
 
         // Make sure we have the payment intent before we attempt to do anything with it.
         if ($paymentIntent) {
-            $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+            $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
             $paymentIntentsService->savePaymentIntent($paymentIntent);
         }
 
-        $intentData = $stripePaymentIntent->jsonSerialize();
+        $intentData = $stripePaymentIntent->toArray();
 
         if (!empty($intentData['payment_method'])) {
             try {
                 $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 return $this->createPaymentResponseFromError($exception);
             }
         }
@@ -191,7 +188,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function getSettingsHtml()
+    public function getSettingsHtml(): ?string
     {
         $this->configureStripeClient();
         return Craft::$app->getView()->renderTemplate('commerce-stripe/gatewaySettings/intentsSettings', ['gateway' => $this]);
@@ -219,7 +216,7 @@ class PaymentIntents extends BaseGateway
                 $refund = Refund::create($request);
 
                 return $this->createPaymentResponseFromApiResource($refund);
-            } catch (\Exception $exception) {
+            } catch (Exception $exception) {
                 return $this->createPaymentResponseFromError($exception);
             }
         }
@@ -230,8 +227,10 @@ class PaymentIntents extends BaseGateway
         $paymentIntent = $paymentIntentsService->getPaymentIntentByReference($transaction->reference);
 
         try {
+            /** @var StripeCharge $charge */
+            $charge = $stripePaymentIntent->charges->data[0];
             $refund = Refund::create([
-                'charge' => $stripePaymentIntent->charges->data[0]->id,
+                'charge' => $charge->id,
                 'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
             ]);
 
@@ -241,12 +240,12 @@ class PaymentIntents extends BaseGateway
             if ($paymentIntent) {
                 // Fetch the new intent data
                 $stripePaymentIntent = PaymentIntent::retrieve($transaction->reference);
-                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
                 $paymentIntentsService->savePaymentIntent($paymentIntent);
             }
 
             return $this->createPaymentResponseFromApiResource($refund);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -254,12 +253,12 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function createPaymentSource(BasePaymentForm $sourceData, int $userId): PaymentSource
+    public function createPaymentSource(BasePaymentForm $sourceData, int $customerId): PaymentSource
     {
         $this->configureStripeClient();
         /** @var PaymentForm $sourceData */
         try {
-            $stripeCustomer = $this->getStripeCustomer($userId);
+            $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = PaymentMethod::retrieve($sourceData->paymentMethodId);
             $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
 
@@ -269,22 +268,24 @@ class PaymentIntents extends BaseGateway
 
             switch ($stripeResponse->type) {
                 case 'card':
-                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($stripeResponse->card->brand), 'last4' => $stripeResponse->card->last4]);
+                    /** @var Card $card */
+                    $card = $stripeResponse->card;
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($card->brand), 'last4' => $card->last4]);
                     break;
                 default:
                     $description = $stripeResponse->type;
             }
 
-            $paymentSource = new PaymentSource([
-                'userId' => $userId,
+            $response = $stripeResponse->toJSON();
+
+            return new PaymentSource([
+                'customerId' => $customerId,
                 'gatewayId' => $this->id,
                 'token' => $stripeResponse->id,
-                'response' => $stripeResponse->jsonSerialize(),
-                'description' => $description
+                'response' => $response ?: '',
+                'description' => $description,
             ]);
-
-            return $paymentSource;
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }
     }
@@ -300,7 +301,7 @@ class PaymentIntents extends BaseGateway
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
         $paymentMethods = PaymentMethod::all(['customer' => $customer->reference, 'type' => 'card']);
 
-        if (\count($paymentMethods->data) === 0) {
+        if (count($paymentMethods->data) === 0) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
@@ -312,7 +313,7 @@ class PaymentIntents extends BaseGateway
         if ($parameters->trialDays !== null) {
             $subscriptionParameters['trial_period_days'] = (int)$parameters->trialDays;
         } elseif ($parameters->trialEnd !== null) {
-            $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;;
+            $subscriptionParameters['trial_end'] = (int)$parameters->trialEnd;
         } else {
             $subscriptionParameters['trial_from_plan'] = true;
         }
@@ -320,15 +321,14 @@ class PaymentIntents extends BaseGateway
         $subscriptionParameters['expand'] = ['latest_invoice.payment_intent'];
 
         $event = new SubscriptionRequestEvent([
-            'plan' => $plan,
-            'parameters' => $subscriptionParameters
+            'parameters' => $subscriptionParameters,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
 
         try {
             $subscription = StripeSubscription::create($event->parameters);
-        } catch (\Throwable $exception) {
+        } catch (Throwable $exception) {
             Craft::warning($exception->getMessage(), 'stripe');
 
             throw new SubscriptionException(Craft::t('commerce-stripe', 'Unable to subscribe at this time.'));
@@ -344,10 +344,9 @@ class PaymentIntents extends BaseGateway
     {
         $this->configureStripeClient();
         try {
-            /** @var PaymentMethod $paymentMethod */
             $paymentMethod = PaymentMethod::retrieve($token);
             $paymentMethod->detach();
-        } catch (\Throwable $throwable) {
+        } catch (Throwable $throwable) {
             // Assume deleted.
         }
 
@@ -414,7 +413,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    public function handleWebhook(array $data)
+    public function handleWebhook(array $data): void
     {
         $this->configureStripeClient();
         switch ($data['type']) {
@@ -426,18 +425,15 @@ class PaymentIntents extends BaseGateway
         parent::handleWebhook($data);
     }
 
-    // Protected methods
-    // =========================================================================
-
     /**
      * Handle a failed invoice by updating the subscription data for the subscription it failed.
      *
-     * @param $data
-     * @throws \Throwable
-     * @throws \craft\errors\ElementNotFoundException
+     * @param array $data
+     * @throws Throwable
+     * @throws ElementNotFoundException
      * @throws \yii\base\Exception
      */
-    protected function handleInvoiceFailed(array $data)
+    protected function handleInvoiceFailed(array $data): void
     {
         $this->configureStripeClient();
         $stripeInvoice = $data['data']['object'];
@@ -449,7 +445,7 @@ class PaymentIntents extends BaseGateway
 
         $subscriptionReference = $stripeInvoice['subscription'] ?? null;
 
-        if (!$subscriptionReference || !($subscription = Subscription::find()->anyStatus()->reference($subscriptionReference)->one())) {
+        if (!$subscriptionReference || !($subscription = Subscription::find()->status(null)->reference($subscriptionReference)->one())) {
             Craft::warning('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id'], 'stripe');
 
             return;
@@ -461,7 +457,7 @@ class PaymentIntents extends BaseGateway
     /**
      * @inheritdoc
      */
-    protected function handleSubscriptionUpdated(array $data)
+    protected function handleSubscriptionUpdated(array $data): void
     {
         $this->configureStripeClient();
         // Fetch expanded data
@@ -471,7 +467,7 @@ class PaymentIntents extends BaseGateway
         ]);
 
         // And nonchalantly replace it, before calling parent.
-        $data['data']['object'] = $stripeSubscription->jsonSerialize();
+        $data['data']['object'] = $stripeSubscription->toArray();
 
         parent::handleSubscriptionUpdated($data);
     }
@@ -494,18 +490,19 @@ class PaymentIntents extends BaseGateway
         if ($form->customer) {
             $requestData['customer'] = $form->customer;
             $customer = $stripePlugin->getCustomers()->getCustomerByReference($form->customer);
-        } else if ($user = $transaction->getOrder()->getUser()) {
+        } elseif ($user = $transaction->getOrder()->getCustomer()) {
             $customer = $stripePlugin->getCustomers()->getCustomer($this->id, $user);
             $requestData['customer'] = $customer->reference;
         }
 
         $requestData['payment_method'] = $paymentMethodId;
 
+        $paymentIntentService = $stripePlugin->getPaymentIntents();
+
         try {
             // If this is a customer that's logged in, attempt to continue the timeline
             if ($customer) {
-                $paymentIntentService = $stripePlugin->getPaymentIntents();
-                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id);
+                $paymentIntent = $paymentIntentService->getPaymentIntent($this->id, $transaction->orderId, $customer->id, $transaction->hash);
             }
 
             // If a payment intent exists, update that.
@@ -521,6 +518,7 @@ class PaymentIntents extends BaseGateway
                 if ($customer) {
                     $paymentIntent = new PaymentIntentModel([
                         'orderId' => $transaction->orderId,
+                        'transactionHash' => $transaction->hash,
                         'customerId' => $customer->id,
                         'gatewayId' => $this->id,
                         'reference' => $stripePaymentIntent->id,
@@ -530,14 +528,14 @@ class PaymentIntents extends BaseGateway
 
             if ($paymentIntent) {
                 // Save data before confirming.
-                $paymentIntent->intentData = $stripePaymentIntent->jsonSerialize();
+                $paymentIntent->intentData = Json::encode($stripePaymentIntent->toArray());
                 $paymentIntentService->savePaymentIntent($paymentIntent);
             }
 
             $this->_confirmPaymentIntent($stripePaymentIntent, $transaction);
 
             return $this->createPaymentResponseFromApiResource($stripePaymentIntent);
-        } catch (\Exception $exception) {
+        } catch (Exception $exception) {
             return $this->createPaymentResponseFromError($exception);
         }
     }
@@ -545,38 +543,50 @@ class PaymentIntents extends BaseGateway
     /**
      * Refresh a subscription's data.
      *
-     * @param $subscription
+     * @param Subscription $subscription
      * @return Subscription
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
      */
-    protected function refreshSubscriptionData(Subscription $subscription)
+    protected function refreshSubscriptionData(Subscription $subscription): Subscription
     {
         $this->configureStripeClient();
         $stripeSubscription = StripeSubscription::retrieve([
             'id' => $subscription->reference,
-            'expand' => ['latest_invoice.payment_intent']
+            'expand' => ['latest_invoice.payment_intent'],
         ]);
 
-        $subscription->setSubscriptionData($stripeSubscription->jsonSerialize());
+        $subscription->setSubscriptionData($stripeSubscription->toArray());
         $this->setSubscriptionStatusData($subscription);
         Craft::$app->getElements()->saveElement($subscription);
 
         return $subscription;
     }
 
-    // Private methods
-    // =========================================================================
-
     /**
      * Confirm a payment intent and set the return URL.
      *
      * @param PaymentIntent $stripePaymentIntent
+     * @param Transaction $transaction
+     * @throws \Stripe\Exception\ApiErrorException
      */
-    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction)
+    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction): void
     {
         $this->configureStripeClient();
-        $stripePaymentIntent->confirm([
-            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash])
+
+        $parameters = [
+            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
+        ];
+
+        $event = new PaymentIntentConfirmationEvent([
+            'parameters' => $parameters,
         ]);
+
+        $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $event);
+
+        $stripePaymentIntent->confirm($event->parameters);
     }
 
     /**
@@ -584,6 +594,7 @@ class PaymentIntents extends BaseGateway
      *
      * @param Subscription $subscription
      * @return array
+     * @throws \Stripe\Exception\ApiErrorException
      */
     private function _getExpandedSubscriptionData(Subscription $subscription): array
     {
@@ -593,9 +604,9 @@ class PaymentIntents extends BaseGateway
         if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
             $stripeSubscription = StripeSubscription::retrieve([
                 'id' => $subscription->reference,
-                'expand' => ['latest_invoice.payment_intent']
+                'expand' => ['latest_invoice.payment_intent'],
             ]);
-            $subscriptionData = $stripeSubscription->jsonSerialize();
+            $subscriptionData = $stripeSubscription->toArray();
             $subscription->setSubscriptionData($subscriptionData);
         }
 

@@ -7,24 +7,24 @@
 
 namespace craft\commerce\stripe\responses;
 
-
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\helpers\DateTimeHelper;
+use DateTime;
 use yii\base\InvalidConfigException;
 
 class SubscriptionResponse implements SubscriptionResponseInterface
 {
     /**
-     * @var
+     * @var array
      */
-    protected $data = [];
+    protected array $data = [];
 
     /**
      * Response constructor.
      *
-     * @param $data
+     * @param array $data
      */
-    public function __construct($data)
+    public function __construct(array $data)
     {
         $this->data = $data;
     }
@@ -44,7 +44,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
     /**
      * @inheritdoc
      */
-    public function getData()
+    public function getData(): mixed
     {
         return $this->data;
     }
@@ -65,7 +65,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
      * @inheritdoc
      * @throws InvalidConfigException if no data
      */
-    public function getNextPaymentDate(): \DateTime
+    public function getNextPaymentDate(): DateTime
     {
         if (empty($this->data)) {
             throw new InvalidConfigException();

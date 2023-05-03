@@ -19,6 +19,7 @@ use yii\db\ActiveQueryInterface;
  * @property int $customerId
  * @property int $gatewayId
  * @property int $orderId
+ * @property string $transactionHash
  * @property string $reference
  * @property string $intentData
  * @property Gateway $gateway
@@ -28,9 +29,6 @@ use yii\db\ActiveQueryInterface;
  */
 class PaymentIntent extends ActiveRecord
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
@@ -68,5 +66,4 @@ class PaymentIntent extends ActiveRecord
     {
         return $this->hasOne(Customer::class, ['customerId' => 'id']);
     }
-
 }

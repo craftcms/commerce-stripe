@@ -24,9 +24,6 @@ use yii\db\ActiveQueryInterface;
  */
 class Invoice extends ActiveRecord
 {
-    // Public Methods
-    // =========================================================================
-
     /**
      * @inheritdoc
      */
