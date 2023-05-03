@@ -238,7 +238,8 @@ class Gateway extends BaseGateway
         }
 
         $event = new SubscriptionRequestEvent([
-            'parameters' => $subscriptionParameters
+            'plan' => $plan,
+            'parameters' => $subscriptionParameters,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
