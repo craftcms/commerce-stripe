@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Switching a user’s primary payment source now ensures it is also set at the default payment method in Stripe.
+
 ## 3.1.0 - 2022-01-29
 
 - Added the `commerce-stripe/reset-data` command.
