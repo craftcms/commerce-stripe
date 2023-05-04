@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Switching a user’s primary payment source now ensures it is also set at the default payment method in Stripe.
+- Switching a user’s primary payment source now ensures it is also set at the default payment method in Stripe ([#235](https://github.com/craftcms/commerce-stripe/issues/235))
 - Added the `craft\commerce\stripe\services\Customers::EVENT_BEFORE_CREATE_CUSTOMER` event. ([#233](https://github.com/craftcms/commerce-stripe/pull/233))
 - The `craft\commerce\stripe\events\SubscriptionRequestEvent` now has access to the plan being subscribed to. ([#141](https://github.com/craftcms/commerce-stripe/pull/141))
 
