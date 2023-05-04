@@ -324,6 +324,7 @@ class PaymentIntents extends BaseGateway
         $subscriptionParameters['expand'] = ['latest_invoice.payment_intent'];
 
         $event = new SubscriptionRequestEvent([
+            'plan' => $plan,
             'parameters' => $subscriptionParameters,
         ]);
 
