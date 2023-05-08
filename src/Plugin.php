@@ -72,10 +72,10 @@ class Plugin extends \craft\base\Plugin
     {
         $paymentSourceService = CommercePlugin::getInstance()->getPaymentSources();
         $newPrimaryPaymentSource = $paymentSourceService->getPaymentSourceById($event->newPrimaryPaymentSourceId);
-        $stripeCustomerReference = $this->getCustomers()->getCustomer($newPrimaryPaymentSource->getGateway()->id, $event->customer)->reference;
+        /** @var Gateway $gateway **/
         $gateway = $newPrimaryPaymentSource->getGateway();
-
         if ($gateway instanceof Gateway) {
+            $stripeCustomerReference = $this->getCustomers()->getCustomer($gateway->id, $event->customer)->reference;
             $gateway->setPaymentSourceAsDefault($stripeCustomerReference, $newPrimaryPaymentSource->token);
         }
     }

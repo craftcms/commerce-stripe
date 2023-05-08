@@ -12,6 +12,7 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\Gateway as BaseGateway;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\errors\CustomerException;
+use craft\commerce\stripe\events\CreateCustomerEvent;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;

@@ -628,7 +628,8 @@ abstract class Gateway extends BaseGateway
     /**
      * Sets the default payment source in Stripe for the payment source’s customer
      *
-     * @param int|null $paymentSourceId
+     * @param string $customer The Stripe Customer ID
+     * @param string $paymentMethodId The Stripe payment method ID
      * @return bool
      * @throws \yii\base\InvalidConfigException
      */
