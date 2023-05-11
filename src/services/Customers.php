@@ -12,6 +12,7 @@ use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\Gateway as BaseGateway;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\errors\CustomerException;
+use craft\commerce\stripe\events\CreateCustomerEvent;
 use craft\commerce\stripe\models\Customer;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
@@ -31,6 +32,25 @@ use yii\base\Exception;
  */
 class Customers extends Component
 {
+    /**
+     * @event CreateCustomerEvent The event that is triggered before a new customer is saved in the gateway.
+     *
+     * Plugins can get notified whenever a new customer is being saved.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\CreateCustomerEvent;
+     * use craft\commerce\stripe\services\Customers;
+     * use yii\base\Event;
+     *
+     * Event::on(Customers::class, Customers::EVENT_BEFORE_CREATE_CUSTOMER, function(CreateCustomerEvent $e) {
+     *     $e->customer['someKey'] = 'some value';
+     *     unset($e->customer['unneededKey']);
+     * });
+     * ```
+     */
+    public const EVENT_BEFORE_CREATE_CUSTOMER = 'beforeCreateCustomer';
+
+
     /**
      * Returns a customer by gateway and user
      *
@@ -56,10 +76,19 @@ class Customers extends Component
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiVersion(SubscriptionGateway::STRIPE_API_VERSION);
 
-        $stripeCustomer = StripeCustomer::create([
+        $customerData = [
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
             'email' => $user->email,
+        ];
+
+        $event = new CreateCustomerEvent([
+            'customer' => $customerData,
+            'user' => $user,
         ]);
+
+        $this->trigger(self::EVENT_BEFORE_CREATE_CUSTOMER, $event);
+
+        $stripeCustomer = StripeCustomer::create($event->customer);
 
         $customer = new Customer([
             'userId' => $user->id,
@@ -86,6 +115,26 @@ class Customers extends Component
     {
         $customerRow = $this->_createCustomerQuery()
             ->where(['id' => $id])
+            ->one();
+
+        if ($customerRow) {
+            return new Customer($customerRow);
+        }
+
+        return null;
+    }
+
+    /**
+     * Return a customer by its user ID.
+     *
+     * @param int $id
+     *
+     * @return Customer|null
+     */
+    public function getCustomerByUserId(int $id): ?Customer
+    {
+        $customerRow = $this->_createCustomerQuery()
+            ->where(['userId' => $id])
             ->one();
 
         if ($customerRow) {

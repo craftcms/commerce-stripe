@@ -1,5 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 3.1.1 - 2023-05-10
+
+- Stripe customers’ default payment methods are now kept in sync with Craft users’ primary payment sources. ([#235](https://github.com/craftcms/commerce-stripe/issues/235))
+- Added `craft\commerce\stripe\services\Customers::EVENT_BEFORE_CREATE_CUSTOMER`. ([#233](https://github.com/craftcms/commerce-stripe/pull/233))
+- Added `craft\commerce\stripe\events\SubscriptionRequestEvent::$plan`, which will be set to the plan being subscribed to. ([#141](https://github.com/craftcms/commerce-stripe/pull/141))
+
 ## 3.1.0 - 2022-01-29
 
 - Added the `commerce-stripe/reset-data` command.
