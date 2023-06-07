@@ -30,6 +30,7 @@ use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\SubscriptionResponse;
+use craft\errors\ElementNotFoundException;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\web\View;
@@ -505,9 +506,97 @@ abstract class SubscriptionGateway extends Gateway
             case 'customer.subscription.updated':
                 $this->handleSubscriptionUpdated($data);
                 break;
+            case 'invoice.payment_failed':
+                $this->handleInvoiceFailed($data);
+                break;
         }
 
         parent::handleWebhook($data);
+    }
+
+    /**
+     * Handle a failed invoice by updating the subscription data for the subscription it failed.
+     *
+     * @param array $data
+     * @throws Throwable
+     * @throws ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handleInvoiceFailed(array $data): void
+    {
+        $stripeInvoice = $data['data']['object'];
+
+        // Sanity check
+        if ($stripeInvoice['paid']) {
+            return;
+        }
+
+        $subscriptionReference = $stripeInvoice['subscription'] ?? null;
+
+        if (!$subscriptionReference || !($subscription = Subscription::find()->status(null)->reference($subscriptionReference)->one())) {
+            Craft::warning('Subscription with the reference “' . $subscriptionReference . '” not found when processing webhook ' . $data['id'], 'stripe');
+
+            return;
+        }
+
+        $this->refreshSubscriptionData($subscription);
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getBillingIssueDescription(Subscription $subscription): string
+    {
+        $subscriptionData = $this->_getExpandedSubscriptionData($subscription);
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+
+        if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
+            switch ($intentData['status']) {
+                case 'requires_payment_method':
+                    return $subscription->hasStarted ? Craft::t('commerce-stripe', 'To resume the subscription, please provide a valid payment method.') : Craft::t('commerce-stripe', 'To start the subscription, please provide a valid payment method.');
+                case 'requires_action':
+                    return $subscription->hasStarted ? Craft::t('commerce-stripe', 'To resume the subscription, please complete 3DS authentication.') : Craft::t('commerce-stripe', 'To start the subscription, please complete 3DS authentication.');
+            }
+        }
+
+        return '';
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getHasBillingIssues(Subscription $subscription): bool
+    {
+        $subscription = $this->refreshSubscriptionData($subscription);
+        $subscriptionData = $subscription->getSubscriptionData();
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+
+        return in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid']) && in_array($intentData['status'], ['requires_payment_method', 'requires_confirmation', 'requires_action']);
+    }
+
+    /**
+     * Refresh a subscription's data.
+     *
+     * @param Subscription $subscription
+     * @return Subscription
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function refreshSubscriptionData(Subscription $subscription): Subscription
+    {
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve(
+            $subscription->reference,
+            [
+                'expand' => ['latest_invoice.payment_intent'],
+            ]);
+
+        $subscription->setSubscriptionData($stripeSubscription->toArray());
+        $this->setSubscriptionStatusData($subscription);
+        Craft::$app->getElements()->saveElement($subscription);
+
+        return $subscription;
     }
 
     /**
@@ -761,7 +850,16 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleSubscriptionUpdated(array $data): void
     {
-        $stripeSubscription = $data['data']['object'];
+        // Fetch expanded data
+        $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve(
+            $data['data']['object']['id'],
+            [
+                'expand' => ['latest_invoice.payment_intent'],
+            ]);
+
+        // And nonchalantly replace it, before calling parent.
+        $stripeSubscription = $data['data']['object'] = $stripeSubscription->toArray();
+
         $subscription = Subscription::find()->status(null)->reference($stripeSubscription['id'])->one();
 
         if (!$subscription) {
@@ -856,5 +954,29 @@ abstract class SubscriptionGateway extends Gateway
         $invoiceService->saveInvoice($invoice);
 
         return $invoice;
+    }
+
+    /**
+     * Get the expanded subscription data, including payment intent for latest invoice.
+     *
+     * @param Subscription $subscription
+     * @return array
+     * @throws \Stripe\Exception\ApiErrorException
+     */
+    private function _getExpandedSubscriptionData(Subscription $subscription): array
+    {
+        $subscriptionData = $subscription->getSubscriptionData();
+
+        if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
+            $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve(
+                $subscription->reference,
+                [
+                    'expand' => ['latest_invoice.payment_intent'],
+                ]);
+            $subscriptionData = $stripeSubscription->toArray();
+            $subscription->setSubscriptionData($subscriptionData);
+        }
+
+        return $subscriptionData;
     }
 }

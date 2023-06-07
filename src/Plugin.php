@@ -13,9 +13,12 @@ use craft\commerce\services\Gateways;
 use craft\commerce\services\PaymentSources;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
-use craft\commerce\stripe\gateways\PaymentIntentsElementsCheckout;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
+use craft\commerce\stripe\services\Customers;
+use craft\commerce\stripe\services\Invoices;
+use craft\commerce\stripe\services\PaymentIntents as PaymentIntentsService;
+use craft\commerce\stripe\services\PaymentMethods;
 use craft\commerce\stripe\utilities\Sync;
 use craft\events\RegisterComponentTypesEvent;
 use craft\services\Utilities;
@@ -41,20 +44,32 @@ class Plugin extends \craft\base\Plugin
     use Services;
 
     /**
+     * @inheritDoc
+     */
+    public static function config(): array
+    {
+        return [
+            'components' => [
+                'customers' => Customers::class,
+                'invoices' => Invoices::class,
+                'paymentIntents' => PaymentIntentsService::class,
+                'paymentMethods' => PaymentMethods::class,
+            ],
+        ];
+    }
+
+    /**
      * @inheritdoc
      */
     public function init(): void
     {
         parent::init();
 
-        $this->_setPluginComponents();
-
         Event::on(
             Gateways::class,
             Gateways::EVENT_REGISTER_GATEWAY_TYPES,
             function(RegisterComponentTypesEvent $event) {
                 $event->types[] = PaymentIntents::class;
-                $event->types[] = PaymentIntentsElementsCheckout::class;
             }
         );
 

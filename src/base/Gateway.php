@@ -22,7 +22,6 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\helpers\App;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
-use craft\helpers\StringHelper;
 use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Exception;
@@ -73,6 +72,32 @@ abstract class Gateway extends BaseGateway
      *
      */
     public const EVENT_BUILD_GATEWAY_REQUEST = 'buildGatewayRequest';
+
+    /**
+     * @event BuildPaymentIntentRequestEvent The event that is triggered when a gateway payment intent request is being built.
+     *
+     * Plugins get a chance to provide additional data to any request that is made to Stripe in the context of creating a new payment intent for an order.
+     *
+     * There are some restrictions:
+     *     Changes to the `Transaction` model available as the `transaction` property will be ignored;
+     *     Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys will be ignored;
+     *     Changes to the `amount`, `currency` request keys will be ignored;
+     *
+     * ```php
+     * use craft\commerce\models\Transaction;
+     * use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+     * use craft\commerce\stripe\base\Gateway as StripeGateway;
+     * use yii\base\Event;
+     *
+     * Event::on(StripeGateway::class, StripeGateway::EVENT_BUILD_GATEWAY_REQUEST, function(BuildGatewayRequestEvent $e) {
+     *     if ($e->transaction->type === 'refund') {
+     *         $e->request['someKey'] = 'some value';
+     *     }
+     * });
+     * ```
+     *
+     */
+    public const EVENT_BUILD_PAYMENT_INTENT_REQUEST = 'buildPaymentIntentRequest';
 
     /**
      * @event ReceiveWebhookEvent The event that is triggered when a valid webhook is received.
@@ -439,6 +464,8 @@ abstract class Gateway extends BaseGateway
      *
      * @return array
      * @throws NotSupportedException
+     * @deprecated 4.0.0 No longer used.
+     *
      */
     protected function buildRequestData(Transaction $transaction): array
     {
@@ -564,30 +591,6 @@ abstract class Gateway extends BaseGateway
         } catch (Exception $exception) {
             throw new CustomerException('Could not fetch Stripe customer: ' . $exception->getMessage());
         }
-    }
-
-    /**
-     * Normalize one-time payment token to a source token, that may or may not be multi-use.
-     *
-     * @param string $token
-     * @return string
-     */
-    protected function normalizePaymentToken(string $token = ''): string
-    {
-        if (StringHelper::substr($token, 0, 4) === 'tok_') {
-            try {
-                $tokenSource = $this->getStripeClient()->sources->create([
-                    'type' => 'card',
-                    'token' => $token,
-                ]);
-
-                return $tokenSource->id;
-            } catch (Exception $exception) {
-                Craft::error('Unable to normalize payment token: ' . $token . ', because ' . $exception->getMessage());
-            }
-        }
-
-        return $token;
     }
 
     /**

@@ -59,17 +59,4 @@ trait Services
     {
         return $this->get('paymentMethods');
     }
-
-    /**
-     * Set the components of the commerce plugin
-     */
-    private function _setPluginComponents()
-    {
-        $this->setComponents([
-            'customers' => Customers::class,
-            'invoices' => Invoices::class,
-            'paymentIntents' => PaymentIntents::class,
-            'paymentMethods' => PaymentMethods::class,
-        ]);
-    }
 }

@@ -1,13 +1,15 @@
 function PaymentIntentsElements(publishableKey, container) {
     this.container = container;
-    this.formNamespace = this.container.data('payment-form-namespace');
+    this.formNamespace = this.container.dataset.paymentFormNamespace;
     this.stripeInstance = Stripe(publishableKey);
     this.elements = null;
-    this.completeActionUrl = this.container.data('complete-action-url');
+    this.completeActionUrl = this.container.dataset.completeActionUrl;
     const self = this;
 
     this.displayPaymentForm = function () {
-        const form = new FormData(this.container.closest("form").get(0));
+        const form = new FormData(this.container.closest("form"));
+
+        // We immediately attempt payment intent creation, so we can get the client secret and payment intent ID
         fetch(window.location.href, {
             method: 'post',
             body: form,
@@ -18,10 +20,8 @@ function PaymentIntentsElements(publishableKey, container) {
             if (res.status !== 200) {
                 responseError = true;
             }
-
             return res.json();
         }).then(function (json) {
-
             let completeActionUrl = new URL(self.completeActionUrl);
             completeActionUrl.searchParams.append('commerceTransactionHash', json.transactionHash);
             completeActionUrl.searchParams.append('commerceTransactionId', json.transactionId);
@@ -29,22 +29,22 @@ function PaymentIntentsElements(publishableKey, container) {
 
             const options = {
                 clientSecret: json.redirectData.client_secret,
-                appearance: self.container.data('appearance')
+                appearance: JSON.parse(self.container.dataset.appearance)
             };
 
             self.elements = self.stripeInstance.elements(options);
 
             const paymentElement = self.elements.create('payment', {
-                layout: self.container.data('layout'),
+                layout: JSON.parse(self.container.dataset.layout),
             });
-            const paymentElementDiv = self.container.find('.stripe-payment-element');
-            paymentElement.mount(paymentElementDiv.get(0));
+            const paymentElementDiv = self.container.querySelector('.stripe-payment-element');
+            paymentElement.mount(paymentElementDiv);
 
-            self.container.removeClass('hidden');
+            self.container.classList.remove('hidden');
         });
     }
 
-    this.container.find('.stripe-payment-elements-submit-button').click(async (event) => {
+    this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
         event.preventDefault();
         let elements = self.elements;
         const {error} = await self.stripeInstance.confirmPayment({
@@ -54,27 +54,21 @@ function PaymentIntentsElements(publishableKey, container) {
             },
         });
 
-        if (error.type === "card_error" || error.type === "validation_error") {
-            alert(error.message);
-        } else {
-            alert("An unexpected error occurred.");
-        }
+        self.container.querySelector('.stripe-error-message').classList.remove('hidden');
+        self.container.querySelector('.stripe-error-message').innerText = error.message;
     });
 }
 
 function initStripe() {
     if (typeof Stripe === 'undefined') {
-
         setTimeout(initStripe, 200);
     } else {
-        $('.stripe-payment-elements-form').each(function () {
-            let $container = $(this);
-
+        document.querySelectorAll('.stripe-payment-elements-form').forEach(function (container) {
             let handlerInstance = new PaymentIntentsElements(
-                $container.data('publishablekey'),
-                $container
+                container.dataset.publishablekey,
+                container
             );
-            $container.data('handlerInstance', handlerInstance);
+            container.dataset.handlerInstance = handlerInstance;
 
             handlerInstance.displayPaymentForm();
         });

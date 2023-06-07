@@ -10,8 +10,7 @@ namespace craft\commerce\stripe\controllers;
 use Craft;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
-use craft\commerce\stripe\base\SubscriptionGateway;
-use craft\commerce\stripe\gateways\PaymentIntentsElementsCheckout;
+use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\helpers\UrlHelper;
 use craft\web\Controller as BaseController;
@@ -47,10 +46,6 @@ class DefaultController extends BaseController
         try {
             $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
 
-            if (!$gateway instanceof SubscriptionGateway) {
-                throw new BadRequestHttpException('That is not a valid gateway id.');
-            }
-
             return $this->asJson($gateway->getSubscriptionPlans());
         } catch (Throwable $e) {
             return $this->asErrorJson($e->getMessage());
@@ -71,7 +66,7 @@ class DefaultController extends BaseController
         if ($currentUser = Craft::$app->getUser()->getIdentity()) {
             $gatewayHandle = Craft::$app->getRequest()->getRequiredParam('gatewayId');
             if ($gateway = Plugin::getInstance()->getGateways()->getGatewayByHandle($gatewayHandle)) {
-                if ($gateway instanceof PaymentIntentsElementsCheckout) {
+                if ($gateway instanceof PaymentIntents) {
                     $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($gateway->id, $currentUser);
 
                     $portal = $gateway->getStripeClient()->billingPortal->sessions->create([
