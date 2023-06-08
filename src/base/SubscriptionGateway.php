@@ -809,14 +809,20 @@ abstract class SubscriptionGateway extends Gateway
     {
         $planService = Commerce::getInstance()->getPlans();
 
-        if ($data['type'] == 'plan.deleted') {
-            $plan = $planService->getPlanByReference($data['data']['object']['id']);
-
-            if ($plan) {
-                $planService->archivePlanById($plan->id);
-                Craft::warning($plan->name . ' was archived because the corresponding plan was deleted on Stripe. (event "' . $data['id'] . '")', 'stripe');
-            }
+        $plan = $planService->getPlanByReference($data['data']['object']['id']);
+        
+        if (!$plan) {
+            throw new InvalidConfigException('Plan with the reference “' . $data['data']['object']['id'] . '” not found when processing webhook ' . $data['id']);
         }
+
+        if ($data['type'] == 'plan.deleted') {
+            $planService->archivePlanById($plan->id);
+            Craft::warning($plan->name . ' was archived because the corresponding plan was deleted on Stripe. (event "' . $data['id'] . '")', 'stripe');
+        } else {
+            $plan->planData = Json::encode($data['data']['object']);
+            $planService->savePlan($plan);
+        }
+
     }
 
     /**

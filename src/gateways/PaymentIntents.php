@@ -259,10 +259,6 @@ class PaymentIntents extends BaseGateway
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($sourceData->paymentMethodId);
             $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
 
-            // Set as default.
-            $stripeCustomer->invoice_settings['default_payment_method'] = $paymentMethod->id;
-            $stripeCustomer->save();
-
             switch ($stripeResponse->type) {
                 case 'card':
                     /** @var Card $card */
@@ -274,6 +270,12 @@ class PaymentIntents extends BaseGateway
             }
 
             $response = $stripeResponse->toJSON();
+
+            // Make it the default in Stripe if its the only one for this gateway
+            $existingPaymentSources = Commerce::getInstance()->getPaymentSources()->getAllPaymentSourcesByCustomerId($customerId, $this->id);
+            if (!$existingPaymentSources) {
+                $this->setPaymentSourceAsDefault($stripeCustomer->id, $paymentMethod->id);
+            }
 
             return new PaymentSource([
                 'customerId' => $customerId,
@@ -317,6 +319,7 @@ class PaymentIntents extends BaseGateway
         $subscriptionParameters['expand'] = ['latest_invoice.payment_intent'];
 
         $event = new SubscriptionRequestEvent([
+            'plan' => $plan,
             'parameters' => $subscriptionParameters,
         ]);
 
@@ -338,11 +341,24 @@ class PaymentIntents extends BaseGateway
      */
     public function deletePaymentSource($token): bool
     {
+        $commercePaymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($token, $this->id);
+
         try {
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($token);
             $paymentMethod->detach();
         } catch (Throwable $throwable) {
-            // Assume deleted.
+            // Assume already deleted.
+        }
+
+        if ($commercePaymentSource->getIsPrimary()) {
+            $paymentSources = Commerce::getInstance()->getPaymentSources()->getAllPaymentSourcesByCustomerId($commercePaymentSource->getCustomer()->id, $this->id);
+            foreach ($paymentSources as $source) {
+                // Set it to the first that is not the one being deleted
+                if ($source->token !== $token) {
+                    Commerce::getInstance()->getCustomers()->savePrimaryPaymentSourceId($commercePaymentSource->getCustomer(), $source->id);
+                    break;
+                }
+            }
         }
 
         return true;

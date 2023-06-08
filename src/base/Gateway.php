@@ -617,4 +617,29 @@ abstract class Gateway extends BaseGateway
     {
         // Do nothing
     }
+
+    /**
+     * Sets the default payment source in Stripe for the payment source’s customer
+     *
+     * @param string $customer The Stripe Customer ID
+     * @param string $paymentMethodId The Stripe payment method ID
+     * @return bool
+     * @throws \yii\base\InvalidConfigException
+     */
+    public function setPaymentSourceAsDefault($customer, $paymentMethodId): bool
+    {
+        try {
+            $this->getStripeClient()->customers->update($customer, [
+                'invoice_settings' => [
+                    'default_payment_method' => $paymentMethodId,
+                ],
+            ]);
+
+            return true;
+        } catch (Exception $exception) {
+            Craft::error('Unable to set Stripe default payment source: ' . $exception->getMessage());
+        }
+
+        return false;
+    }
 }
