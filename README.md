@@ -2,7 +2,8 @@
 
 <h1 align="center">Stripe for Craft Commerce</h1>
 
-This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce) supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and traditional charges.
+This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce)
+supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and traditional charges.
 
 ## Requirements
 
@@ -16,7 +17,8 @@ You can install this plugin from the Plugin Store or using Composer.
 
 #### From the Plugin Store
 
-Go to the Plugin Store in your project’s control panel, search for “Stripe for Craft Commerce”, and choose **Install** in the plugin’s modal window.
+Go to the Plugin Store in your project’s control panel, search for “Stripe for Craft Commerce”, and choose **Install**
+in the plugin’s modal window.
 
 #### With Composer
 
@@ -33,15 +35,10 @@ composer require craftcms/commerce-stripe
 php craft install/plugin commerce-stripe
 ```
 
-## Changes in 2.0
-
-We deprecated the original “Stripe” gateway as “Stripe Charge” and added a new “Stripe Payment Intents” gateway which uses Stripe’s [Payment Intents API](https://stripe.com/docs/payments/payment-intents) and [3D Secure 2](https://stripe.com/guides/3d-secure-2), which is easier to implement than the old 3D Secure standard and delivers a better customer experience.
-
-**Stripe began declining all EU charges using its old charge API on September 14, 2019,** so we highly recommend switching to the newer “Stripe Payment Intents” gateway. (Learn more by reading Stripe’s [Strong Customer Authentication](https://stripe.com/guides/strong-customer-authentication) guide.)
-
 ## Setup
 
-To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, create a new gateway, and set the gateway type to “Stripe Payment Intents”.
+To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**,
+create a new gateway, and set the gateway type to “Stripe Payment Intents”.
 
 > ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
 
@@ -49,58 +46,39 @@ In order for the gateway to work properly, the following settings are required:
 
 - Publishable API Key
 - Secret API Key
+- Webhook Secret
 
 You can find these in your Stripe dashboard under **Developers** → **API keys**.
 
-## Payment Process and Security
+Once you have saved the the gateway in Commerce, you can reopen it to find the webhook URL available for you to enter
+into
+Stripe’s Dashboard settings.
 
-This plugin relies on stored payment methods and doesn’t allow directly-submitted credit card details. To check out, a customer must submit a `paymentMethodId` parameter to the Commerce `commerce/payments/pay` form action.
+When you've set up that URL in the Stripe dashboard, you can view the signing secret in its settings. Enter this value
+in your Stripe
+gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
 
-A new payment method can be created prior to checkout using Stripe’s front-end JavaScript API.
+We recommend emitting all possible events for the webhook. Unnecessary events will be ignored by the plugin.
 
-Check out Stripe’s [Create Payment Method](https://stripe.com/docs/js/payment_methods/create_payment_method) documentation to learn how to save a payment method or follow the [example below](#creating-a-stripe-payment-form-for-the-payment-intents-gateway).
+We advise using the Stripe CLI in development to test webhooks.
+See [Testing Webhooks](https://stripe.com/docs/webhooks/test) for more information.
 
-## Webhooks
+## Payment Process Changes
 
-You’ll need to update configuration with this plugin and the Stripe dashboard in order to utilize webhooks.
+In the previous version of this plugin, we relied on a directly submitted `paymentMethodId` parameter to the
+Commerce `commerce/payments/pay` form action to make payment.
+This continues to work for backwards compatibility but the new payment form HTML.
 
-### Configuring Stripe
-
-Set up a webhook endpoint in your Stripe dashboard API settings. The URL for this endpoint can be found in your Commerce Stripe gateway settings.
-
-We recommend emitting all possible events, but the required events are:
-
-#### For 3D Secure Payments (if using Stripe Charge gateway)
-
-- `source.cancelled`
-- `source.chargeable`
-- `source.failed`
-
-#### For refunds:
-- `charge.refund.updated`
-
-#### For Subscriptions
-
-- `invoice.payment_succeeded`
-- `customer.subscription.deleted`
-
-We strongly recommended enabling the following events to ensure your Commerce subscriptions stay in sync with your Stripe dashboard:
-
-- `plan.deleted`
-- `plan.updated`
-- `invoice.created`
-- `customer.subscription.updated`
-- `invoice.payment_failed`
-
-### Configuring the Gateway
-
-When you've set up the endpoint, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
+A new payment method can still be created prior to checkout using Stripe’s front-end JavaScript API manully, but we now
+advise using the built in payment form HTML.
 
 ## Configuration Settings
 
 ### `chargeInvoicesImmediately`
 
-For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By setting this to `true` in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice immediately.
+For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours before attempting to charge it. By
+setting this to `true` in your `commerce-stripe.php` config file, you can force Stripe to charge this invoice
+immediately.
 
 This setting affects all Stripe gateways on your Commerce installation.
 
@@ -108,30 +86,36 @@ This setting affects all Stripe gateways on your Commerce installation.
 
 ### Creating a Subscription Plan
 
-1. Every subscription plan must first be [created in the Stripe dashboard](https://dashboard.stripe.com/test/subscriptions/products).
-2. In the Craft control panel, navigate to **Commerce** → **Settings** → **Subscription plans** and create a new subscription plan.
+1. Every subscription plan must first
+   be [created in the Stripe dashboard](https://dashboard.stripe.com/test/subscriptions/products).
+2. In the Craft control panel, navigate to **Commerce** → **Settings** → **Subscription plans** and create a new
+   subscription plan.
 
 ### Subscribe Options
 
 #### `trialDays`
 
-When subscribing, you can pass a `trialDays` parameter. The first full billing cycle will start once the number of trial days lapse. Default value is `0`.
+When subscribing, you can pass a `trialDays` parameter. The first full billing cycle will start once the number of trial
+days lapse. Default value is `0`.
 
 ### Cancel Options
 
 #### `cancelImmediately`
 
-If this parameter is set to `true`, the subscription is canceled immediately. Otherwise, it is marked to cancel at the end of the current billing cycle. Defaults to `false`.
+If this parameter is set to `true`, the subscription is canceled immediately. Otherwise, it is marked to cancel at the
+end of the current billing cycle. Defaults to `false`.
 
 ### Plan-Switching Options
 
 #### `prorate`
 
-If this parameter is set to `true`, the subscription switch will be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
+If this parameter is set to `true`, the subscription switch will
+be [prorated](https://stripe.com/docs/subscriptions/upgrading-downgrading#understanding-proration). Defaults to `false`.
 
 #### `billImmediately`
 
-If this parameter is set to `true`, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to `true` and switching to a cheaper plan) is applied to the next invoice.
+If this parameter is set to `true`, the subscription switch is billed immediately. Otherwise, the cost (or credit,
+if `prorate` is set to `true` and switching to a cheaper plan) is applied to the next invoice.
 
 > ⚠️ If the billing periods differ, the plan switch will be billed immediately and this parameter will be ignored.
 
@@ -143,12 +127,14 @@ The plugin provides several events you can use to modify the behavior of your in
 
 #### `buildGatewayRequest`
 
-Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for an order. This includes capturing and refunding transactions.
+Plugins get a chance to provide additional metadata to any request that is made to Stripe in the context of paying for
+an order. This includes capturing and refunding transactions.
 
 There are some restrictions:
 
 - Changes to the `Transaction` model available as the `transaction` property will be ignored;
-- Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys will be ignored;
+- Changes to the `order_id`, `order_number`, `transaction_id`, `client_ip`, and `transaction_reference` metadata keys
+  will be ignored;
 - Changes to the `amount`, `currency` and `description` request keys will be ignored;
 
 ```php
@@ -173,7 +159,8 @@ Event::on(
 
 #### `receiveWebhook`
 
-Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless of whether or not the gateway has done something with the webhook.
+Plugins get a chance to do something whenever a webhook is received. This event will be fired regardless of whether or
+not the gateway has done something with the webhook.
 
 ```php
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
@@ -234,187 +221,151 @@ Event::on(
 );
 ```
 
-### Deprecated Events
+## Creating a Stripe Payment Form
 
-The following event is deprecated because it’s associated with the deprecated Stripe Charge gateway.
+You can output a standard credit card form quickly using `order.gateway.getPaymentFormHtml()`
+or `gateway.getPaymentFormHtml()`.
 
-#### `receive3dsPayment`
+If you want to read how to create the legacy payment form with stripe.js read
+the [old README](https://github.com/craftcms/commerce-stripe/blob/e0325e98594cc4824b3e2788ac0573c8d04a71d5/README.md#creating-a-stripe-payment-form-for-the-payment-intents-gateway).
 
-Plugins get a chance to do something whenever a successful 3D Secure payment is received.
+## Customizing the Stripe Payment Form
 
-```php
-use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\events\Receive3dsPaymentEvent;
-use craft\commerce\stripe\gateways\PaymentIntents as StripeGateway;
-use yii\base\Event;
+`getPaymentFormHtml()` takes the following parameters:
 
-Event::on(
-    StripeGateway::class,
-    StripeGateway::EVENT_RECEIVE_3DS_PAYMENT,
-    function(Receive3dsPaymentEvent $e) {
-        $order = $e->transaction->getOrder();
-        $paidStatus = Commerce::getInstance()->getOrderStatuses()->getOrderStatusByHandle('paid');
-        if ($order && $paidStatus && $order->orderStatusId !== $paidStatus->id && $order->getIsPaid()) {
-            $order->orderStatusId = $paidStatus->id;
-            Craft::$app->getElements()->saveElement($order);
-        }
-    }
-);
-```
+### `paymentFormType`
 
----
+This option has 3 possible values: `card` (default), `elements` and `checkout`.
 
-## Creating a Stripe Payment Form for the Payment Intents Gateway
+#### `card` (default)
 
-You can output a standard form quickly using `order.gateway.getPaymentFormHtml()` or `gateway.getPaymentFormHtml()`, but you can take a little more time to follow these steps and have more control over the resulting template.
+This renders a Stripe Elements form with a credit card number, expiry date and CVC input fields. It will also
+show the [Stripe Link](https://stripe.com/docs/payments/link) feature if you have not turned it off in your dashboard.
 
-### 1. Include Stripe’s JavaScript on your payment page.
+This option does not let you pass the `paymentMethods` array to the form.
 
-```
-<script src="https://js.stripe.com/v3/"></script>
-```
-
-> 💡 See the [Stripe JS documentation](https://stripe.com/docs/js) for more on using the Stripe JavaScript libraries and Stripe Elements front end tools we’re using below.
-
-### 2. Create the HTML wrapper for Stripe’s inputs.
-
-We only need a few specific IDs in our markup, and Stripe’s JavaScript will take care of the rest by inserting and managing form inputs.
-
-The following example is based on the gateway having already been set on the cart in a previous step.
+Example:
 
 ```twig
-<form method="post" action="" id="payment-form"
-    data-payment-form-namespace="{{ cart.gateway.handle|commercePaymentFormNamespace }}"
->
-    {{ actionInput('commerce/payments/pay') }}
-    {{ redirectInput(siteUrl('shop/customer/order', { number: cart.number, success: 'true' })) }}
-    {{ hiddenInput('cancelUrl', siteUrl('shop/checkout/payment')|hash) }}
-    {{ hiddenInput('gatewayId', cart.gateway.id) }}
-    {{ csrfInput() }}
-
-    {% namespace cart.gateway.handle|commercePaymentFormNamespace %}        
-        <div class="form-row">
-            <label for="card-element">
-                Credit or debit card input fields
-            </label>
-            <div id="card-element">
-                {# Stripe’s JavaScript will insert Stripe Elements here #}
-            </div>
-            {# Used to display form errors #}
-            <div id="card-errors" role="alert"></div>
-        </div>
-    {% endnamespace %}
-
-    <button id="submit-button" type="submit">Submit Payment</button>
-</form>
+{% set params = {
+  paymentFormType: 'card',
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-### 3. Instantiate the Stripe JS library with your gateway’s `publishableKey`.
+#### `elements`
 
-Create the `stripe` object in your page’s JavaScript:
+This renders a Stripe Elements form with all payment methods you have enabled in your Stripe Dashboard, like Apple Pay
+or Afterpay.
 
-```javascript
-var stripe = Stripe('{{ parseEnv(cart.gateway.publishableKey) }}');
-```
-
-This expects the Stripe gateway to be set on the order. If you’re setting it on the order during the payment submission, you would need to get a reference to the gateway first:
+This option does lets you pass the `paymentMethods` array which will no longer use the automatic payment methods you
+have enabled in your dashboard.
 
 ```twig
-{% set gateway = craft.commerce.gateways.getGatewayById('YOUR_GATEWAY_ID') %}
+{% set params = {
+  paymentFormType: 'elements',
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-Then you could instantiate the `stripe` object using `gateway.publishableKey`:
+#### `checkout`
 
-```javascript
-var stripe = Stripe('{{ parseEnv(gateway.publishableKey) }}');
+This generates a form ready to redirect to Stripe Checkout.
+
+This option ignores all other params.
+
+```twig
+{% set params = {
+  paymentFormType: 'checkout',
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-Once you have a `stripe` object, you need to create an instance of Stripe Elements:
+### `paymentMethods`
 
-```javascript
-// Create an instance of Elements
-var elements = stripe.elements();
+You can pass an array of payment methods when using the `elements` payment form type. This will override the automatic
+payment methods you have enabled in your dashboard.
+
+```twig
+{% set params = {
+  paymentFormType: 'elements',
+  paymentMethods: ['card', 'sepa_debit'],
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-### 4. Create a styled card instance.
+### `appearance`
 
-Set some style attributes for the card element we’ll create:
+You can pass an array of appearance options when using the `elements` or `card` payment form type.
 
-```javascript
-var style = {
-  base: {
-    color: '#32325d',
-    fontFamily: '"Helvetica Neue", Helvetica, sans-serif',
-    fontSmoothing: 'antialiased',
-    fontSize: '16px',
-    '::placeholder': {
-      color: '#aab7c4'
-    }
-  },
-  invalid: {
-    color: '#fa755a',
-    iconColor: '#fa755a'
+This expects data for the [Elements Appearance API](https://stripe.com/docs/elements/appearance-api).
+
+```twig
+{% set params = {
+  paymentFormType: 'elements',
+  appearance: {
+    theme: 'stripe'
   }
-};
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-Create the cart instance using those styles:
-
-```javascript
-// Create an instance of the card Element
-var card = elements.create('card', { style: style });
-```
-
-Mount that card into our markup’s ` <div id="card-element">` we created earlier:
-
-```javascript
-card.mount('#card-element');
-```
-
-To handle real-time validation errors from the card Element, we’ll add error messages to our markup’s `<div id="card-errors" role="alert"></div>`:
-
-```javascript
-card.on('change', function(event) {
-    var displayError = document.getElementById('card-errors');
-    if (event.error) {
-        displayError.textContent = event.error.message;
-    } else {
-        displayError.textContent = '';
+```twig
+{% set params = {
+  paymentFormType: 'elements',
+  appearance: {
+    theme: 'night',
+    variables: {
+      colorPrimary: '#0570de'
     }
-});
+  }
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-Finally, add a form listener that uses the submitted card details to [create a payment method](https://stripe.com/docs/js/payment_methods/create_payment_method) and pass in optional billing details:
+### `layout`
 
-```javascript
-var form = document.getElementById('payment-form');
-var paymentFormNamespace = form.data('payment-form-namespace');
+This allows you to modify
+the [Payment Element layout option](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options-layout)
 
-form.addEventListener('submit', function(event) {
-    event.preventDefault();
+```twig
+{% set params = {
+  paymentFormType: 'elements',
+  layout: {
+    type: 'tabs',
+    defaultCollapsed: false,
+    radios: false,
+    spacedAccordionItems: false
+  }
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
+```
 
-    var paymentData = {
-        billing_details: {
-            email: "{{ cart.email }}",
-        }
-    };
+### `submitButtonClasses` and `submitButtonLabel`
 
-    stripe.createPaymentMethod('card', card, paymentData).then(function(result) {
-        if (result.error) {
-            // Show the user any errors
-            var errorElement = document.getElementById('card-errors');
-            errorElement.textContent = result.error.message;
-        } else {
-            // Insert the token ID into the form so it gets submitted to the server
-            var form = document.getElementById('payment-form');
-            var hiddenInput = document.createElement('input');
-            hiddenInput.setAttribute('type', 'hidden');
-            hiddenInput.setAttribute('name', paymentFormNamespace + '[paymentMethodId]'); // Craft Commerce only needs this
-            hiddenInput.setAttribute('value', result.paymentMethod.id);
-            form.appendChild(hiddenInput);
+These control the button rendered at the bottom of the form.
 
-            form.submit();
-        }
-    });
-});
+```twig
+{% set params = {
+  paymentFormType: 'elements',
+  submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
+  submitButtonLabel: 'Pay',
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
+```
+
+### `errorMessageClasses`
+
+Above the form is a location where error messages are displayed when an error occurs. You can control the classes of
+this element.
+
+```
+{% set params = {
+  paymentFormType: 'elements',
+  submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
+  submitButtonLabel: 'Pay',
+  errorMessageClasses: 'bg-red-200 text-red-600 my-2 p-2 rounded',
+} %}
+{{ cart.gateway.getPaymentFormHtml(params) }}
+  
 ```
