@@ -17,6 +17,7 @@ use craft\commerce\models\Transaction;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\events\BuildSetupIntentRequestEvent;
 use craft\commerce\stripe\events\ReceiveWebhookEvent;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\helpers\App;
@@ -29,6 +30,7 @@ use Stripe\ApiResource;
 use Stripe\Customer;
 use Stripe\Exception\ApiErrorException;
 use Stripe\Exception\CardException;
+use Stripe\SetupIntent;
 use Stripe\Stripe;
 use Stripe\StripeClient;
 use Stripe\Webhook;
@@ -119,6 +121,11 @@ abstract class Gateway extends BaseGateway
      * ```
      */
     public const EVENT_RECEIVE_WEBHOOK = 'receiveWebhook';
+
+    /**
+     * @event BuildSetupIntentRequestEvent The event that is triggered when a SetupIntent is being built
+     */
+    public const EVENT_BUILD_SETUP_INTENT_REQUEST = 'buildSetupIntentRequest';
 
     /**
      * string The Stripe API version to use.
@@ -515,6 +522,8 @@ abstract class Gateway extends BaseGateway
             $event->request['receipt_email'] = $transaction->getOrder()->email;
         }
 
+        Craft::$app->getDeprecator()->log(__METHOD__, 'The `\craft\commerce\stripe\base\Gateway::buildRequestData` METHOD has been deprecated. Use a hashed `createPaymentIntent()` or `createSetupIntent()` instead.');
+
         return $event->request;
     }
 
@@ -642,4 +651,26 @@ abstract class Gateway extends BaseGateway
 
         return false;
     }
+
+    public function createSetupIntent($params): SetupIntent
+    {
+        $defaults = [
+            'usage' => 'off_session',
+            'payment_method_types' => ['card'],
+        ];
+
+        $params = array_merge($defaults, $params);
+
+        $event = new BuildSetupIntentRequestEvent([
+            'request' => $params,
+        ]);
+
+        if ($this->hasEventHandlers(self::EVENT_BUILD_SETUP_INTENT_REQUEST)) {
+            $this->trigger(self::EVENT_BUILD_SETUP_INTENT_REQUEST, $event);
+        }
+
+        return $this->getStripeClient()->setupIntents->create($event->request);
+    }
 }
+
+

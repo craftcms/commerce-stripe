@@ -17,6 +17,7 @@ use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
+use craft\commerce\stripe\services\Customers;
 use craft\commerce\stripe\services\Invoices;
 use craft\commerce\stripe\services\PaymentIntents as PaymentIntentsService;
 use craft\commerce\stripe\services\PaymentMethods;
@@ -53,7 +54,7 @@ class Plugin extends \craft\base\Plugin
             'components' => [
                 'customers' => Customers::class,
                 'invoices' => Invoices::class,
-                'paymentIntents' => PaymentIntentsService::class,
+                'paymentIntents' => PaymentIntents::class,
                 'paymentMethods' => PaymentMethods::class,
             ],
         ];
@@ -92,7 +93,9 @@ class Plugin extends \craft\base\Plugin
         Event::on(
             CommerceCustomers::class,
             CommerceCustomers::EVENT_UPDATE_PRIMARY_PAYMENT_SOURCE,
-            [$this, 'handlePrimaryPaymentSourceUpdated']
+            function(PaymentSourceEvent $event) {
+                Plugin::getInstance()->getPaymentMethods()->handlePrimaryPaymentSourceUpdated($event);
+            }
         );
     }
 
@@ -106,25 +109,6 @@ class Plugin extends \craft\base\Plugin
             ->filter(function($gateway) {
                 return $gateway instanceof Gateway;
             });
-    }
-
-    /**
-     * Whenever a payment source is set as primary in Commerce, lets make it the primary in the gateway too .
-     *
-     * @param UpdatePrimaryPaymentSourceEvent $event
-     * @return void
-     * @throws InvalidConfigException
-     */
-    public function handlePrimaryPaymentSourceUpdated(UpdatePrimaryPaymentSourceEvent $event): void
-    {
-        $paymentSourceService = CommercePlugin::getInstance()->getPaymentSources();
-        $newPrimaryPaymentSource = $paymentSourceService->getPaymentSourceById($event->newPrimaryPaymentSourceId);
-        /** @var Gateway $gateway * */
-        $gateway = $newPrimaryPaymentSource->getGateway();
-        if ($gateway instanceof Gateway) {
-            $stripeCustomerReference = $this->getCustomers()->getCustomer($gateway->id, $event->customer)->reference;
-            $gateway->setPaymentSourceAsDefault($stripeCustomerReference, $newPrimaryPaymentSource->token);
-        }
     }
 
     /**

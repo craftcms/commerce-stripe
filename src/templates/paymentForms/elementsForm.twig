@@ -1,11 +1,19 @@
+<script type="text/javascript">
+    window.csrfTokenName = "{{ craft.app.config.general.csrfTokenName }}";
+    window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
+</script>
 <div class="stripe-payment-elements-form hidden"
+     data-scenario="{{ scenario ?? 'payment' }}"
      data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
-     data-complete-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
+     data-complete-payment-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
      data-payment-form-namespace="{{ handle|commercePaymentFormNamespace }}"
+     data-gateway-id="{{ gateway.id }}"
      data-appearance="{{ appearance|json_encode }}"
-     data-layout="{{ layout|json_encode }}"
+     data-element-options="{{ elementOptions|json_encode }}"
+     data-client-secret="{{ clientSecret }}"
 >
     {{ hiddenInput('paymentFormType', 'elements') }}
+
     <div class="hidden stripe-error-message {{ errorMessageClasses }}">
         {# Display error message to your customers here #}
     </div>

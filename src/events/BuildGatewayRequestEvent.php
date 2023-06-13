@@ -27,4 +27,9 @@ class BuildGatewayRequestEvent extends Event
      * @var array The request being used
      */
     public array $request;
+
+    /**
+     * @var string|null The type of request being made (payment_intent, setup_intent, checkout.session, etc)
+     */
+    public ?string $type = null;
 }

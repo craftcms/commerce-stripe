@@ -21,6 +21,7 @@ use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\Plugin as Commerce;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
@@ -171,6 +172,13 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getPlanSettingsHtml(array $params = []): ?string
     {
+        $plansList = collect($this->getSubscriptionPlans())->mapWithKeys(function($plan) {
+            return [$plan['reference'] => $plan['name']];
+        })->all();
+
+        $params = array_merge([
+            'plansList' => $plansList
+        ], $params);
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
     }
 
@@ -487,6 +495,8 @@ abstract class SubscriptionGateway extends Gateway
             case 'payment_method.detached':
                 $this->handlePaymentMethodDetached($data);
             // no break
+            case 'charge.refunded':
+                $this->handleRefunded($data);
             case 'charge.refund.updated':
                 $this->handleRefundUpdated($data);
             // no break
@@ -695,6 +705,9 @@ abstract class SubscriptionGateway extends Gateway
                     $paymentSource->description = $stripePaymentMethod['card']['brand'] . ' ending in ' . $stripePaymentMethod['card']['last4'];
                 }
 
+                $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($stripePaymentMethod['id']);
+                $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+
                 Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
             }
         }
@@ -716,9 +729,11 @@ abstract class SubscriptionGateway extends Gateway
             switch ($stripeRefund['status']) {
                 case Refund::STATUS_SUCCEEDED:
                     $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                    $transactionRecord->message = "";
                     break;
                 case Refund::STATUS_PENDING:
                     $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+                    $transactionRecord->message = "Processing";
                     break;
                 case Refund::STATUS_FAILED:
                     $transactionRecord->status = TransactionRecord::STATUS_FAILED;
@@ -732,6 +747,19 @@ abstract class SubscriptionGateway extends Gateway
             $transactionRecord->save(false);
             $transaction->getOrder()->updateOrderPaidInformation();
         }
+    }
+
+    /**
+     * Handle an updated refund by updating the refund transaction.
+     *
+     * @param array $data
+     * @throws \Throwable
+     * @throws \craft\errors\ElementNotFoundException
+     * @throws \yii\base\Exception
+     */
+    protected function handleRefunded(array $data)
+    {
+        // We
     }
 
     /**

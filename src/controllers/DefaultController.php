@@ -30,6 +30,8 @@ class DefaultController extends BaseController
      * Load Stripe Subscription plans for a gateway.
      *
      * @return Response
+     *
+     * @deprecated in 4.0. Use [[\craft\commerce\base\SubscriptionGatewayInterface::getSubscriptionPlans()]] instead.
      */
     public function actionFetchPlans(): Response
     {
@@ -48,43 +50,18 @@ class DefaultController extends BaseController
 
             return $this->asJson($gateway->getSubscriptionPlans());
         } catch (Throwable $e) {
-            return $this->asErrorJson($e->getMessage());
+            return $this->asFailure($e->getMessage());
         }
     }
 
     /**
      * @return Response
      * @throws BadRequestHttpException
-     * @throws \yii\base\InvalidConfigException
+     * @throws \yii\web\ForbiddenHttpException
      */
-    public function actionBillingPortal(): Response
-    {
-        $this->requirePostRequest();
-
-        $redirect = $this->getPostedRedirectUrl() ?? Craft::$app->getRequest()->pathInfo;
-
-        if ($currentUser = Craft::$app->getUser()->getIdentity()) {
-            $gatewayHandle = Craft::$app->getRequest()->getRequiredParam('gatewayId');
-            if ($gateway = Plugin::getInstance()->getGateways()->getGatewayByHandle($gatewayHandle)) {
-                if ($gateway instanceof PaymentIntents) {
-                    $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($gateway->id, $currentUser);
-
-                    $portal = $gateway->getStripeClient()->billingPortal->sessions->create([
-                        'customer' => $customer->reference,
-                        'return_url' => UrlHelper::siteUrl($redirect),
-                    ]);
-
-                    return $this->redirect($portal->url);
-                }
-            }
-        }
-
-
-        return $this->asFailure('Can not create billing portal link.');
-    }
-
     public function actionSyncPaymentSources(): Response
     {
+        $this->requireAdmin(false);
         $this->requirePostRequest();
 
         $request = Craft::$app->getRequest();

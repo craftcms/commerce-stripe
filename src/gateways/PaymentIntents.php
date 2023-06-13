@@ -38,6 +38,7 @@ use craft\helpers\UrlHelper;
 use craft\web\View;
 use Exception;
 use Stripe\Card;
+use Stripe\Checkout\Session as StripeCheckoutSession;
 use Stripe\PaymentIntent;
 use Throwable;
 use yii\base\NotSupportedException;
@@ -70,7 +71,6 @@ class PaymentIntents extends BaseGateway
      * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
      */
     public const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
-
 
     /**
      * @inheritdoc
@@ -110,23 +110,37 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormHtml(array $params): ?string
     {
+
         $defaults = [
+            'scenario' => 'payment',
+            'clientSecret' => '',
             'gateway' => $this,
             'handle' => $this->handle,
             'appearance' => [
                 'theme' => 'stripe'
             ],
-            'layout' => [
-                'type' => 'tabs',
+            'elementOptions' => [
+                'layout' => [
+                    'type' => 'tabs',
+                ],
             ],
-            'submitButtonText' => Craft::t('commerce', 'Pay'),
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'paymentFormType' => $this->getFormType(),
             'paymentMethodTypes' => ['card'],
         ];
 
+        if (!isset($params['submitButtonText']) && $params['scenario'] == 'payment') {
+            $defaults['submitButtonText'] = Craft::t('commerce', 'Pay');
+        } elseif ($params['scenario'] == 'setup') {
+            $defaults['submitButtonText'] = Craft::t('commerce', 'Create');
+        }
+
         $params = array_merge($defaults, $params);
+
+        if ($params['scenario'] == '') {
+            return Craft::t('commerce-stripe', 'Commerce Stripe 4.0+ requires a scenario is set on the payment form.');
+        }
 
         // Set it in memory on the gateway for this request
         $this->setFormType($params['paymentFormType']);
@@ -388,24 +402,74 @@ class PaymentIntents extends BaseGateway
     }
 
     /**
-     * @inheritdoc
+     * @param Transaction $transaction
+     * @param int $amount
+     * @param array $metadata
+     * @param bool $capture
+     * @param BasePaymentForm|PaymentIntentForm $form
+     * @return array
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \craft\commerce\stripe\errors\CustomerException
+     * @throws \yii\base\InvalidConfigException
      */
-    public function handleWebhook(array $data): void
+    public function createPaymentIntent(Transaction $transaction, int $amount, array $metadata, bool $capture, BasePaymentForm|PaymentIntentForm $form): PaymentIntent
     {
-//        switch ($data['type']) {
-//            case 'invoice.payment_failed':
-//                $this->handleInvoiceFailed($data);
-//                break;
-//        }
+        // Base information for the payment intent
+        $paymentIntentData = [
+            'amount' => $amount,
+            'currency' => $transaction->paymentCurrency,
+            'confirm' => false,
+            'metadata' => $metadata,
+            'capture_method' => $capture ? 'automatic' : 'manual',
+        ];
 
-        parent::handleWebhook($data);
+        // Which payment methods are allowed on the new payment intent
+        if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_ELEMENTS && $form->paymentMethodTypes) {
+            $paymentIntentData['payment_method_types'] = $form->paymentMethodTypes;
+        } elseif ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CARD) {
+            $paymentIntentData['payment_method_types'] = ['card'];
+        } else {
+            $paymentIntentData['automatic_payment_methods'] = ['enabled' => true];
+        }
+
+        // If we have a payment method ID use it
+        if ($form->paymentMethodId) {
+            $paymentIntentData['payment_method'] = $form->paymentMethodId;
+        }
+
+        // Add the receipt email if enabled
+        if ($this->sendReceiptEmail) {
+            $paymentIntentData['receipt_email'] = $transaction->getOrder()->getEmail();
+        }
+
+        // Add customer
+        if ($orderCustomer = $transaction->getOrder()->getCustomer()) {
+            // Will always create a customer in Stripe if none exists
+            $paymentIntentData['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $orderCustomer)->reference;
+        }
+
+        $event = new BuildGatewayRequestEvent([
+            'type' => 'payment_intent',
+            'transaction' => $transaction,
+            'request' => $paymentIntentData,
+        ]);
+
+        if ($this->hasEventHandlers(self::EVENT_BUILD_GATEWAY_REQUEST)) {
+            $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
+
+            // Do not allow these to be modified by event handlers
+            $event->request['amount'] = $paymentIntentData['amount'];
+            $event->request['currency'] = $paymentIntentData['currency'];
+        }
+
+        return $this->getStripeClient()->paymentIntents->create($event->request);
     }
 
     /**
      * @param Transaction $transaction
      * @param int $amount
-     * @param bool $capture
      * @param array $metadata
+     * @param bool $capture
      * @param ?User $user
      * @return CheckoutSessionResponse
      * @throws \Stripe\Exception\ApiErrorException
@@ -413,7 +477,7 @@ class PaymentIntents extends BaseGateway
      * @throws \craft\errors\SiteNotFoundException
      * @throws \yii\base\InvalidConfigException
      */
-    public function handleCheckoutRequest(Transaction $transaction, int $amount, bool $capture, array $metadata, ?User $user): CheckoutSessionResponse
+    public function createCheckoutSession(Transaction $transaction, int $amount, array $metadata, bool $capture, ?User $user): StripeCheckoutSession
     {
         $lineItems = [];
         $lineItems[] = [
@@ -451,15 +515,15 @@ class PaymentIntents extends BaseGateway
             'payment_intent_data' => $paymentIntentData,
         ];
 
-        $orderCustomer = $transaction->getOrder()->getCustomer();
-        if ($user && $orderCustomer && $user->id == $orderCustomer->id) {
-            $data['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $transaction->getOrder()->getCustomer())->reference;
+        if ($orderCustomer = $transaction->getOrder()->getCustomer()) {
+            $data['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $orderCustomer)->reference;
         } else {
             $data['customer_email'] = $transaction->getOrder()->email;
         }
 
         $event = new BuildGatewayRequestEvent([
             'transaction' => $transaction,
+            'type' => 'checkout.session',
             'request' => $data,
         ]);
 
@@ -467,9 +531,7 @@ class PaymentIntents extends BaseGateway
             $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
         }
 
-        $session = $this->getStripeClient()->checkout->sessions->create($event->request);
-
-        return new CheckoutSessionResponse($session->toArray());
+        return $this->getStripeClient()->checkout->sessions->create($event->request);
     }
 
     /**
@@ -477,9 +539,6 @@ class PaymentIntents extends BaseGateway
      */
     protected function authorizeOrPurchase(Transaction $transaction, PaymentIntentForm|BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
-        // When we are using the legacy payment flow, we will need to immediately confirm the payment intent later
-        $immediatelyConfirmLegacy = false;
-
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
         $user = Craft::$app->getUser()->getIdentity();
 
@@ -502,67 +561,29 @@ class PaymentIntents extends BaseGateway
         $amount = $transaction->paymentAmount * (10 ** $currency->minorUnit);
 
         if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {
-            return $this->handleCheckoutRequest($transaction, $amount, $capture, $metadata, $user);
+            $session = $this->createCheckoutSession($transaction, $amount, $metadata, $capture, $user);
+            return new CheckoutSessionResponse($session->toArray());
         }
-
-        // Base information for the payment intent
-        $paymentIntentData = [
-            'amount' => $amount,
-            'currency' => $transaction->paymentCurrency,
-            'confirm' => false,
-            'metadata' => $metadata,
-            'capture_method' => $capture ? 'automatic' : 'manual',
-        ];
 
         /**
          * The previous version of the Stripe plugin accepted a payment method ID on initial
          * payment intent creation. We can attach it to the payment intent
          * before creating it, and we will immediately confirm it later in this function to match the previous behavior.
          */
+        $immediatelyConfirmLegacy = false;
         if ($form->paymentMethodId) {
             $paymentIntentData['payment_method'] = $form->paymentMethodId;
             $immediatelyConfirmLegacy = true;
         }
 
-        // Which payment methods are allowed on the payment intent
-        if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_ELEMENTS && $form->paymentMethodTypes) {
-            $paymentIntentData['payment_method_types'] = $form->paymentMethodTypes;
-        } elseif ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CARD) {
-            $paymentIntentData['payment_method_types'] = ['card'];
-        } else {
-            $paymentIntentData['automatic_payment_methods'] = ['enabled' => true];
-        }
 
-        // Add the receipt email if enabled
-        if ($this->sendReceiptEmail) {
-            $paymentIntentData['receipt_email'] = $transaction->getOrder()->getEmail();
-        }
-
-        // Add current customer if the user is logged in
-        $orderCustomer = $transaction->getOrder()->getCustomer();
-        if ($user && $orderCustomer && $user->id == $orderCustomer->id) {
-            $paymentIntentData['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $transaction->getOrder()->getCustomer())->reference;
-        }
-
-        $event = new BuildGatewayRequestEvent([
-            'transaction' => $transaction,
-            'request' => $paymentIntentData,
-        ]);
-
-        if ($this->hasEventHandlers(self::EVENT_BUILD_GATEWAY_REQUEST)) {
-            $this->trigger(self::EVENT_BUILD_GATEWAY_REQUEST, $event);
-
-            // Do not allow these to be modified by event handlers
-            $event->request['amount'] = $paymentIntentData['amount'];
-            $event->request['currency'] = $paymentIntentData['currency'];
-        }
-
-        $paymentIntent = $this->getStripeClient()->paymentIntents->create($event->request);
+        $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form, $user);
 
         if ($immediatelyConfirmLegacy) {
             // Mutates the payment intent that has been confirmed
             $this->_confirmPaymentIntent($paymentIntent, $transaction);
         }
+
 
         return new PaymentIntentResponse($paymentIntent->toArray());
     }
@@ -574,10 +595,17 @@ class PaymentIntents extends BaseGateway
      * @param Transaction $transaction
      * @throws \Stripe\Exception\ApiErrorException
      */
-    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction): void
+    private function _confirmPaymentIntent(PaymentIntent $stripePaymentIntent, Transaction $transaction, ?string $returnUrl = null): void
     {
+        // The URL to redirect your customer back to after they authenticate or cancel their payment on the payment method’s app or site.
+        // If you’d prefer to redirect to a mobile application, you can alternatively supply an application URI scheme.
+        // This parameter can only be used with confirm=true.
+        // https://stripe.com/docs/api/payment_intents/create#create_payment_intent-return_url
+        $defaultReturnUrl = UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]);
+        $returnUrl = $returnUrl ?? $defaultReturnUrl;
+
         $parameters = [
-            'return_url' => UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]),
+            'return_url' => $returnUrl,
         ];
 
         $event = new PaymentIntentConfirmationEvent([

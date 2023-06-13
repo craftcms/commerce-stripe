@@ -14,47 +14,53 @@ $stripeButton.on('click', function (ev) {
         gatewayId: gatewayId,
     };
 
-    Craft.postActionRequest('commerce-stripe/default/fetch-plans', data, function (response, textStatus) {
-            $stripeButton.removeClass('disabled').siblings('.spinner').addClass('hidden');
 
-            if (textStatus === 'success') {
-                if (response.error) {
-                    alert(response.error);
-                } else if (response.length > 0) {
+    Craft.sendActionRequest('POST', 'commerce-stripe/plans/fetch-plans', {data}).then((ev) => {
+        debugger;
 
-                    let currentPlan = $planSelect.val(),
-                        currentPlanStillExists = false;
+        const textStatus = ev.statusText;
+        const response = ev.response;
 
-                    $planSelect.empty();
+        $stripeButton.removeClass('disabled').siblings('.spinner').addClass('hidden');
 
-                    for (var i = 0; i < response.length; i++) {
-                        if (response[i].reference == currentPlan) {
-                            currentPlanStillExists = true;
-                            $planSelect.append(
-                                '<option value="' +
-                                response[i].reference +
-                                '">' +
-                                response[i].name +
-                                '</option>'
-                            );
-                        } else {
-                            $planSelect.append(
-                                '<option value="' +
-                                response[i].reference +
-                                '">' +
-                                response[i].name +
-                                '</option>'
-                            );
-                        }
+        if (ev.status === 200) {
+            if (response.error) {
+                alert(response.error);
+            } else if (response.length > 0) {
 
-                        if (currentPlanStillExists) {
-                            $planSelect.val(currentPlan);
-                        }
+                let currentPlan = $planSelect.val(),
+                    currentPlanStillExists = false;
+
+                $planSelect.empty();
+
+                for (var i = 0; i < response.length; i++) {
+                    if (response[i].reference == currentPlan) {
+                        currentPlanStillExists = true;
+                        $planSelect.append(
+                            '<option value="' +
+                            response[i].reference +
+                            '">' +
+                            response[i].name +
+                            '</option>'
+                        );
+                    } else {
+                        $planSelect.append(
+                            '<option value="' +
+                            response[i].reference +
+                            '">' +
+                            response[i].name +
+                            '</option>'
+                        );
+                    }
+
+                    if (currentPlanStillExists) {
+                        $planSelect.val(currentPlan);
                     }
                 }
             }
         }
-    );
+
+    });
 });
 
 $stripeButton.click();

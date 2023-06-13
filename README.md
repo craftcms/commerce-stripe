@@ -233,6 +233,12 @@ the [old README](https://github.com/craftcms/commerce-stripe/blob/e0325e98594cc4
 
 `getPaymentFormHtml()` takes the following parameters:
 
+### `scenario`
+
+This option has 2 possible values: `payment` (default) and `setup`.
+
+The first option is designed for payment on orders, and the second is designed for creating payment sources.
+
 ### `paymentFormType`
 
 This option has 3 possible values: `card` (default), `elements` and `checkout`.
@@ -323,22 +329,34 @@ This expects data for the [Elements Appearance API](https://stripe.com/docs/elem
 {{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
-### `layout`
+### `elementOptions`
 
 This allows you to modify
-the [Payment Element layout option](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options-layout)
+the [Payment Element options](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options)
 
 ```twig
 {% set params = {
   paymentFormType: 'elements',
-  layout: {
-    type: 'tabs',
-    defaultCollapsed: false,
-    radios: false,
-    spacedAccordionItems: false
+  elementOptions: {
+    layout: {
+      type: 'tabs',
+      defaultCollapsed: false,
+      radios: false,
+      spacedAccordionItems: false
+    }
   }
 } %}
 {{ cart.gateway.getPaymentFormHtml(params) }}
+```
+
+Default value:
+
+```twig
+elementOptions: {
+    layout: {
+      type: 'tabs'
+    }
+  }
 ```
 
 ### `submitButtonClasses` and `submitButtonLabel`

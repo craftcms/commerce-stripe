@@ -85,7 +85,7 @@ class Customers extends Component
 
         $this->trigger(self::EVENT_BEFORE_CREATE_CUSTOMER, $event);
 
-        $stripeCustomer = StripeCustomer::create($event->customer);
+        $stripeCustomer = $gateway->getStripeClient()->customers->create($event->customer);
 
         $customer = new Customer([
             'userId' => $user->id,
