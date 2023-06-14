@@ -276,7 +276,7 @@ have enabled in your dashboard.
 
 #### `checkout`
 
-This generates a form ready to redirect to Stripe Checkout.
+This generates a form ready to redirect to Stripe Checkout. This can only be used with the `payment` scenario.
 
 This option ignores all other params.
 
