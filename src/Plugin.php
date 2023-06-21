@@ -84,16 +84,9 @@ class Plugin extends \craft\base\Plugin
         );
 
         Event::on(
-            PaymentSources::class,
-            PaymentSources::EVENT_DELETE_PAYMENT_SOURCE,
-            function(PaymentSourceEvent $event) {
-                Plugin::getInstance()->getPaymentMethods()->deletePaymentMethod($event->paymentSource);
-            });
-
-        Event::on(
             CommerceCustomers::class,
             CommerceCustomers::EVENT_UPDATE_PRIMARY_PAYMENT_SOURCE,
-            function(PaymentSourceEvent $event) {
+            function(UpdatePrimaryPaymentSourceEvent $event) {
                 Plugin::getInstance()->getPaymentMethods()->handlePrimaryPaymentSourceUpdated($event);
             }
         );

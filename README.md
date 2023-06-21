@@ -226,18 +226,20 @@ Event::on(
 You can output a standard credit card form quickly using `order.gateway.getPaymentFormHtml()`
 or `gateway.getPaymentFormHtml()`.
 
+The payment for HTML output the inputs and includes the javascript needed to complete the form you are embedding it in. You can embed it inside one of three forms:
+
+- `commerce/payments/pay`.
+- `commerce/payment-sources/add`.
+- `commerce/subscriptions/subscribe`. (You should only output the payment form HTML in this form if they do not have a primary payment source already set up)
+
+If you embed it into a form tag with an action parameter of `commerce/payments/pay`, it will be a payment flow which will create a transaction in Commerce with a redirect status and create a payment intent in Stripe.
+
 If you want to read how to create the legacy payment form with stripe.js read
 the [old README](https://github.com/craftcms/commerce-stripe/blob/e0325e98594cc4824b3e2788ac0573c8d04a71d5/README.md#creating-a-stripe-payment-form-for-the-payment-intents-gateway).
 
 ## Customizing the Stripe Payment Form
 
 `getPaymentFormHtml()` takes the following parameters:
-
-### `scenario`
-
-This option has 2 possible values: `payment` (default) and `setup`.
-
-The first option is designed for payment on orders, and the second is designed for creating payment sources.
 
 ### `paymentFormType`
 

@@ -3,9 +3,9 @@
     window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 </script>
 <div class="stripe-payment-elements-form hidden"
-     data-scenario="{{ scenario ?? 'payment' }}"
      data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
      data-complete-payment-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
+     data-confirm-setup-intent-url="{{ actionUrl('commerce-stripe/customers/confirm-setup-intent') }}"
      data-payment-form-namespace="{{ handle|commercePaymentFormNamespace }}"
      data-gateway-id="{{ gateway.id }}"
      data-appearance="{{ appearance|json_encode }}"

@@ -108,11 +108,16 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerById(int $id): ?Customer
+    public function getCustomerById(int $id, int $gatewayId = null): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
-            ->where(['id' => $id])
-            ->one();
+            ->where(['id' => $id]);
+
+        if ($gatewayId) {
+            $customerRow->andWhere(['gatewayId' => $gatewayId]);
+        }
+
+        $customerRow = $customerRow->one();
 
         if ($customerRow) {
             return new Customer($customerRow);
@@ -148,13 +153,17 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerByReference(string $reference): ?Customer
+    public function getCustomerByReference(string $reference, int $gatewayId = null): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
             ->where([
                 'reference' => $reference,
-            ])
-            ->one();
+            ]);
+
+        if ($gatewayId) {
+            $customerRow->andWhere(['gatewayId' => $gatewayId]);
+        }
+        $customerRow = $customerRow->one();
 
         if ($customerRow) {
             return new Customer($customerRow);

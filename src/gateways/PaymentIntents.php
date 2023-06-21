@@ -17,6 +17,7 @@ use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\Transaction;
+use craft\commerce\Plugin;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
@@ -112,7 +113,6 @@ class PaymentIntents extends BaseGateway
     {
 
         $defaults = [
-            'scenario' => 'payment',
             'clientSecret' => '',
             'gateway' => $this,
             'handle' => $this->handle,
@@ -271,19 +271,17 @@ class PaymentIntents extends BaseGateway
         try {
             $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($sourceData->paymentMethodId);
-            $stripeResponse = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+            $paymentMethod = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
 
-            switch ($stripeResponse->type) {
+            switch ($paymentMethod->type) {
                 case 'card':
                     /** @var Card $card */
-                    $card = $stripeResponse->card;
+                    $card = $paymentMethod->card;
                     $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($card->brand), 'last4' => $card->last4]);
                     break;
                 default:
-                    $description = $stripeResponse->type;
+                    $description = $paymentMethod->type;
             }
-
-            $response = $stripeResponse->toJSON();
 
             // Make it the default in Stripe if its the only one for this gateway
             $existingPaymentSources = Commerce::getInstance()->getPaymentSources()->getAllPaymentSourcesByCustomerId($customerId, $this->id);
@@ -291,13 +289,21 @@ class PaymentIntents extends BaseGateway
                 $this->setPaymentSourceAsDefault($stripeCustomer->id, $paymentMethod->id);
             }
 
-            return new PaymentSource([
-                'customerId' => $customerId,
-                'gatewayId' => $this->id,
-                'token' => $stripeResponse->id,
-                'response' => $response ?: '',
-                'description' => $description,
-            ]);
+            $paymentSource = Plugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($paymentMethod->id, $this->id);
+
+            if (!$paymentSource) {
+                $paymentSource = new PaymentSource();
+            }
+
+            $paymentSource->customerId = $customerId;
+            $paymentSource->gatewayId = $this->id;
+            $paymentSource->token = $paymentMethod->id;
+            $paymentSource->response = $paymentMethod->toJSON() ?? '';
+            $paymentSource->description = $description;
+
+
+            return $paymentSource;
+
         } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }
@@ -576,7 +582,6 @@ class PaymentIntents extends BaseGateway
             $immediatelyConfirmLegacy = true;
         }
 
-
         $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form, $user);
 
         if ($immediatelyConfirmLegacy) {
@@ -627,5 +632,30 @@ class PaymentIntents extends BaseGateway
         }
 
         return parent::supportsPaymentSources();
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getBillingPortalUrl(User $user, ?string $returnUrl = null, string $configurationId = null): string
+    {
+        if (!$returnUrl) {
+            $returnUrl = Craft::$app->getRequest()->pathInfo;
+        }
+
+        $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
+
+        $params = [
+            'customer' => $customer->reference,
+            'return_url' => UrlHelper::siteUrl($returnUrl),
+        ];
+
+        if ($configurationId) {
+            $params['configuration'] = $configurationId;
+        }
+
+        $session = $this->getStripeClient()->billingPortal->sessions->create($params);
+
+        return $session->url . '?customer_id=' . $customer->reference;
     }
 }

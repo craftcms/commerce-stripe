@@ -23,6 +23,7 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\helpers\App;
 use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
+use craft\log\MonologTarget;
 use craft\web\Response;
 use craft\web\Response as WebResponse;
 use Exception;
@@ -162,9 +163,14 @@ abstract class Gateway extends BaseGateway
      */
     public function getStripeClient(): StripeClient
     {
+        /** @var MonologTarget $webLogTarget */
+        $webLogTarget = Craft::$app->getLog()->targets['web'];
+
         Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
         Stripe::setApiKey($this->getApiKey());
         Stripe::setApiVersion(self::STRIPE_API_VERSION);
+        Stripe::setMaxNetworkRetries(3);
+        Stripe::setLogger($webLogTarget->getLogger());
 
         return new StripeClient([
             'api_key' => $this->getApiKey(),
@@ -624,7 +630,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function handleWebhook(array $data): void
     {
-        // Do nothing
+        // Nothing
     }
 
     /**

@@ -52,30 +52,6 @@ class PaymentMethods
     }
 
     /**
-     * @param $gateway
-     * @param $paymentMethodId
-     * @return void
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function deletePaymentMethod(PaymentSource $paymentSource)
-    {
-        /** @var Gateway $gateway */
-        $gateway = $paymentSource->getGateway();
-        $stripeGatewayIds = StripePlugin::getInstance()->getStripeGateways()->pluck('id')->all();
-        if (in_array($gateway->id, $stripeGatewayIds, false) && $paymentSource->token) {
-            try {
-                $method = $gateway->getStripeClient()->paymentMethods->retrieve($paymentSource->token);
-                if($method->customer) {
-                    $gateway->getStripeClient()->paymentMethods->detach($paymentSource->token);
-                }
-            } catch (\Exception $e) {
-                // If the payment method doesn't exist, we don't need to do anything.
-                return;
-            }
-        }
-    }
-
-    /**
      * Whenever a payment source is set as primary in Commerce, lets make it the primary in the gateway too .
      *
      * @param UpdatePrimaryPaymentSourceEvent $event

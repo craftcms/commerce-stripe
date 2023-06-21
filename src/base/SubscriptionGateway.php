@@ -20,8 +20,7 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\Plugin;
-use craft\commerce\Plugin as Commerce;
-use craft\commerce\Plugin as Commerce;
+use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
 use craft\commerce\stripe\models\forms\CancelSubscription;
@@ -148,7 +147,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $data = $subscription->getSubscriptionData();
         $currencyCode = strtoupper($data['plan']['currency']);
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
+        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
             Craft::warning('Unsupported currency - ' . $currencyCode, 'stripe');
@@ -202,7 +201,7 @@ abstract class SubscriptionGateway extends Gateway
         foreach ($invoices as $invoice) {
             $data = $invoice->invoiceData;
 
-            $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($data['currency']));
+            $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($data['currency']));
 
             if (!$currency) {
                 Craft::warning('Unsupported currency - ' . $data['currency'], 'stripe');
@@ -476,7 +475,7 @@ abstract class SubscriptionGateway extends Gateway
             'subscription_billing_cycle_anchor' => 'now',
         ]);
 
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
+        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
 
         return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
     }
@@ -491,15 +490,16 @@ abstract class SubscriptionGateway extends Gateway
             case 'payment_method.updated':
             case 'payment_method.automatically_updated':
                 $this->handlePaymentMethodUpdated($data['data']['object']);
-            // no break
+                break;
             case 'payment_method.detached':
                 $this->handlePaymentMethodDetached($data);
-            // no break
+                break;
             case 'charge.refunded':
                 $this->handleRefunded($data);
+                break;
             case 'charge.refund.updated':
                 $this->handleRefundUpdated($data);
-            // no break
+                break;
             case 'plan.deleted':
             case 'plan.updated':
                 $this->handlePlanEvent($data);
@@ -515,6 +515,9 @@ abstract class SubscriptionGateway extends Gateway
                 break;
             case 'customer.subscription.updated':
                 $this->handleSubscriptionUpdated($data);
+                break;
+            case 'customer.updated':
+                $this->handleCustomerUpdated($data);
                 break;
             case 'invoice.payment_failed':
                 $this->handleInvoiceFailed($data);
@@ -654,9 +657,9 @@ abstract class SubscriptionGateway extends Gateway
     protected function handlePaymentMethodDetached(array $data)
     {
         $stripePaymentMethod = $data['data']['object'];
-        if ($paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id)) {
+        if ($paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id)) {
             // We don’t care if it does not exist, just try to delete it
-            Commerce::getInstance()->getPaymentSources()->deletePaymentSourceById($paymentSource->id);
+            CommercePlugin::getInstance()->getPaymentSources()->deletePaymentSourceById($paymentSource->id);
         }
     }
 
@@ -670,32 +673,27 @@ abstract class SubscriptionGateway extends Gateway
         $stripePaymentMethod = $data;
         $user = null;
 
-        // We only care about payment methods that have a customer at the moment
+        // We only care about payment methods that have a customer
         if ($stripePaymentMethod['customer']) {
 
+            // Do we have a local customer for this stripe customer?
             $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripePaymentMethod['customer']);
 
-            // Get the Craft user/customer account for this stripe customer
-            $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
-            $metaData = $stripeCustomer->metadata->toArray();
-            if (isset($metaData['craft_user_id'])) {
-                $user = Craft::$app->getUsers()->getUserById($metaData['craft_user_id']);
+            // We don’t know who this customer is, so we cant do anything
+            if(!$customer) {
+                return;
             }
 
+            $user = Craft::$app->getUsers()->getUserById($customer->userId);
+            $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
+
             // See if we have a Commerce payment source for this stripe payment method already or create one
-            $paymentSource = Commerce::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id);
-            if ($paymentSource) {
-                $user = Craft::$app->getUsers()->getUserById($paymentSource->customerId);
-            } else {
+            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id);
+            if (!$paymentSource) {
                 $paymentSource = new PaymentSource();
             }
 
-            if (!$user) {
-                $user = Craft::$app->getUsers()->ensureUserByEmail($stripeCustomer->email);
-                $stripeCustomer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
-            }
-
-            if ($user && $stripeCustomer) {
+            if ($stripeCustomer) {
                 $paymentSource->gatewayId = $this->id;
                 $paymentSource->token = $stripePaymentMethod['id'];
                 $paymentSource->customerId = $user->id;
@@ -724,7 +722,7 @@ abstract class SubscriptionGateway extends Gateway
     protected function handleRefundUpdated(array $data)
     {
         $stripeRefund = $data['data']['object'];
-        if ($transaction = Commerce::getInstance()->getTransactions()->getTransactionByReference($stripeRefund['id'])) {
+        if ($transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($stripeRefund['id'])) {
             $transactionRecord = TransactionRecord::findOne($transaction->id);
             switch ($stripeRefund['status']) {
                 case Refund::STATUS_SUCCEEDED:
@@ -759,7 +757,52 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleRefunded(array $data)
     {
-        // We
+        // We don’t need to handle this at the moment as we are handling the refund.updated event which also is triggered once the refund is refunded successfully.
+    }
+
+    /**
+     * @param array $data
+     * @return void
+     */
+    public function handleCustomerUpdated(array $data): void
+    {
+        $stripeCustomer = $data['data']['object'];
+
+        // Set the primary payment source for the user if it has changed
+        if(isset($stripeCustomer['invoice_settings']['default_payment_method']))
+        {
+            $paymentMethodId =  $stripeCustomer['invoice_settings']['default_payment_method'];
+
+            $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripeCustomer['id'], $this->id);
+            if(!$customer)
+            {
+                return;
+            }
+
+            $gateway = $customer->getGateway();
+            if($gateway->id != $this->id)
+            {
+                return;
+            }
+
+            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($paymentMethodId, $this->id);
+            if(!$paymentSource)
+            {
+                return;
+            }
+
+            $user = $customer->getUser();
+
+            if($user->getPrimaryPaymentSource() && $user->getPrimaryPaymentSource()->id == $paymentSource->id)
+            {
+                return;
+            }
+
+            /** $user User|CustomerBehavior */
+            $user->setPrimaryPaymentSourceId($paymentSource->id);
+
+            Craft::$app->getElements()->saveElement($user, false);
+        }
     }
 
     /**
@@ -820,11 +863,11 @@ abstract class SubscriptionGateway extends Gateway
 
         $invoice = $this->saveSubscriptionInvoice($stripeInvoice, $subscription);
 
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($stripeInvoice['currency']));
+        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($stripeInvoice['currency']));
         $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscriptionReference);
         $payment = $this->createSubscriptionPayment($invoice->invoiceData, $currency);
 
-        Commerce::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($stripeSubscription['current_period_end']));
+        CommercePlugin::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($stripeSubscription['current_period_end']));
     }
 
     /**
@@ -835,7 +878,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handlePlanEvent(array $data): void
     {
-        $planService = Commerce::getInstance()->getPlans();
+        $planService = CommercePlugin::getInstance()->getPlans();
 
         $plan = $planService->getPlanByReference($data['data']['object']['id']);
         
@@ -872,7 +915,7 @@ abstract class SubscriptionGateway extends Gateway
             return;
         }
 
-        Commerce::getInstance()->getSubscriptions()->expireSubscription($subscription);
+        CommercePlugin::getInstance()->getSubscriptions()->expireSubscription($subscription);
     }
 
     /**
@@ -911,7 +954,7 @@ abstract class SubscriptionGateway extends Gateway
             Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
         } else {
             $planReference = $data['data']['object']['plan']['id'];
-            $plan = Commerce::getInstance()->getPlans()->getPlanByReference($planReference);
+            $plan = CommercePlugin::getInstance()->getPlans()->getPlanByReference($planReference);
 
             if ($plan) {
                 $subscription->planId = $plan->id;
@@ -920,7 +963,7 @@ abstract class SubscriptionGateway extends Gateway
             }
         }
 
-        Commerce::getInstance()->getSubscriptions()->updateSubscription($subscription);
+        CommercePlugin::getInstance()->getSubscriptions()->updateSubscription($subscription);
     }
 
     /**
