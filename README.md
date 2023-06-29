@@ -278,7 +278,7 @@ have enabled in your dashboard.
 
 #### `checkout`
 
-This generates a form ready to redirect to Stripe Checkout. This can only be used with the `payment` scenario.
+This generates a form ready to redirect to Stripe Checkout. This can only be used inside a `commerce/payments/pay` form.
 
 This option ignores all other params.
 
@@ -361,7 +361,7 @@ elementOptions: {
   }
 ```
 
-### `submitButtonClasses` and `submitButtonLabel`
+### `submitButtonClasses` and `submitButtonText`
 
 These control the button rendered at the bottom of the form.
 
@@ -369,7 +369,7 @@ These control the button rendered at the bottom of the form.
 {% set params = {
   paymentFormType: 'elements',
   submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
-  submitButtonLabel: 'Pay',
+  submitButtonText: 'Pay',
 } %}
 {{ cart.gateway.getPaymentFormHtml(params) }}
 ```
@@ -383,7 +383,7 @@ this element.
 {% set params = {
   paymentFormType: 'elements',
   submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
-  submitButtonLabel: 'Pay',
+  submitButtonText: 'Pay',
   errorMessageClasses: 'bg-red-200 text-red-600 my-2 p-2 rounded',
 } %}
 {{ cart.gateway.getPaymentFormHtml(params) }}

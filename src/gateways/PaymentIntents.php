@@ -82,28 +82,11 @@ class PaymentIntents extends BaseGateway
     }
 
     /**
-     * @return string
-     */
-    public function getFormType(): string
-    {
-        return $this->_formType;
-    }
-
-    /**
-     * @param string $formType
-     * @return void
-     */
-    public function setFormType(string $formType): void
-    {
-        $this->_formType = $formType;
-    }
-
-    /**
      * @inheritDoc
      */
     public function showPaymentFormSubmitButton(): bool
     {
-        return $this->getFormType() == self::PAYMENT_FORM_TYPE_CHECKOUT;
+        return false;
     }
 
     /**
@@ -111,9 +94,9 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormHtml(array $params): ?string
     {
-
         $defaults = [
             'clientSecret' => '',
+            'scenario' => 'payment',
             'gateway' => $this,
             'handle' => $this->handle,
             'appearance' => [
@@ -126,15 +109,10 @@ class PaymentIntents extends BaseGateway
             ],
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
-            'paymentFormType' => $this->getFormType(),
+            'submitButtonText' => Craft::t('commerce', 'Pay'),
+            'paymentFormType' => self::PAYMENT_FORM_TYPE_CARD,
             'paymentMethodTypes' => ['card'],
         ];
-
-        if (!isset($params['submitButtonText']) && $params['scenario'] == 'payment') {
-            $defaults['submitButtonText'] = Craft::t('commerce', 'Pay');
-        } elseif ($params['scenario'] == 'setup') {
-            $defaults['submitButtonText'] = Craft::t('commerce', 'Create');
-        }
 
         $params = array_merge($defaults, $params);
 
@@ -142,16 +120,13 @@ class PaymentIntents extends BaseGateway
             return Craft::t('commerce-stripe', 'Commerce Stripe 4.0+ requires a scenario is set on the payment form.');
         }
 
-        // Set it in memory on the gateway for this request
-        $this->setFormType($params['paymentFormType']);
-
         $view = Craft::$app->getView();
         $previousMode = $view->getTemplateMode();
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
 
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
-        if ($this->getFormType() == self::PAYMENT_FORM_TYPE_CHECKOUT) {
+        if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT) {
             $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);;
         } else {
             $view->registerAssetBundle(ElementsFormAsset::class);
