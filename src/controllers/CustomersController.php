@@ -60,6 +60,13 @@ class CustomersController extends BaseController
         return $this->asFailure('Can not create billing portal link.');
     }
 
+    /**
+     * @return Response
+     * @throws \Stripe\Exception\ApiErrorException
+     * @throws \craft\commerce\errors\PaymentSourceException
+     * @throws \yii\base\Exception
+     * @throws \yii\base\InvalidConfigException
+     */
     public function actionConfirmSetupIntent(): Response
     {
         $params = Craft::$app->getRequest()->getQueryParams();
@@ -69,6 +76,7 @@ class CustomersController extends BaseController
 
         switch ($setupIntent->status) {
             case 'succeeded':
+            case 'processing':
                 $message = Craft::$app->getSecurity()->validateData($params['successMessage']);
                 $paymentForm = new PaymentIntent();
                 $paymentForm->paymentMethodId = $setupIntent->payment_method;
@@ -77,30 +85,27 @@ class CustomersController extends BaseController
                 $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($setupIntent->customer, $gateway->id);
 
                 if ($customer) {
-                    $paymentSource = Plugin::getInstance()->getPaymentSources()->createPaymentSource($customer->getUser()->id, $gateway, $paymentForm, $description, $isPrimaryPaymentSource);
+                    Plugin::getInstance()->getPaymentSources()->createPaymentSource($customer->getUser()->id, $gateway, $paymentForm, $description, $isPrimaryPaymentSource);
                 }
 
                 break;
-
-            case 'processing':
-                $message = "Processing payment details. We'll update you when processing is complete.";
-                break;
-
             case 'requires_payment_method':
-                $message = 'Failed to process payment details. Please try another payment method.';
-
                 $cancelUrl = Craft::$app->getSecurity()->validateData($params['cancelUrl']);
-
+                $this->setFailFlash(Craft::t('commerce-stripe', 'Failed to process payment details. Please try another payment method.'));
                 return $this->redirect($cancelUrl);
-
-                break;
         }
 
         $redirectUrl = Craft::$app->getSecurity()->validateData($params['redirect']);
-
+        $this->setSuccessFlash($message ?? Craft::t('commerce-stripe', 'Payment source saved.'));
         return $this->redirect($redirectUrl);
     }
 
+    /**
+     * @return Response
+     * @throws BadRequestHttpException
+     * @throws Throwable
+     * @throws \craft\commerce\stripe\errors\CustomerException
+     */
     public function actionCreateSetupIntent(): Response
     {
         $this->requirePostRequest();
