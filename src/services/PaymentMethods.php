@@ -8,12 +8,10 @@
 namespace craft\commerce\stripe\services;
 
 use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
-use craft\commerce\models\PaymentSource;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\Plugin;
-use craft\commerce\stripe\Plugin as StripePlugin;
 
 /**
  * Payment sources service.

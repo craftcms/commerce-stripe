@@ -23,7 +23,6 @@ use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
 use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
-use craft\commerce\stripe\events\PaymentIntentRequestEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentIntentForm;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
@@ -31,7 +30,6 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\CheckoutSessionResponse;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\elementsform\ElementsFormAsset;
-use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
@@ -58,7 +56,6 @@ use function count;
  **/
 class PaymentIntents extends BaseGateway
 {
-
     public const PAYMENT_FORM_TYPE_CARD = 'card'; // default
     public const PAYMENT_FORM_TYPE_CHECKOUT = 'checkout';
     public const PAYMENT_FORM_TYPE_ELEMENTS = 'elements';
@@ -100,7 +97,7 @@ class PaymentIntents extends BaseGateway
             'gateway' => $this,
             'handle' => $this->handle,
             'appearance' => [
-                'theme' => 'stripe'
+                'theme' => 'stripe',
             ],
             'elementOptions' => [
                 'layout' => [
@@ -278,7 +275,6 @@ class PaymentIntents extends BaseGateway
 
 
             return $paymentSource;
-
         } catch (Throwable $exception) {
             throw new PaymentSourceException($exception->getMessage());
         }

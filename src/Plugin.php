@@ -7,19 +7,16 @@
 
 namespace craft\commerce\stripe;
 
-use craft\commerce\events\PaymentSourceEvent;
 use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\services\Customers as CommerceCustomers;
 use craft\commerce\services\Gateways;
-use craft\commerce\services\PaymentSources;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
 use craft\commerce\stripe\services\Customers;
 use craft\commerce\stripe\services\Invoices;
-use craft\commerce\stripe\services\PaymentIntents as PaymentIntentsService;
 use craft\commerce\stripe\services\PaymentMethods;
 use craft\commerce\stripe\utilities\Sync;
 use craft\events\RegisterComponentTypesEvent;

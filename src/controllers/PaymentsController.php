@@ -7,17 +7,7 @@
 
 namespace craft\commerce\stripe\controllers;
 
-use Craft;
-use craft\commerce\Plugin;
-use craft\commerce\Plugin as CommercePlugin;
-use craft\commerce\stripe\gateways\PaymentIntents;
-use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\helpers\UrlHelper;
 use craft\web\Controller as BaseController;
-use Stripe\StripeClient;
-use Throwable;
-use yii\web\BadRequestHttpException;
-use yii\web\Response;
 
 /**
  * This controller provides functionality to...
@@ -27,5 +17,4 @@ use yii\web\Response;
  */
 class PaymentsController extends BaseController
 {
-
 }

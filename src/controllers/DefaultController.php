@@ -8,11 +8,8 @@
 namespace craft\commerce\stripe\controllers;
 
 use Craft;
-use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
-use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\Plugin as StripePlugin;
-use craft\helpers\UrlHelper;
 use craft\web\Controller as BaseController;
 use Throwable;
 use yii\web\BadRequestHttpException;

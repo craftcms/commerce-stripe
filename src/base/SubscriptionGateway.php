@@ -176,7 +176,7 @@ abstract class SubscriptionGateway extends Gateway
         })->all();
 
         $params = array_merge([
-            'plansList' => $plansList
+            'plansList' => $plansList,
         ], $params);
         return Craft::$app->getView()->renderTemplate('commerce-stripe/planSettings', $params);
     }
@@ -680,7 +680,7 @@ abstract class SubscriptionGateway extends Gateway
             $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripePaymentMethod['customer']);
 
             // We don’t know who this customer is, so we cant do anything
-            if(!$customer) {
+            if (!$customer) {
                 return;
             }
 
@@ -769,32 +769,27 @@ abstract class SubscriptionGateway extends Gateway
         $stripeCustomer = $data['data']['object'];
 
         // Set the primary payment source for the user if it has changed
-        if(isset($stripeCustomer['invoice_settings']['default_payment_method']))
-        {
-            $paymentMethodId =  $stripeCustomer['invoice_settings']['default_payment_method'];
+        if (isset($stripeCustomer['invoice_settings']['default_payment_method'])) {
+            $paymentMethodId = $stripeCustomer['invoice_settings']['default_payment_method'];
 
             $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripeCustomer['id'], $this->id);
-            if(!$customer)
-            {
+            if (!$customer) {
                 return;
             }
 
             $gateway = $customer->getGateway();
-            if($gateway->id != $this->id)
-            {
+            if ($gateway->id != $this->id) {
                 return;
             }
 
             $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($paymentMethodId, $this->id);
-            if(!$paymentSource)
-            {
+            if (!$paymentSource) {
                 return;
             }
 
             $user = $customer->getUser();
 
-            if($user->getPrimaryPaymentSource() && $user->getPrimaryPaymentSource()->id == $paymentSource->id)
-            {
+            if ($user->getPrimaryPaymentSource() && $user->getPrimaryPaymentSource()->id == $paymentSource->id) {
                 return;
             }
 
@@ -893,7 +888,6 @@ abstract class SubscriptionGateway extends Gateway
             $plan->planData = Json::encode($data['data']['object']);
             $planService->savePlan($plan);
         }
-
     }
 
     /**

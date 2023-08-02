@@ -678,5 +678,3 @@ abstract class Gateway extends BaseGateway
         return $this->getStripeClient()->setupIntents->create($event->request);
     }
 }
-
-
