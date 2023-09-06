@@ -12,6 +12,8 @@ use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
+use craft\commerce\errors\ImmediatePaymentSourceCreationNotAvailableException;
+use craft\commerce\errors\PaymentSourceCreatedLaterException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
@@ -94,6 +96,7 @@ class PaymentIntents extends BaseGateway
         $defaults = [
             'clientSecret' => '',
             'scenario' => 'payment',
+            'order' => null,
             'gateway' => $this,
             'handle' => $this->handle,
             'appearance' => [
@@ -239,6 +242,14 @@ class PaymentIntents extends BaseGateway
      */
     public function createPaymentSource(BasePaymentForm $sourceData, int $customerId): PaymentSource
     {
+        // Is Craft request the commerce/pay controller action?
+        $appRequest = Craft::$app->getRequest();
+        $isCommercePayRequest = $appRequest->getIsSiteRequest() && $appRequest->getIsActionRequest() && $appRequest->getActionSegments() == ['commerce', 'pay', 'index'];
+
+        if ($isCommercePayRequest) {
+            throw new PaymentSourceCreatedLaterException(Craft::t('commerce', 'The payment source should be created after successful payment.'));
+        }
+
         /** @var PaymentForm $sourceData */
         try {
             $stripeCustomer = $this->getStripeCustomer($customerId);
@@ -423,6 +434,10 @@ class PaymentIntents extends BaseGateway
         if ($orderCustomer = $transaction->getOrder()->getCustomer()) {
             // Will always create a customer in Stripe if none exists
             $paymentIntentData['customer'] = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $orderCustomer)->reference;
+
+            if ($form->savePaymentSource) {
+                $paymentIntentData['setup_future_usage'] = 'off_session';
+            }
         }
 
         $event = new BuildGatewayRequestEvent([
@@ -542,6 +557,11 @@ class PaymentIntents extends BaseGateway
             return new CheckoutSessionResponse($session->toArray());
         }
 
+        if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {
+            $session = $this->createCheckoutSession($transaction, $amount, $metadata, $capture, $user);
+            return new CheckoutSessionResponse($session->toArray());
+        }
+
         /**
          * The previous version of the Stripe plugin accepted a payment method ID on initial
          * payment intent creation. We can attach it to the payment intent
@@ -598,10 +618,6 @@ class PaymentIntents extends BaseGateway
      */
     public function supportsPaymentSources(): bool
     {
-        if ($this->_formType == self::PAYMENT_FORM_TYPE_CARD) {
-            return true;
-        }
-
         return parent::supportsPaymentSources();
     }
 

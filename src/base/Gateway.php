@@ -153,6 +153,11 @@ abstract class Gateway extends BaseGateway
      */
     private ?string $_signingSecret = null;
 
+    /**
+     * @var StripeClient|null
+     */
+    private ?StripeClient $_stripeClient = null;
+
     public function init(): void
     {
         parent::init();
@@ -163,18 +168,23 @@ abstract class Gateway extends BaseGateway
      */
     public function getStripeClient(): StripeClient
     {
-        /** @var MonologTarget $webLogTarget */
-        $webLogTarget = Craft::$app->getLog()->targets['web'];
+        if ($this->_stripeClient == null) {
+            /** @var MonologTarget $webLogTarget */
+            $webLogTarget = Craft::$app->getLog()->targets['web'];
 
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiKey($this->getApiKey());
-        Stripe::setApiVersion(self::STRIPE_API_VERSION);
-        Stripe::setMaxNetworkRetries(3);
-        Stripe::setLogger($webLogTarget->getLogger());
+            Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
+            Stripe::setApiKey($this->getApiKey());
+            Stripe::setApiVersion(self::STRIPE_API_VERSION);
+            Stripe::setMaxNetworkRetries(3);
+            Stripe::setLogger($webLogTarget->getLogger());
 
-        return new StripeClient([
-            'api_key' => $this->getApiKey(),
-        ]);
+            $this->_stripeClient = new StripeClient([
+                'api_key' => $this->getApiKey(),
+            ]);
+        }
+
+        return $this->_stripeClient;
+
     }
 
     /**

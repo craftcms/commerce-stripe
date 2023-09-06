@@ -671,7 +671,6 @@ abstract class SubscriptionGateway extends Gateway
     public function handlePaymentMethodUpdated(array $data)
     {
         $stripePaymentMethod = $data;
-        $user = null;
 
         // We only care about payment methods that have a customer
         if ($stripePaymentMethod['customer']) {
@@ -706,7 +705,11 @@ abstract class SubscriptionGateway extends Gateway
                 $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($stripePaymentMethod['id']);
                 $paymentMethod->attach(['customer' => $stripeCustomer->id]);
 
-                Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+                $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+
+                if (!$result) {
+                    Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
+                }
             }
         }
     }
@@ -876,7 +879,7 @@ abstract class SubscriptionGateway extends Gateway
         $planService = CommercePlugin::getInstance()->getPlans();
 
         $plan = $planService->getPlanByReference($data['data']['object']['id']);
-        
+
         if (!$plan) {
             throw new InvalidConfigException('Plan with the reference “' . $data['data']['object']['id'] . '” not found when processing webhook ' . $data['id']);
         }

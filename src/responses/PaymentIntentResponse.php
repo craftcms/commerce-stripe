@@ -90,6 +90,7 @@ class PaymentIntentResponse implements RequestResponseInterface
         if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
             return [
                 'client_secret' => $this->data['client_secret'],
+                'payment_intent' => $this->data['id'],
             ];
         }
 

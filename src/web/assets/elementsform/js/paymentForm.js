@@ -20,10 +20,7 @@ class PaymentIntentsElements {
 
     createStripeElementsForm(options) {
         this.elements = this.stripeInstance.elements(options);
-        const paymentElement = this.elements.create(
-            'payment',
-            JSON.parse(this.container.dataset.elementOptions)
-        );
+        const paymentElement = this.elements.create('payment', JSON.parse(this.container.dataset.elementOptions));
         const paymentElementDiv = this.container.querySelector('.stripe-payment-element');
         paymentElement.mount(paymentElementDiv);
         this.container.classList.remove('hidden');
@@ -38,9 +35,7 @@ class PaymentIntentsElements {
         let responseError = false;
 
         fetch(window.location.href, {
-            method: 'post',
-            body: setupIntentFormData,
-            headers: {
+            method: 'post', body: setupIntentFormData, headers: {
                 Accept: 'application/json',
             },
         })
@@ -57,38 +52,34 @@ class PaymentIntentsElements {
                 }
 
                 const options = {
-                    clientSecret: json.client_secret,
-                    appearance: JSON.parse(this.container.dataset.appearance),
+                    clientSecret: json.client_secret, appearance: JSON.parse(this.container.dataset.appearance),
                 };
 
                 this.createStripeElementsForm(options);
 
-                this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener(
-                    'click',
-                    async (event) => {
-                        event.preventDefault();
-                        this.container.classList.add('hidden');
-                        const elements = this.elements;
-                        const form = this.getFormData();
-                        const formDataArray = [...form.entries()];
-                        const params = formDataArray
-                            .map((x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`)
-                            .join('&');
 
-                        this.stripeInstance
-                            .confirmSetup({
-                                elements,
-                                confirmParams: {
-                                    return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
-                                },
-                            })
-                            .then((result) => {
-                                if (result.error) {
-                                    this.showErrorMessage(result.error.message);
-                                }
-                            });
-                    }
-                );
+                this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
+                    event.preventDefault();
+                    this.container.classList.add('hidden');
+                    const elements = this.elements;
+                    const form = this.getFormData();
+                    const formDataArray = [...form.entries()];
+                    const params = formDataArray
+                        .map((x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`)
+                        .join('&');
+
+                    this.stripeInstance
+                        .confirmSetup({
+                            elements, confirmParams: {
+                                return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
+                            },
+                        })
+                        .then((result) => {
+                            if (result.error) {
+                                this.showErrorMessage(result.error.message);
+                            }
+                        });
+                });
             });
     }
 
@@ -97,9 +88,7 @@ class PaymentIntentsElements {
         let responseError = false;
 
         fetch(window.location.href, {
-            method: 'post',
-            body: form,
-            headers: {
+            method: 'post', body: form, headers: {
                 Accept: 'application/json',
             },
         })
@@ -116,6 +105,7 @@ class PaymentIntentsElements {
                     return;
                 }
 
+
                 const completeActionUrl = new URL(this.completeActionUrl);
                 completeActionUrl.searchParams.append('commerceTransactionHash', json.transactionHash);
                 completeActionUrl.searchParams.append('commerceTransactionId', json.transactionId);
@@ -127,25 +117,46 @@ class PaymentIntentsElements {
                 };
 
                 this.createStripeElementsForm(options);
+
+                const updatePaymentIntentForm = new FormData();
+                updatePaymentIntentForm.append('action', 'commerce-stripe/payments/save-payment-intent');
+                updatePaymentIntentForm.append(window.csrfTokenName, window.csrfTokenValue);
+                updatePaymentIntentForm.append('paymentIntentId', json.redirectData.payment_intent);
+                updatePaymentIntentForm.append('gatewayId', this.container.dataset.gatewayId);
+
+                const savePaymentSourceCheckbox = this.container.closest('form').querySelector('input[name="savePaymentSource"]');
+                savePaymentSourceCheckbox.addEventListener('click', function () {
+                    updatePaymentIntentForm.append('paymentIntent[setup_future_usage]', savePaymentSourceCheckbox.checked ? '1' : '0');
+
+                    fetch(window.location.href, {
+                        method: 'post', body: updatePaymentIntentForm, headers: {
+                            Accept: 'application/json',
+                        },
+                    }).then(response => response.json()).then(data => {
+                        this.elements.fetchUpdates();
+                    }).catch(error => {
+                        console.error('There was an error updating the Payment Intent:', error);
+                    });
+                }.bind(this));
+
+                this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
+                    event.preventDefault();
+
+                    this.fade(this.container, true);
+                    this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.remove('hidden');
+                    const elements = this.elements;
+                    const {error} = await this.stripeInstance.confirmPayment({
+                        elements, confirmParams: {
+                            'return_url': this.completeActionUrl,
+                        },
+                    });
+                    this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.add('hidden');
+                    this.showErrorMessage(error.message);
+                });
+
             });
 
-        this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener(
-            'click',
-            async (event) => {
-                event.preventDefault();
-                this.fade(this.container, true);
-                this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.remove('hidden');
-                const elements = this.elements;
-                const { error } = await this.stripeInstance.confirmPayment({
-                    elements,
-                    confirmParams: {
-                        return_url: this.completeActionUrl,
-                    },
-                });
-                this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.add('hidden');
-                this.showErrorMessage(error.message);
-            }
-        );
+
     }
 
     fade(element, fadeOut, skipFade) {

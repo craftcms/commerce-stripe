@@ -49,7 +49,6 @@ class Install extends Migration
             'reference' => $this->string(),
             'gatewayId' => $this->integer()->notNull(),
             'customerId' => $this->integer()->notNull(),
-            'orderId' => $this->integer()->notNull(),
             'transactionHash' => $this->string()->notNull(),
             'intentData' => $this->text(),
             'dateCreated' => $this->dateTime()->notNull(),
@@ -62,7 +61,6 @@ class Install extends Migration
         $this->addForeignKey(null, '{{%stripe_invoices}}', 'subscriptionId', '{{%commerce_subscriptions}}', 'id', 'CASCADE');
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE');
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE');
-        $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'orderId', '{{%commerce_orders}}', 'id', 'CASCADE');
 
         $this->createIndex(null, '{{%stripe_customers}}', 'gatewayId', false);
         $this->createIndex(null, '{{%stripe_customers}}', 'userId', false);
@@ -70,7 +68,7 @@ class Install extends Migration
         $this->createIndex(null, '{{%stripe_invoices}}', 'subscriptionId', false);
         $this->createIndex(null, '{{%stripe_invoices}}', 'reference', true);
         $this->createIndex(null, '{{%stripe_paymentintents}}', 'reference', true);
-        $this->createIndex(null, '{{%stripe_paymentintents}}', ['orderId', 'gatewayId', 'customerId', 'transactionHash'], true);
+        $this->createIndex(null, '{{%stripe_paymentintents}}', ['gatewayId', 'customerId', 'transactionHash'], true);
 
         return true;
     }
