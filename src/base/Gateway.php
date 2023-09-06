@@ -184,7 +184,6 @@ abstract class Gateway extends BaseGateway
         }
 
         return $this->_stripeClient;
-
     }
 
     /**
