@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stripe plugin now requires the `2022-11-15` version of the Stripe API.
 - Added support to all Stripe payment methods including Apple Pay and Google Wallet.
 - Added support for the Stripe Billing Portal.
 - Added support for Stripe Checkout, a off-site checkout page.

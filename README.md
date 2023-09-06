@@ -9,7 +9,7 @@ supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) a
 
 - Craft CMS 4.0 or later
 - Craft Commerce 4.3 or later
-- Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
+- Stripe [API version](https://stripe.com/docs/api/versioning) '2022-11-15'
 
 ## Installation
 
