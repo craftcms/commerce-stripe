@@ -560,7 +560,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getBillingIssueDescription(Subscription $subscription): string
     {
-        $subscriptionData = $this->_getExpandedSubscriptionData($subscription);
+        $subscriptionData = $this->getExpandedSubscriptionData($subscription);
         $intentData = $subscriptionData['latest_invoice']['payment_intent'];
 
         if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
@@ -780,6 +780,7 @@ abstract class SubscriptionGateway extends Gateway
                 return;
             }
 
+            /** @var Gateway $gateway */
             $gateway = $customer->getGateway();
             if ($gateway->id != $this->id) {
                 return;
@@ -792,11 +793,12 @@ abstract class SubscriptionGateway extends Gateway
 
             $user = $customer->getUser();
 
+            /** @phpstan-ignore-next-line */
             if ($user->getPrimaryPaymentSource() && $user->getPrimaryPaymentSource()->id == $paymentSource->id) {
                 return;
             }
 
-            /** $user User|CustomerBehavior */
+            /** @phpstan-ignore-next-line */
             $user->setPrimaryPaymentSourceId($paymentSource->id);
 
             Craft::$app->getElements()->saveElement($user, false);
@@ -1037,7 +1039,7 @@ abstract class SubscriptionGateway extends Gateway
      * @return array
      * @throws \Stripe\Exception\ApiErrorException
      */
-    private function _getExpandedSubscriptionData(Subscription $subscription): array
+    public function getExpandedSubscriptionData(Subscription $subscription): array
     {
         $subscriptionData = $subscription->getSubscriptionData();
 

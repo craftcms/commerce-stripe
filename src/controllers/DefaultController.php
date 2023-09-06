@@ -9,6 +9,7 @@ namespace craft\commerce\stripe\controllers;
 
 use Craft;
 use craft\commerce\Plugin as CommercePlugin;
+use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\web\Controller as BaseController;
 use Throwable;
@@ -43,8 +44,8 @@ class DefaultController extends BaseController
         }
 
         try {
+            /** @var PaymentIntents $gateway */
             $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
-
             return $this->asJson($gateway->getSubscriptionPlans());
         } catch (Throwable $e) {
             return $this->asFailure($e->getMessage());

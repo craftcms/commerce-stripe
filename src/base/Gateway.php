@@ -529,9 +529,6 @@ abstract class Gateway extends BaseGateway
             // Do not allow these to be modified by event handlers
             $event->request['amount'] = $request['amount'];
             $event->request['currency'] = $request['currency'];
-
-            // TODO remove when metadata is removed from the BuildGatewayRequestEvent event
-            $event->request['metadata'] = array_replace($event->metadata, $event->request['metadata']);
         }
 
         if ($this->sendReceiptEmail) {

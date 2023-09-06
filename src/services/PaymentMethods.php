@@ -53,8 +53,6 @@ class PaymentMethods
      * Whenever a payment source is set as primary in Commerce, lets make it the primary in the gateway too .
      *
      * @param UpdatePrimaryPaymentSourceEvent $event
-     * @return void
-     * @throws InvalidConfigException
      */
     public function handlePrimaryPaymentSourceUpdated(UpdatePrimaryPaymentSourceEvent $event): void
     {

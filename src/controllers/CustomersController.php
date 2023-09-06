@@ -124,6 +124,7 @@ class CustomersController extends BaseController
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($gatewayId, $user);
 
         try {
+            /** @var PaymentIntents $gateway */
             $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
             $setupIntent = [
                 'customer' => $customer->reference,

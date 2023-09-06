@@ -139,18 +139,7 @@ class PaymentIntent extends Model
 
         return $this->_customer;
     }
-
-    /**
-     * Returns the gateway associated with this payment intent.
-     *
-     * @return Order|null
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function getOrder(): ?Order
-    {
-        return $this->getTransaction() - $this->getOrder();
-    }
-
+    
     /**
      * Returns the transaction associated with this payment intent.
      *

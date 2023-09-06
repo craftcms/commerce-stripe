@@ -250,7 +250,7 @@ class PaymentIntents extends BaseGateway
             throw new PaymentSourceCreatedLaterException(Craft::t('commerce', 'The payment source should be created after successful payment.'));
         }
 
-        /** @var PaymentForm $sourceData */
+        /** @var PaymentIntentForm $sourceData */
         try {
             $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($sourceData->paymentMethodId);
@@ -372,7 +372,7 @@ class PaymentIntents extends BaseGateway
      */
     public function getBillingIssueResolveFormHtml(Subscription $subscription): string
     {
-        $subscriptionData = $this->_getExpandedSubscriptionData($subscription);
+        $subscriptionData = $this->getExpandedSubscriptionData($subscription);
         $intentData = $subscriptionData['latest_invoice']['payment_intent'];
 
         if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
@@ -394,13 +394,13 @@ class PaymentIntents extends BaseGateway
      * @param int $amount
      * @param array $metadata
      * @param bool $capture
-     * @param BasePaymentForm|PaymentIntentForm $form
-     * @return array
+     * @param PaymentIntentForm $form
+     * @return PaymentIntent
      * @throws \Stripe\Exception\ApiErrorException
      * @throws \craft\commerce\stripe\errors\CustomerException
      * @throws \yii\base\InvalidConfigException
      */
-    public function createPaymentIntent(Transaction $transaction, int $amount, array $metadata, bool $capture, BasePaymentForm|PaymentIntentForm $form): PaymentIntent
+    public function createPaymentIntent(Transaction $transaction, int $amount, array $metadata, bool $capture, PaymentIntentForm $form): PaymentIntent
     {
         // Base information for the payment intent
         $paymentIntentData = [
@@ -463,7 +463,7 @@ class PaymentIntents extends BaseGateway
      * @param array $metadata
      * @param bool $capture
      * @param ?User $user
-     * @return CheckoutSessionResponse
+     * @return StripeCheckoutSession
      * @throws \Stripe\Exception\ApiErrorException
      * @throws \craft\commerce\stripe\errors\CustomerException
      * @throws \craft\errors\SiteNotFoundException
@@ -552,11 +552,7 @@ class PaymentIntents extends BaseGateway
         // Normalized amount for Stripe into minor units
         $amount = $transaction->paymentAmount * (10 ** $currency->minorUnit);
 
-        if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {
-            $session = $this->createCheckoutSession($transaction, $amount, $metadata, $capture, $user);
-            return new CheckoutSessionResponse($session->toArray());
-        }
-
+        /** @var PaymentIntentForm $form */
         if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {
             $session = $this->createCheckoutSession($transaction, $amount, $metadata, $capture, $user);
             return new CheckoutSessionResponse($session->toArray());
@@ -569,11 +565,10 @@ class PaymentIntents extends BaseGateway
          */
         $immediatelyConfirmLegacy = false;
         if ($form->paymentMethodId) {
-            $paymentIntentData['payment_method'] = $form->paymentMethodId;
             $immediatelyConfirmLegacy = true;
         }
 
-        $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form, $user);
+        $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form);
 
         if ($immediatelyConfirmLegacy) {
             // Mutates the payment intent that has been confirmed
