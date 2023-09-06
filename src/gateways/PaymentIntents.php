@@ -382,7 +382,7 @@ class PaymentIntents extends BaseGateway
                 case 'requires_confirmation':
                     return $this->getPaymentFormHtml(['clientSecret' => $clientSecret]);
                 case 'requires_action':
-                    return $this->getPaymentFormHtml(['clientSecret' => $clientSecret, 'scenario' => '3ds']);
+                    return $this->getPaymentFormHtml(['clientSecret' => $clientSecret, 'scenario' => 'requires_action']);
             }
         }
 

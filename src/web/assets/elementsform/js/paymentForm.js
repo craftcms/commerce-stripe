@@ -4,6 +4,7 @@ class PaymentIntentsElements {
         this.formNamespace = this.container.dataset.paymentFormNamespace;
         this.stripeInstance = Stripe(publishableKey);
         this.elements = null;
+        this.scenario = this.container.dataset.scenario;
         this.completeActionUrl = this.container.dataset.completePaymentActionUrl;
     }
 
@@ -24,6 +25,22 @@ class PaymentIntentsElements {
         const paymentElementDiv = this.container.querySelector('.stripe-payment-element');
         paymentElement.mount(paymentElementDiv);
         this.container.classList.remove('hidden');
+    }
+
+    async requiresActionFlow() {
+        const options = {
+            clientSecret: this.container.dataset.clientSecret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+        };
+
+        this.createStripeElementsForm(options);
+
+        const elements = this.elements;
+        const {error} = await this.stripeInstance.confirmPayment({
+            elements, confirmParams: {
+                'return_url': this.completeActionUrl,
+            },
+        });
     }
 
     setupIntentFlow() {
@@ -52,11 +69,11 @@ class PaymentIntentsElements {
                 }
 
                 const options = {
-                    clientSecret: json.client_secret, appearance: JSON.parse(this.container.dataset.appearance),
+                    clientSecret: json.client_secret,
+                    appearance: JSON.parse(this.container.dataset.appearance),
                 };
 
                 this.createStripeElementsForm(options);
-
 
                 this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
                     event.preventDefault();
@@ -185,10 +202,16 @@ class PaymentIntentsElements {
         const formData = this.getFormData();
         const action = formData.get('action');
 
-        if (action.includes('commerce/payments/pay')) {
-            this.cartPaymentFlow();
-        } else if (action.includes('commerce/payment-sources/add') || action.includes('commerce/subscriptions/create')) {
-            this.setupIntentFlow();
+        if (this.scenario === 'payment') {
+            if (action.includes('commerce/payments/pay')) {
+                this.cartPaymentFlow();
+            } else if (action.includes('commerce/payment-sources/add') || action.includes('commerce/subscriptions/create')) {
+                this.setupIntentFlow();
+            }
+        }
+
+        if (this.scenario === 'requires_action') {
+            this.requiresActionFlow();
         }
     }
 }
