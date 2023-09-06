@@ -8,7 +8,7 @@ supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) a
 ## Requirements
 
 - Craft CMS 4.0 or later
-- Craft Commerce 4.0 or later
+- Craft Commerce 4.3 or later
 - Stripe [API version](https://stripe.com/docs/api/versioning) '2019-03-14'
 
 ## Installation
@@ -40,8 +40,6 @@ php craft install/plugin commerce-stripe
 To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**,
 create a new gateway, and set the gateway type to “Stripe Payment Intents”.
 
-> ⚠️ The deprecated “Stripe Charge” gateway is still available. See [Changes in 2.0](#changes-in-2-0).
-
 In order for the gateway to work properly, the following settings are required:
 
 - Publishable API Key
@@ -49,6 +47,9 @@ In order for the gateway to work properly, the following settings are required:
 - Webhook Secret
 
 You can find these in your Stripe dashboard under **Developers** → **API keys**.
+
+We recommend using environment variables to store these values and using the environment variable names in the gateway
+settings.
 
 Once you have saved the the gateway in Commerce, you can reopen it to find the webhook URL available for you to enter
 into
@@ -63,14 +64,25 @@ We recommend emitting all possible events for the webhook. Unnecessary events wi
 We advise using the Stripe CLI in development to test webhooks.
 See [Testing Webhooks](https://stripe.com/docs/webhooks/test) for more information.
 
-## Payment Process Changes
+## Payment Form Changes in 4.0
 
-In the previous version of this plugin, we relied on a directly submitted `paymentMethodId` parameter to the
-Commerce `commerce/payments/pay` form action to make payment.
-This continues to work for backwards compatibility but the new payment form HTML.
+Previously the `gateway.getPaymentFormHtml()` method output a basic credit card stripe form to generate a payment method
+ID
+on the client side and submitted that ID to the `commerce/payments/pay` action.
 
-A new payment method can still be created prior to checkout using Stripe’s front-end JavaScript API manully, but we now
-advise using the built in payment form HTML.
+This continues to work for backwards compatibility, so if you had a custom stripe payment form that will continue to
+work.
+
+Now the `gateway.getPaymentFormHtml()` outputs a payment elements form that supports all payment methods in addition to
+just credit cards.
+It does this by first submitting an automatic request to `commerce/payments/pay` (without a payment method), which
+creates a transaction with
+a redirect status and returns a reference to the generated payment intent and client secret.
+
+This allows the new form to support all payment methods, including Apple Pay and Google Pay, which require a payment
+intent to be created.
+
+Details on how to configure the new payment form are below.
 
 ## Configuration Settings
 
@@ -221,18 +233,55 @@ Event::on(
 );
 ```
 
+## Billing Portal
+
+You can now generate a link to the stripe billing portal for customers to manage their credit cards and plans.
+
+```twig
+<a href={{ gateway.billingPortalUrl(currentUser) }}">Manage your billing account</a>
+```
+
+You can also pass a `returnUrl` parameter to redirect the customer to a specific page after they have finished.
+
+```twig
+{{ gateway.billingPortalUrl(currentUser, 'myaccount') }}
+```
+
+You can also pass a `configurationId` parameter to use a
+specific [Stripe configuration](https://stripe.com/docs/api/customer_portal/configuration).
+
+```twig
+{{ gateway.billingPortalUrl(currentUser, 'myaccount', 'config_12345') }}
+```
+
+You can also redirect the customer to the billing portal using the `commerce-stripe/customers/billing-portal-redirect`
+action in a form,
+but this does not allow a `configurationId` to be passed, only a redirect URL.
+
+## Syncing Customer Payment Methods
+
+Going forward the plugin will sync payment methods that are attached to customers in Stripe with the payment sources
+inside your installation. Make sure your webhook is set up correctly in Stripe to sync correctly.
+
+To do an initial sync, you can use the `commerce-stripe/sync/payment-methods` console command.
+
+```bash
+
 ## Creating a Stripe Payment Form
 
 You can output a standard credit card form quickly using `order.gateway.getPaymentFormHtml()`
 or `gateway.getPaymentFormHtml()`.
 
-The payment for HTML output the inputs and includes the javascript needed to complete the form you are embedding it in. You can embed it inside one of three forms:
+The payment for HTML output the inputs and includes the javascript needed to complete the form you are embedding it in.
+You can embed it inside one of three forms:
 
 - `commerce/payments/pay`.
 - `commerce/payment-sources/add`.
-- `commerce/subscriptions/subscribe`. (You should only output the payment form HTML in this form if they do not have a primary payment source already set up)
+- `commerce/subscriptions/subscribe`. (You should only output the payment form HTML in this form if they do not have a
+  primary payment source already set up)
 
-If you embed it into a form tag with an action parameter of `commerce/payments/pay`, it will be a payment flow which will create a transaction in Commerce with a redirect status and create a payment intent in Stripe.
+If you embed it into a form tag with an action parameter of `commerce/payments/pay`, it will be a payment flow which
+will create a transaction in Commerce with a redirect status and create a payment intent in Stripe.
 
 If you want to read how to create the legacy payment form with stripe.js read
 the [old README](https://github.com/craftcms/commerce-stripe/blob/e0325e98594cc4824b3e2788ac0573c8d04a71d5/README.md#creating-a-stripe-payment-form-for-the-payment-intents-gateway).
@@ -266,8 +315,8 @@ Example:
 This renders a Stripe Elements form with all payment methods you have enabled in your Stripe Dashboard, like Apple Pay
 or Afterpay.
 
-This option does lets you pass the `paymentMethods` array which will no longer use the automatic payment methods you
-have enabled in your dashboard.
+This option does lets you pass the `paymentMethods` array which will override automatic payment methods you
+have enabled in your Stripe dashboard.
 
 ```twig
 {% set params = {
@@ -275,6 +324,8 @@ have enabled in your dashboard.
 } %}
 {{ cart.gateway.getPaymentFormHtml(params) }}
 ```
+
+Remember, some payment methods like Apple Pay will only show up in the Safari browser.
 
 #### `checkout`
 

@@ -28,7 +28,7 @@
     "php": "^8.0.2",
     "craftcms/cms": "^4.0.0",
     "stripe/stripe-php": "^10.0",
-    "craftcms/commerce": "^4.2.8"
+    "craftcms/commerce": "^4.3"
   },
   "require-dev": {
     "craftcms/phpstan": "dev-main",
