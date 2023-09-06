@@ -3,7 +3,7 @@
 <h1 align="center">Stripe for Craft Commerce</h1>
 
 This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce)
-supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and traditional charges.
+supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and all payment methods.
 
 ## Requirements
 
