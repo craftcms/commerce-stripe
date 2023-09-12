@@ -1,11 +1,11 @@
 {% import '_includes/forms' as forms %}
 
-<h2>{{ "Stripe Sync"|t('shopify') }}</h2>
+<h2>{{ "Stripe Sync"|t('commerce') }}</h2>
 <form method="POST">
     {{ actionInput('') }}
     {{ csrfInput() }}
     {{ forms.selectField({
-        label: 'Gateway'|t('shopify'),
+        label: 'Gateway'|t('commerce'),
         name: 'gatewayId',
         options: stripeGatewayOptions
     }) }}

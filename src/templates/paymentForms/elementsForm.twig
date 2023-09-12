@@ -12,6 +12,7 @@
      data-element-options="{{ elementOptions|json_encode }}"
      data-client-secret="{{ clientSecret }}"
      data-client-scenario="{{ scenario }}"
+     data-processing-button-text="{{ processingButtonText }}"
 >
     {{ hiddenInput('paymentFormType', 'elements') }}
 
@@ -26,4 +27,3 @@
         <button class="stripe-payment-elements-submit-button {{ submitButtonClasses }}">{{ submitButtonText }}</button>
     </div>
 </div>
-<button disabled class="stripe-payment-elements-processing-button hidden {{ submitButtonClasses }}">Processing...</button>

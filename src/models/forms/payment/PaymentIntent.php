@@ -24,14 +24,7 @@ class PaymentIntent extends BasePaymentForm
      *
      * @var string
      */
-    public string $paymentFormType = 'card';
-
-    /**
-     * The payment method types allowed to be used. If null, then `automatic_payment_methods` is used.
-     *
-     * @var array|null $paymentMethodTypes
-     */
-    public ?array $paymentMethodTypes = null;
+    public string $paymentFormType = 'elements';
 
     /**
      * @var string|null $customer the Stripe customer token.
