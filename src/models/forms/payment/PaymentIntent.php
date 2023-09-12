@@ -28,7 +28,6 @@ class PaymentIntent extends BasePaymentForm
 
     /**
      * The payment method types allowed to be used. If null, then `automatic_payment_methods` is used.
-     * See.
      *
      * @var array|null $paymentMethodTypes
      */
