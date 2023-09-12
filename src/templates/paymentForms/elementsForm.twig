@@ -3,7 +3,7 @@
     window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 </script>
 <div class="stripe-payment-elements-form hidden"
-     data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
+     data-publishablekey="{{ gateway.getPublishableKey() }}"
      data-complete-payment-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
      data-confirm-setup-intent-url="{{ actionUrl('commerce-stripe/customers/confirm-setup-intent') }}"
      data-payment-form-namespace="{{ handle|commercePaymentFormNamespace }}"
@@ -17,11 +17,11 @@
     {{ hiddenInput('paymentFormType', 'elements') }}
 
     <div class="hidden stripe-error-message {{ errorMessageClasses }}">
-        {# Display error message to your customers here #}
+        {# Error messages are displayed to your customers, here. #}
     </div>
     <div class="stripe-payment-form">
         <div class="stripe-payment-element">
-            {# Elements will create form elements here #}
+            {# The Stripe JS SDK will mount its UI here! #}
         </div>
 
         <button class="stripe-payment-elements-submit-button {{ submitButtonClasses }}">{{ submitButtonText }}</button>

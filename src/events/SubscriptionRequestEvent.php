@@ -7,6 +7,7 @@
 
 namespace craft\commerce\stripe\events;
 
+use craft\elements\User;
 use craft\commerce\base\Plan;
 use yii\base\Event;
 
@@ -27,4 +28,9 @@ class SubscriptionRequestEvent extends Event
      * @var array The subscription parameters
      */
     public array $parameters;
+
+    /**
+     * @var User The user the subscription will belong to
+     */
+    public User $user;
 }

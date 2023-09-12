@@ -316,6 +316,7 @@ class PaymentIntents extends BaseGateway
         $event = new SubscriptionRequestEvent([
             'plan' => $plan,
             'parameters' => $subscriptionParameters,
+            'user' => $user,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_SUBSCRIBE, $event);
@@ -560,7 +561,6 @@ class PaymentIntents extends BaseGateway
             // Mutates the payment intent that has been confirmed
             $this->_confirmPaymentIntent($paymentIntent, $transaction);
         }
-
 
         return new PaymentIntentResponse($paymentIntent->toArray());
     }
