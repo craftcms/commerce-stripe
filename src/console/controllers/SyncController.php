@@ -28,53 +28,45 @@ class SyncController extends Controller
      */
     public function actionPaymentSources(): int
     {
-        $doSync = $this->prompt('This will sync down all payment sources in your stripe account, and create inactive local users if a local user is not found for that customer email ... do you wish to continue?', [
-            'required' => true,
-            'default' => 'no',
-            'validator' => function($input) {
-                if (!in_array($input, ['yes', 'no'])) {
-                    $this->stderr('You must answer either "yes" or "no".' . PHP_EOL, Console::FG_RED);
-                    return false;
-                }
-
-                return true;
-            },
-        ]);
-
-        // get all gateways which inherit from Gateway
+        // Find all gateways that inherit from our base class:
         $allGateways = collect(CommercePlugin::getInstance()->getGateways()->getAllGateways())->where(function($gateway) {
             return $gateway instanceof Gateway;
-        })->pluck('handle')->all();
+        })->mapWithKeys(function($gateway) {
+            // Convert to a format compatible with `Console::select()`:
+            return [$gateway->handle => $gateway->name];
+        })->all();
 
-        // ask for which gateway handle to use
-        $gatewayHandle = $this->prompt('Which gateway (handle) would you like to sync payment sources for?', [
-            'required' => true,
-            'default' => '',
-            'validator' => function($input) use ($allGateways) {
-                if (!in_array($input, $allGateways)) {
-                    $this->stderr('You must answer either "stripe" or "stripe3".' . PHP_EOL, Console::FG_RED);
-                    return false;
-                }
+        // Did we find any?
+        if (empty($allGateways)) {
+            $this->stdout('No Stripe gateways exist.');
 
-                return true;
-            },
-        ]);
+            return ExitCode::OK;
+        }
+
+        // Prompt for the gateway handle:
+        $gatewayHandle = $this->select('Which gateway would you like to sync payment sources for?', $allGateways);
 
         /** @var Gateway $gateway */
         $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayByHandle($gatewayHandle);
 
-        if ($doSync == 'yes') {
-            try {
-                $this->stdout('Syncing...' . PHP_EOL . PHP_EOL, Console::FG_GREEN);
-                $count = Plugin::getInstance()->getPaymentMethods()->syncAllPaymentMethods($gateway);
-                $this->stdout('Synced ' . $count . ' payment methods.' . PHP_EOL . PHP_EOL, Console::FG_GREEN);
-            } catch (Exception $e) {
-                $this->stdout($e->getmessage() . PHP_EOL, Console::FG_RED);
-            }
-        } else {
-            $this->stdout('Skipping data sync.' . PHP_EOL . PHP_EOL, Console::FG_GREEN);
+        $this->stdout('This will sync down all payment sources in your Stripe account, and create inactive local users if one is not found for that customer’s email.' . PHP_EOL);
+        $this->stdout('If you are using testing keys, your development environment may end up with inconsistent customer information.' . PHP_EOL, Console::FG_YELLOW);
+
+        if (!$this->confirm('Do you want to continue?')) {
+            return ExitCode::OK;
         }
-        $this->stdout('Done.' . PHP_EOL . PHP_EOL, Console::FG_GREEN);
+
+        try {
+            $this->stdout('Syncing... ');
+            $count = Plugin::getInstance()->getPaymentMethods()->syncAllPaymentMethods($gateway);
+            $this->stdout('done! ' . PHP_EOL, Console::FG_GREEN);
+            $this->stdout('Synchronized ');
+            $this->stdout($count, Console::FG_BLUE);
+            $this->stdout(' payment method(s).' . PHP_EOL);
+        } catch (Exception $e) {
+            $this->stdout(PHP_EOL . $e->getmessage() . PHP_EOL, Console::FG_RED);
+        }
+
         return ExitCode::OK;
     }
 }
