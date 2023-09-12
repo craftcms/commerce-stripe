@@ -2,14 +2,27 @@
 
 <h1 align="center">Stripe for Craft Commerce</h1>
 
-This plugin provides a [Stripe](https://stripe.com/) integration for [Craft Commerce](https://craftcms.com/commerce)
-supporting [Payment Intents](https://stripe.com/docs/payments/payment-intents) and all payment methods.
+Flexible payment processing for your [Craft Commerce](https://craftcms.com/commerce) store, powered by [Stripe](https://stripe.com/).
+
+This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-gateways.html) that leverages the [Payment Intents](https://stripe.com/docs/payments/payment-intents) API to support popular payment methods like…
+
+- Major debit and credit cards
+- Apple Pay
+- Google Pay
+- Cash App
+- Afterpay, Affirm, and other installment plans
+- ECH and direct bank account transfers
+
+…and [more](https://stripe.com/guides/payment-methods-guide)!
+
+> [!NOTE]
+> Looking for [3.x documentation](https://github.com/craftcms/commerce-stripe/tree/v3)?
 
 ## Requirements
 
 - Craft CMS 4.0 or later
 - Craft Commerce 4.3 or later
-- Stripe [API version](https://stripe.com/docs/api/versioning) '2022-11-15'
+- Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
 
 ## Installation
 
@@ -25,19 +38,19 @@ in the plugin’s modal window.
 Open your terminal and run the following commands:
 
 ```bash
-# go to the project directory
-cd /path/to/my-project.test
+# Switch your project’s directory:
+cd /path/to/my-project
 
-# tell Composer to load the plugin
+# Require the package with Composer:
 composer require craftcms/commerce-stripe
 
-# tell Craft to install the plugin
+# Install the plugin with Craft:
 php craft install/plugin commerce-stripe
 ```
 
 ## Setup
 
-To add a Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, and click **New gateway**.
+To add a Stripe payment gateway, open the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, and click **New gateway**.
 
 Your gateway’s **Name** should make sense to administrators _and_ customers (especially if you’re using the example templates).
 
@@ -47,7 +60,7 @@ From the **Gateway** dropdown, select **Stripe**, then provide the following inf
 
 - Publishable API Key
 - Secret API Key
-- Webhook Signing Secret
+- Webhook Signing Secret (See [Webhooks](#webhooks) for details)
 
 Your **Publishable API Key** and **Secret API Key** can be found in (or generated from) your Stripe dashboard, within the **Developers** &rarr; **API Keys** tab. Read more about [Stripe API keys](https://stripe.com/docs/keys).
 
@@ -58,16 +71,36 @@ Stripe provides different keys for testing—use those until you are ready to la
 
 ### Webhooks
 
-Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a new webhook in your Stripe dashboard.
+Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a new webhook in your Stripe dashboard. A signing secret will be generated for you—save this in your `.env` file with the other secrets, then return to the gateway’s settings screen and populate the **Webhook Signing Secret** field with the variable’s name.
+
+> [!WARNING]
+> Webhooks will not be processed if the signing secret is missing or invalid!
+
+We recommend enabling _all_ available events for the webhook. Unnecessary events will be ignored by the plugin.
+
+The webhook URL for your production environment will be different! It may also have a different ID than the one you use in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)). Run one of these Commerce console commands to view your gateway’s configuration:
+
+```bash
+# Outputs a table with information about each gateway:
+php craft commerce/gateways/list
+
+# Outputs a single gateway’s webhook URL:
+php craft commerce/gateways/webhook-url myGatewayHandle
+```
 
 #### Local Development
 
-When you've set up that URL in the Stripe dashboard, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
+Your local environment isn’t often exposed to the public internet, so Stripe won’t be able to send webhooks for testing. You have two options for testing webhooks:
 
-We recommend enabling all available events for the webhook. Unnecessary events will be ignored by the plugin.
+1. Use the [Stripe CLI](https://stripe.com/docs/stripe-cli), replacing the URL in the command below with the one from your gateway’s setting screen:
 
-> [!NOTE]
-> We advise using the [Stripe CLI](https://stripe.com/docs/stripe-cli) in development. See Stripe’s [Testing Webhooks](https://stripe.com/docs/webhooks/test) article for more information.
+    ```bash
+    stripe listen --forward-to "my-project.ddev.site/index.php?action=commerce/webhooks/process-webhook&gateway=1"
+    ```
+
+  This command will create a temporary webhook and signing secret, which you should add to your `.env` file and  See Stripe’s [Testing Webhooks](https://stripe.com/docs/webhooks#test-webhook) article for more information.
+
+2. Use DDEV’s `share` command, and use the public Ngrok URL when configuring the webhook manually, in Stripe.
 
 ## Uprading from 3.x
 
