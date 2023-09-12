@@ -120,7 +120,8 @@ class PaymentIntents extends BaseGateway
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
         if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT) {
-            $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);;
+            $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);
+            ;
         } else {
             $view->registerAssetBundle(ElementsFormAsset::class);
             $html = $view->renderTemplate('commerce-stripe/paymentForms/elementsForm', $params);
