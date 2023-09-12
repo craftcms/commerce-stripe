@@ -26,12 +26,11 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 
 ## Installation
 
-You can install this plugin from the Plugin Store or using Composer.
+You can install this plugin from the [Plugin Store](https://plugins.craftcms.com/commerce-stripe) or with Composer.
 
 #### From the Plugin Store
 
-Go to the Plugin Store in your project’s control panel, search for “Stripe for Craft Commerce”, and choose **Install**
-in the plugin’s modal window.
+Go to the Plugin Store in your project’s control panel, search for “Stripe for Craft Commerce”, and click **Install** in the sidebar.
 
 #### With Composer
 
@@ -50,7 +49,7 @@ php craft install/plugin commerce-stripe
 
 ## Setup
 
-To add a Stripe payment gateway, open the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, and click **New gateway**.
+To add a Stripe payment gateway, open the Craft control panel, navigate to **Commerce** → **System Settings** → **Gateways**, and click **+ New gateway**.
 
 Your gateway’s **Name** should make sense to administrators _and_ customers (especially if you’re using the example templates).
 
