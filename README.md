@@ -253,7 +253,7 @@ Event::on(
 
 ## Billing Portal
 
-You can now generate a link to the Stripe billing portal for customers to manage their credit cards and plans.
+You can now generate a link to the [Stripe billing portal](https://stripe.com/docs/customer-management) for customers to manage their credit cards and plans.
 
 ```twig
 <a href={{ gateway.billingPortalUrl(currentUser) }}">Manage your billing account</a>
@@ -265,20 +265,20 @@ Pass a `returnUrl` parameter to return the customer to a specific on-site page a
 {{ gateway.billingPortalUrl(currentUser, 'myaccount') }}
 ```
 
-A specific Stripe [customer portal](https://stripe.com/docs/customer-management/activate-no-code-customer-portal) configuration can be chosen with the third `configurationId` argument. This value must agree with a preexisting configuration in the associated Stripe account:
+A specific Stripe customer portal configuration can be chosen with the third `configurationId` argument. This value must agree with a preexisting configuration [created via the API](https://stripe.com/docs/customer-management/integrate-customer-portal#customize) in the associated Stripe account:
 
 ```twig
 {{ gateway.billingPortalUrl(currentUser, 'myaccount', 'config_12345') }}
 ```
 
 > [!NOTE]
-> Logged-in users can be redirected via the `commerce-stripe/customers/billing-portal-redirect` action. The `configurationId` parameter is not supported when using this method.
+> Logged-in users can also be redirected with the `commerce-stripe/customers/billing-portal-redirect` action. The `configurationId` parameter is not supported when using this method.
 
 ## Syncing Customer Payment Methods
 
-Payment methods created directly in Stripe are now synchronized back to Commerce. Webhooks must be configured for this to work as expected!
+Payment methods created directly in the Stripe customer portal are now synchronized back to Commerce. Webhooks must be configured for this to work as expected!
 
-To do an initial sync, run the `commerce-stripe/sync/payment-sources` console command:
+To perform an initial sync, run the `commerce-stripe/sync/payment-sources` console command:
 
 ```bash
 php craft commerce-stripe/sync/payment-sources
@@ -292,91 +292,100 @@ To render a Stripe Elements payment form, get a reference to the gateway, then c
 {% set cart = craft.commerce.carts.cart %}
 {% set gateway = cart.gateway %}
 
-{% namespace gateway.handle|commercePaymentFormNamespace %}
-  {{ gateway.getPaymentFormHtml({})|raw }}
-{% endnamespace %}
+<form method="POST">
+  {{ csrfInput() }}
+  {{ actionInput('commerce/payments/pay') }}
+
+  {% namespace gateway.handle|commercePaymentFormNamespace %}
+    {{ gateway.getPaymentFormHtml({})|raw }}
+  {% endnamespace %}
+
+  <button>Pay</button>
+</form>
 ```
 
-This assumes you have provided a means of selecting the gateway in a prior checkout step—or, if your store only uses a single gateway, you may get a static reference to the gateway and set it during payment:
+This assumes you have provided a means of selecting the gateway in a prior checkout step. If your store only uses a single gateway, you may get a reference to the gateway statically and set it during payment:
 
 ```twig
 {% set gateway = craft.commerce.gateways.getGatewayByHandle('myStripeGateway') %}
 
-{# Include *outside* the namespaced form inputs: #}
-{{ hiddenInput('gatewayId', gateway.id) }}
+<form method="POST">
+  {{ csrfInput() }}
+  {{ actionInput('commerce/payments/pay') }}
 
-{% namespace gateway.handle|commercePaymentFormNamespace %}
-  {{ gateway.getPaymentFormHtml({})|raw }}
-{% endnamespace %}
+  {# Include *outside* the namespaced form inputs: #}
+  {{ hiddenInput('gatewayId', gateway.id) }}
+
+  {% namespace gateway.handle|commercePaymentFormNamespace %}
+    {{ gateway.getPaymentFormHtml({})|raw }}
+  {% endnamespace %}
+
+  <button>Pay</button>
+</form>
 ```
 
-Regardless of how you use this output, it will automatically register all the necessary Javascript for Stripe Elements to function properly.
+Regardless of how you use this output, it will automatically register all the necessary Javascript to create the Payment Intent and bootstrap Stripe Elements.
 
 ### Payment Form Contexts
 
 Commerce uses payment forms in three places:
 
-- `commerce/payments/pay`.
-- `commerce/payment-sources/add`.
-- `commerce/subscriptions/subscribe`. (You should only output the payment form HTML in this form if the customer does not already have a primary payment source)
+- Paying for a cart (`commerce/payments/pay`);
+- Adding a saved payment source (`commerce/payment-sources/add`);
+- Starting a subscription (`commerce/subscriptions/subscribe`);
 
-If you embed it into a form tag with an action parameter of `commerce/payments/pay`, it will be a payment flow which
-will create a transaction in Commerce with a redirect status and create a payment intent in Stripe.
+> [!NOTE]
+> When creating a subscription, you should only include the payment form HTML if the customer does not already have a saved payment source. Subscriptions are always created with the customer’s primary payment source.
 
-If you want to read how to create the legacy payment form with stripe.js read
-the [old README](https://github.com/craftcms/commerce-stripe/blob/e0325e98594cc4824b3e2788ac0573c8d04a71d5/README.md#creating-a-stripe-payment-form-for-the-payment-intents-gateway).
+
 
 ## Customizing the Stripe Payment Form
 
-`getPaymentFormHtml()` accepts one argument, an array with one or more of the following keys:
+`getPaymentFormHtml()` accepts one argument, an array with any of the following keys:
 
 ### `paymentFormType`
 
 #### `elements`
 
-Renders a Stripe Elements form with all the payment method types [enabled in your Stripe Dashboard](https://stripe.com/docs/payments/customize-payment-methods). Some methods may be hidden if the order total or currency don’t meet the method’s criteria—or if they aren’t supported in development environments.
+Renders a Stripe Elements form with all the payment method types [enabled in your Stripe Dashboard](https://stripe.com/docs/payments/customize-payment-methods). Some methods may be hidden if the order total or currency don’t meet the method’s criteria—or if they aren’t supported in the current environment.
 
 ```twig
 {% set params = {
   paymentFormType: 'elements',
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
 
-Remember, some payment methods like Apple Pay will only show up in the Safari browser.
+This is the default `paymentFormType`, and most installations will not need to alter it.
 
 #### `checkout`
 
-This generates a form ready to redirect to Stripe Checkout. This can only be used inside a `commerce/payments/pay` form.
-
-This option ignores all other params.
+This generates a form ready to redirect to Stripe Checkout. This can only be used inside a `commerce/payments/pay` form. This option ignores all other params.
 
 ```twig
 {% set params = {
   paymentFormType: 'checkout',
 } %}
-{{ gateway.getPaymentFormHtml(params) }}
+
+{{ gateway.getPaymentFormHtml(params)|raw }}
 ```
 
 ### `appearance`
 
-You can pass an array of appearance options when using the `elements` or `card` payment form type.
-
-This expects data for the [Elements Appearance API](https://stripe.com/docs/elements/appearance-api).
+You can pass an array of appearance options to the `stripe.elements()` configurator function. This expects data compatible with the [Elements Appearance API](https://stripe.com/docs/elements/appearance-api).
 
 ```twig
 {% set params = {
-  paymentFormType: 'elements',
   appearance: {
     theme: 'stripe'
   }
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
 
 ```twig
 {% set params = {
-  paymentFormType: 'elements',
   appearance: {
     theme: 'night',
     variables: {
@@ -384,17 +393,15 @@ This expects data for the [Elements Appearance API](https://stripe.com/docs/elem
     }
   }
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
 
 ### `elementOptions`
 
-This allows you to modify
-the [Payment Element options](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options)
+Modify the [Payment Element options](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options) passed to the `elements.create()` factory function.
 
 ```twig
 {% set params = {
-  paymentFormType: 'elements',
   elementOptions: {
     layout: {
       type: 'tabs',
@@ -404,44 +411,42 @@ the [Payment Element options](https://stripe.com/docs/js/elements_object/create_
     }
   }
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
 
-Default value:
+The default `elementOptions` value only defines a layout:
 
 ```twig
-elementOptions: {
+{% set params = {
+  elementOptions: {
     layout: {
       type: 'tabs'
     }
   }
-```
-
-### `submitButtonClasses` and `submitButtonText`
-
-These control the button rendered at the bottom of the form.
-
-```twig
-{% set params = {
-  paymentFormType: 'elements',
-  submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
-  submitButtonText: 'Pay',
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
 ```
 
 ### `errorMessageClasses`
 
-Above the form is a location where error messages are displayed when an error occurs. You can control the classes of
-this element.
+Error messages are displayed in a container above the form. You can add classes to this element to alter its style.
 
 ```
 {% set params = {
-  paymentFormType: 'elements',
-  submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
-  submitButtonText: 'Pay',
   errorMessageClasses: 'bg-red-200 text-red-600 my-2 p-2 rounded',
 } %}
-{{ cart.gateway.getPaymentFormHtml(params) }}
-  
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
+```
+
+### `submitButtonClasses` and `submitButtonText`
+
+Customize the style and text of the button used to submit a payment form.
+
+```twig
+{% set params = {
+  submitButtonClasses: 'cursor-pointer rounded px-4 py-2 inline-block bg-blue-500 hover:bg-blue-600 text-white hover:text-white my-2',
+  submitButtonText: 'Pay',
+} %}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
