@@ -57,14 +57,8 @@ use function count;
  **/
 class PaymentIntents extends BaseGateway
 {
-    public const PAYMENT_FORM_TYPE_CARD = 'card'; // default
     public const PAYMENT_FORM_TYPE_CHECKOUT = 'checkout';
     public const PAYMENT_FORM_TYPE_ELEMENTS = 'elements';
-
-    /**
-     * @var string
-     */
-    public string $_formType = 'card';
 
     /**
      * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
@@ -109,8 +103,7 @@ class PaymentIntents extends BaseGateway
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'submitButtonText' => Craft::t('commerce', 'Pay'),
-            'paymentFormType' => self::PAYMENT_FORM_TYPE_CARD,
-            'paymentMethodTypes' => ['card'],
+            'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
         ];
 
         $params = array_merge($defaults, $params);
@@ -126,8 +119,7 @@ class PaymentIntents extends BaseGateway
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
         if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT) {
-            $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);
-            ;
+            $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);;
         } else {
             $view->registerAssetBundle(ElementsFormAsset::class);
             $html = $view->renderTemplate('commerce-stripe/paymentForms/elementsForm', $params);
@@ -410,15 +402,6 @@ class PaymentIntents extends BaseGateway
             'metadata' => $metadata,
             'capture_method' => $capture ? 'automatic' : 'manual',
         ];
-
-        // Which payment methods are allowed on the new payment intent
-        if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_ELEMENTS && $form->paymentMethodTypes) {
-            $paymentIntentData['payment_method_types'] = $form->paymentMethodTypes;
-        } elseif ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CARD) {
-            $paymentIntentData['payment_method_types'] = ['card'];
-        } else {
-            $paymentIntentData['automatic_payment_methods'] = ['enabled' => true];
-        }
 
         // If we have a payment method ID use it
         if ($form->paymentMethodId) {
