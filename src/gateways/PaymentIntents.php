@@ -403,6 +403,8 @@ class PaymentIntents extends BaseGateway
             'capture_method' => $capture ? 'automatic' : 'manual',
         ];
 
+        $paymentIntentData['automatic_payment_methods'] = ['enabled' => true];
+
         // If we have a payment method ID use it
         if ($form->paymentMethodId) {
             $paymentIntentData['payment_method'] = $form->paymentMethodId;
