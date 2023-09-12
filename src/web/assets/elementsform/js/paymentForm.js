@@ -211,7 +211,10 @@ class PaymentIntentsElements {
         if (this.scenario === 'payment') {
             if (action.includes('commerce/payments/pay')) {
                 this.cartPaymentFlow();
-            } else if (action.includes('commerce/payment-sources/add') || action.includes('commerce/subscriptions/create')) {
+            } else if (
+                action.includes('commerce/payment-sources/add')
+                || action.includes('commerce/subscriptions/subscribe')
+            ) {
                 this.setupIntentFlow();
             }
         }
