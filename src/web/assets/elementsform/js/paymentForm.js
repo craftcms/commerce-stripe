@@ -256,28 +256,6 @@ class PaymentIntentsElements {
       });
   }
 
-  fade(element, fadeOut, skipFade) {
-    if (skipFade) {
-      element.style.opacity = fadeOut ? 0 : 1;
-      return;
-    }
-
-    let opacity = fadeOut ? 1 : 0;
-    const step = 0.1; // Adjust the step value for smoother or faster fade-in/fade-out
-
-    const interval = setInterval(() => {
-      if (fadeOut && opacity > 0) {
-        opacity -= step;
-        element.style.opacity = opacity;
-      } else if (!fadeOut && opacity < 1) {
-        opacity += step;
-        element.style.opacity = opacity;
-      } else {
-        clearInterval(interval);
-      }
-    }, 50); // Adjust the interval value for smoother or faster fade-in/fade-out
-  }
-
   handle() {
     const formData = this.getFormData();
     const action = formData.get('action');
