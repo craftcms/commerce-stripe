@@ -6,6 +6,7 @@ class PaymentIntentsElements {
         this.elements = null;
         this.scenario = this.container.dataset.clientScenario;
         this.completeActionUrl = this.container.dataset.completePaymentActionUrl;
+        this.processingButtonText = this.container.dataset.processingButtonText;
     }
 
     getFormData() {
@@ -77,7 +78,10 @@ class PaymentIntentsElements {
 
                 this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
                     event.preventDefault();
-                    this.container.classList.add('hidden');
+
+                    const submitText = this.container.querySelector('.stripe-payment-elements-submit-button').innerText;
+                    this.container.querySelector('.stripe-payment-elements-submit-button').innerText = this.processingButtonText;
+
                     const elements = this.elements;
                     const form = this.getFormData();
                     const formDataArray = [...form.entries()];
@@ -94,6 +98,7 @@ class PaymentIntentsElements {
                         .then((result) => {
                             if (result.error) {
                                 this.showErrorMessage(result.error.message);
+                                this.container.querySelector('.stripe-payment-elements-submit-button').innerText = submitText;
                             }
                         });
                 });
@@ -159,15 +164,16 @@ class PaymentIntentsElements {
                 this.container.querySelector('.stripe-payment-elements-submit-button').addEventListener('click', async (event) => {
                     event.preventDefault();
 
-                    this.fade(this.container, true);
-                    this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.remove('hidden');
+                    const submitText = this.container.querySelector('.stripe-payment-elements-submit-button').innerText;
+                    this.container.querySelector('.stripe-payment-elements-submit-button').innerText = this.processingButtonText;
+
                     const elements = this.elements;
                     const {error} = await this.stripeInstance.confirmPayment({
                         elements, confirmParams: {
                             'return_url': this.completeActionUrl,
                         },
                     });
-                    this.container.parentNode.querySelector('.stripe-payment-elements-processing-button').classList.add('hidden');
+                    this.container.querySelector('.stripe-payment-elements-submit-button').innerText = submitText;
                     this.showErrorMessage(error.message);
                 });
 

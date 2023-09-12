@@ -103,6 +103,7 @@ class PaymentIntents extends BaseGateway
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'submitButtonText' => Craft::t('commerce', 'Pay'),
+            'processingButtonText' => Craft::t('commerce', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
         ];
 
