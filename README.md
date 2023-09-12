@@ -37,50 +37,56 @@ php craft install/plugin commerce-stripe
 
 ## Setup
 
-To add the Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**,
-create a new gateway, and set the gateway type to “Stripe Payment Intents”.
+To add a Stripe payment gateway in the Craft control panel, navigate to **Commerce** → **Settings** → **Gateways**, and click **New gateway**.
 
-In order for the gateway to work properly, the following settings are required:
+Your gateway’s **Name** should make sense to administrators _and_ customers (especially if you’re using the example templates).
+
+### Secrets
+
+From the **Gateway** dropdown, select **Stripe**, then provide the following information:
 
 - Publishable API Key
 - Secret API Key
-- Webhook Secret
+- Webhook Signing Secret
 
-You can find these in your Stripe dashboard under **Developers** → **API keys**.
+Your **Publishable API Key** and **Secret API Key** can be found in (or generated from) your Stripe dashboard, within the **Developers** &rarr; **API Keys** tab. Read more about [Stripe API keys](https://stripe.com/docs/keys).
 
-We recommend using environment variables to store these values and using the environment variable names in the gateway
-settings.
+> [!NOTE]
+> To prevent secrets leaking into project config, put them in your `.env` file, then use the special [environment variable syntax](https://craftcms.com/docs/4.x/config/#control-panel-settings) in the gateway settings.
 
-Once you have saved the the gateway in Commerce, you can reopen it to find the webhook URL available for you to enter
-into
-Stripe’s Dashboard settings.
+Stripe provides different keys for testing—use those until you are ready to launch, then replace the testing keys in the live server’s `.env` file.
 
-When you've set up that URL in the Stripe dashboard, you can view the signing secret in its settings. Enter this value
-in your Stripe
-gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
+### Webhooks
+
+Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a new webhook in your Stripe dashboard.
+
+#### Local Development
+
+
+
+When you've set up that URL in the Stripe dashboard, you can view the signing secret in its settings. Enter this value in your Stripe gateway settings in the Webhook Signing Secret field. To use webhooks, the Webhook Signing Secret setting is required.
 
 We recommend emitting all possible events for the webhook. Unnecessary events will be ignored by the plugin.
 
-We advise using the Stripe CLI in development to test webhooks.
-See [Testing Webhooks](https://stripe.com/docs/webhooks/test) for more information.
+> [!NOTE]
+> We advise using the [Stripe CLI](https://stripe.com/docs/stripe-cli) in development to test webhooks. See Stripe’s [Testing Webhooks](https://stripe.com/docs/webhooks/test) article for more information.
 
-## Payment Form Changes in 4.0
+## Uprading from 3.x
 
-Previously the `gateway.getPaymentFormHtml()` method output a basic credit card stripe form to generate a payment method
-ID
-on the client side and submitted that ID to the `commerce/payments/pay` action.
+Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
 
-This continues to work for backwards compatibility, so if you had a custom stripe payment form that will continue to
-work.
+### Payment Forms
 
-Now the `gateway.getPaymentFormHtml()` outputs a payment elements form that supports all payment methods in addition to
-just credit cards.
-It does this by first submitting an automatic request to `commerce/payments/pay` (without a payment method), which
-creates a transaction with
-a redirect status and returns a reference to the generated payment intent and client secret.
+To support the full array of payment methods available via Stripe (like Apple Pay and Google Pay), the plugin makes exclusive use of the Payment Intents API.
 
-This allows the new form to support all payment methods, including Apple Pay and Google Pay, which require a payment
-intent to be created.
+Historically, `gateway.getPaymentFormHtml({})` has output a basic form for tokenizing a credit card, client-side—it would then submit only the resulting token to the `commerce/payments/pay` action, and capture the payment from the back-end. **Custom payment forms that use this process will continue to work.**
+
+Now, output is a more flexible [Payment Element](https://stripe.com/docs/payments/payment-element) form, which makes use of Stripes modern [Payment Intents](https://stripe.com/docs/api/payment_intents) API. The process looks something like this:
+
+1. A request is submitted in the background to `commerce/payments/pay` (without a payment method);
+1. Commerce creates a Payment Intent with some information about the order, then sets up an internal Transaction record to track its status;
+1. The Payment Intent’s [`client_secret`](https://stripe.com/docs/api/payment_intents/object#payment_intent_object-client_secret) is returned to the front-end;
+1. The Stripe JS SDK is initialized with the secret, and the customer is able 
 
 Details on how to configure the new payment form are below.
 
@@ -235,37 +241,36 @@ Event::on(
 
 ## Billing Portal
 
-You can now generate a link to the stripe billing portal for customers to manage their credit cards and plans.
+You can now generate a link to the Stripe billing portal for customers to manage their credit cards and plans.
 
 ```twig
 <a href={{ gateway.billingPortalUrl(currentUser) }}">Manage your billing account</a>
 ```
 
-You can also pass a `returnUrl` parameter to redirect the customer to a specific page after they have finished.
+Pass a `returnUrl` parameter to return the customer to a specific on-site page after they have finished:
 
 ```twig
 {{ gateway.billingPortalUrl(currentUser, 'myaccount') }}
 ```
 
-You can also pass a `configurationId` parameter to use a
-specific [Stripe configuration](https://stripe.com/docs/api/customer_portal/configuration).
+A specific Stripe [customer portal](https://stripe.com/docs/customer-management/activate-no-code-customer-portal) configuration can be chosen with the third `configurationId` argument. This value must agree with a preexisting configuration in the associated Stripe account:
 
 ```twig
 {{ gateway.billingPortalUrl(currentUser, 'myaccount', 'config_12345') }}
 ```
 
-You can also redirect the customer to the billing portal using the `commerce-stripe/customers/billing-portal-redirect`
-action in a form,
-but this does not allow a `configurationId` to be passed, only a redirect URL.
+> [!NOTE]
+> Logged-in users can be redirected via the `commerce-stripe/customers/billing-portal-redirect` action. The `configurationId` parameter is not supported when using this method.
 
 ## Syncing Customer Payment Methods
 
-Going forward the plugin will sync payment methods that are attached to customers in Stripe with the payment sources
-inside your installation. Make sure your webhook is set up correctly in Stripe to sync correctly.
+Payment methods created directly in Stripe are now synchronized back to Commerce. Webhooks must be configured for this to work as expected!
 
-To do an initial sync, you can use the `commerce-stripe/sync/payment-methods` console command.
+To do an initial sync, run the `commerce-stripe/sync/payment-sources` console command:
 
 ```bash
+php craft commerce-stripe/sync/payment-sources
+```
 
 ## Creating a Stripe Payment Form
 
