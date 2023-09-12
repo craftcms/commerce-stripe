@@ -90,11 +90,6 @@ abstract class SubscriptionGateway extends Gateway
     public const EVENT_BEFORE_SUBSCRIBE = 'beforeSubscribe';
 
     /**
-     * string The Stripe API version to use.
-     */
-    public const STRIPE_API_VERSION = '2022-11-15';
-
-    /**
      * @inheritdoc
      */
     public function cancelSubscription(Subscription $subscription, BaseCancelSubscriptionForm $parameters): SubscriptionResponseInterface
