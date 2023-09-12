@@ -30,6 +30,16 @@ class PaymentIntentsElements {
       '.stripe-payment-element',
     );
     paymentElement.mount(paymentElementDiv);
+
+    // Listen for the ready event and simulate a window resize:
+    const layoutChangeHandler = (e) => {
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    paymentElement.on('ready', layoutChangeHandler);
+    paymentElement.on('change', layoutChangeHandler);
+
+    // Show the container:
     this.container.classList.remove('hidden');
   }
 
