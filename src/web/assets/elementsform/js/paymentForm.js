@@ -4,7 +4,7 @@ class PaymentIntentsElements {
         this.formNamespace = this.container.dataset.paymentFormNamespace;
         this.stripeInstance = Stripe(publishableKey);
         this.elements = null;
-        this.scenario = this.container.dataset.scenario;
+        this.scenario = this.container.dataset.clientScenario;
         this.completeActionUrl = this.container.dataset.completePaymentActionUrl;
     }
 
