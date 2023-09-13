@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Added support for all Stripe payment methods including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
+- Added support for all of Stripe’s payment methods, including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
 - Added support for [Stripe Billing](https://stripe.com/billing).
 - Added support for [Stripe Checkout](https://stripe.com/payments/checkout).
 - Added support for syncing customer payment methods.
