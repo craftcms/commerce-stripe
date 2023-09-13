@@ -23,27 +23,19 @@ use yii\base\Exception;
 class PaymentIntents extends Component
 {
     /**
-     * Returns a payment intent by gateway, order id and stripe plugin customer id
+     * Returns a payment intent by gateway, customer id, and transaction
      *
      * @param int $gatewayId The stripe gateway
+     * @param int $customerId The customer id
+     * @param string|null $transactionHash The transaction hash
      *
      * @return PaymentIntent|null
      */
-    public function getPaymentIntent(int $gatewayId, $orderId, $customerId, $transactionHash = null): ?PaymentIntent
+    public function getPaymentIntent(int $gatewayId, $customerId, $transactionHash = null): ?PaymentIntent
     {
-        // The `orderId` is not unique across multiple payments (the new partial payment feature) on the same order.
-        // We have added `transactionHash` in commerce-stripe 2.4 to solve this.
-        // TODO make transactionHash required in next major release. Could also drop `orderId`
-        if ($transactionHash) {
-            $result = $this->_createIntentQuery()
-                ->where(['orderId' => $orderId, 'gatewayId' => $gatewayId, 'customerId' => $customerId, 'transactionHash' => $transactionHash])
-                ->one();
-        } else {
-            // This is just in case 3rd party code is calling this method.
-            $result = $this->_createIntentQuery()
-                ->where(['orderId' => $orderId, 'gatewayId' => $gatewayId, 'customerId' => $customerId, 'transactionHash' => null])
-                ->one();
-        }
+        $result = $this->_createIntentQuery()
+            ->where(['gatewayId' => $gatewayId, 'customerId' => $customerId, 'transactionHash' => $transactionHash])
+            ->one();
 
         if ($result !== null) {
             return new PaymentIntent($result);
@@ -95,7 +87,6 @@ class PaymentIntents extends Component
         $record->reference = $paymentIntent->reference;
         $record->gatewayId = $paymentIntent->gatewayId;
         $record->customerId = $paymentIntent->customerId;
-        $record->orderId = $paymentIntent->orderId;
         $record->transactionHash = $paymentIntent->transactionHash;
         $record->intentData = $paymentIntent->intentData;
 
@@ -125,7 +116,6 @@ class PaymentIntents extends Component
                 'gatewayId',
                 'customerId',
                 'reference',
-                'orderId',
                 'transactionHash',
                 'intentData',
             ])

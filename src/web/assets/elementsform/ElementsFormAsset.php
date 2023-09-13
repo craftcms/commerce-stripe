@@ -5,7 +5,7 @@
  * @license MIT
  */
 
-namespace craft\commerce\stripe\web\assets\intentsform;
+namespace craft\commerce\stripe\web\assets\elementsform;
 
 use yii\web\AssetBundle;
 use yii\web\JqueryAsset;
@@ -13,7 +13,7 @@ use yii\web\JqueryAsset;
 /**
  * Asset bundle for the Payment Form
  */
-class IntentsFormAsset extends AssetBundle
+class ElementsFormAsset extends AssetBundle
 {
     /**
      * @inheritdoc

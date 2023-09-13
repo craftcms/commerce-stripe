@@ -1,0 +1,17 @@
+{% import '_includes/forms' as forms %}
+
+<h2>{{ "Stripe Sync"|t('commerce') }}</h2>
+<form method="POST">
+    {{ actionInput('') }}
+    {{ csrfInput() }}
+    {{ forms.selectField({
+        label: 'Gateway'|t('commerce'),
+        name: 'gatewayId',
+        options: stripeGatewayOptions
+    }) }}
+    <a class="btn submit formsubmit" data-icon="refresh"
+       data-action="commerce-stripe/default/sync-payment-sources"
+       data-confirm="{{ 'Are you sure you want run a complete sync of all Stripe payment methods to payment sources?'|t('commerce-stripe') }}">
+        {{ 'Sync all Payment Methods'|t('commerce-stripe') }}
+    </a>
+</form>

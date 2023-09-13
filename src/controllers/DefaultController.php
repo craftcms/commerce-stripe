@@ -8,8 +8,9 @@
 namespace craft\commerce\stripe\controllers;
 
 use Craft;
-use craft\commerce\Plugin as Commerce;
-use craft\commerce\stripe\base\SubscriptionGateway;
+use craft\commerce\Plugin as CommercePlugin;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\web\Controller as BaseController;
 use Throwable;
 use yii\web\BadRequestHttpException;
@@ -24,18 +25,11 @@ use yii\web\Response;
 class DefaultController extends BaseController
 {
     /**
-     * @inheritdoc
-     */
-    public function init(): void
-    {
-        parent::init();
-        $this->defaultAction = 'fetch-plans';
-    }
-
-    /**
      * Load Stripe Subscription plans for a gateway.
      *
      * @return Response
+     *
+     * @deprecated in 4.0. Use [[\craft\commerce\base\SubscriptionGatewayInterface::getSubscriptionPlans()]] instead.
      */
     public function actionFetchPlans(): Response
     {
@@ -50,15 +44,40 @@ class DefaultController extends BaseController
         }
 
         try {
-            $gateway = Commerce::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
-
-            if (!$gateway instanceof SubscriptionGateway) {
-                throw new BadRequestHttpException('That is not a valid gateway id.');
-            }
-
+            /** @var PaymentIntents $gateway */
+            $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
             return $this->asJson($gateway->getSubscriptionPlans());
         } catch (Throwable $e) {
-            return $this->asErrorJson($e->getMessage());
+            return $this->asFailure($e->getMessage());
+        }
+    }
+
+    /**
+     * @return Response
+     * @throws BadRequestHttpException
+     * @throws \yii\web\ForbiddenHttpException
+     */
+    public function actionSyncPaymentSources(): Response
+    {
+        $this->requireAdmin(false);
+        $this->requirePostRequest();
+
+        $request = Craft::$app->getRequest();
+        $gatewayId = $request->getRequiredBodyParam('gatewayId');
+
+        if (!$gatewayId) {
+            return $this->asFailure(Craft::t('commerce-stripe', 'No valid gateway ID provided.'));
+        }
+
+        try {
+            if ($gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId)) {
+                $count = StripePlugin::getInstance()->getPaymentMethods()->syncAllPaymentMethods($gateway);
+                return $this->asSuccess(Craft::t('commerce-stripe', 'Synced {count} payment sources.', ['count' => $count]));
+            } else {
+                return $this->asFailure(Craft::t('commerce-stripe', 'No valid gateway ID provided.'));
+            }
+        } catch (\Throwable $e) {
+            return $this->asFailure($e->getMessage());
         }
     }
 }

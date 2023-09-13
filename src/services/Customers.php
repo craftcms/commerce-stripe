@@ -10,16 +10,12 @@ namespace craft\commerce\stripe\services;
 use Craft;
 use craft\commerce\Plugin as Commerce;
 use craft\commerce\stripe\base\Gateway as BaseGateway;
-use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\errors\CustomerException;
 use craft\commerce\stripe\events\CreateCustomerEvent;
 use craft\commerce\stripe\models\Customer;
-use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\records\Customer as CustomerRecord;
 use craft\db\Query;
 use craft\elements\User;
-use Stripe\Customer as StripeCustomer;
-use Stripe\Stripe;
 use Throwable;
 use yii\base\Component;
 use yii\base\Exception;
@@ -72,13 +68,14 @@ class Customers extends Component
 
         /** @var BaseGateway $gateway */
         $gateway = Commerce::getInstance()->getGateways()->getGatewayById($gatewayId);
-        Stripe::setApiKey($gateway->getApiKey());
-        Stripe::setAppInfo(StripePlugin::getInstance()->name, StripePlugin::getInstance()->version, StripePlugin::getInstance()->documentationUrl);
-        Stripe::setApiVersion(SubscriptionGateway::STRIPE_API_VERSION);
 
         $customerData = [
             'description' => Craft::t('commerce-stripe', 'Customer for Craft user with ID {id}', ['id' => $user->id]),
+            'name' => $user->fullName,
             'email' => $user->email,
+            'metadata' => [
+                'craft_user_id' => $user->id,
+            ],
         ];
 
         $event = new CreateCustomerEvent([
@@ -88,7 +85,7 @@ class Customers extends Component
 
         $this->trigger(self::EVENT_BEFORE_CREATE_CUSTOMER, $event);
 
-        $stripeCustomer = StripeCustomer::create($event->customer);
+        $stripeCustomer = $gateway->getStripeClient()->customers->create($event->customer);
 
         $customer = new Customer([
             'userId' => $user->id,
@@ -111,11 +108,16 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerById(int $id): ?Customer
+    public function getCustomerById(int $id, int $gatewayId = null): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
-            ->where(['id' => $id])
-            ->one();
+            ->where(['id' => $id]);
+
+        if ($gatewayId) {
+            $customerRow->andWhere(['gatewayId' => $gatewayId]);
+        }
+
+        $customerRow = $customerRow->one();
 
         if ($customerRow) {
             return new Customer($customerRow);
@@ -151,11 +153,17 @@ class Customers extends Component
      *
      * @return Customer|null
      */
-    public function getCustomerByReference(string $reference): ?Customer
+    public function getCustomerByReference(string $reference, int $gatewayId = null): ?Customer
     {
         $customerRow = $this->_createCustomerQuery()
-            ->where(['reference' => $reference])
-            ->one();
+            ->where([
+                'reference' => $reference,
+            ]);
+
+        if ($gatewayId) {
+            $customerRow->andWhere(['gatewayId' => $gatewayId]);
+        }
+        $customerRow = $customerRow->one();
 
         if ($customerRow) {
             return new Customer($customerRow);

@@ -19,12 +19,6 @@ use yii\base\Event;
 class BuildGatewayRequestEvent extends Event
 {
     /**
-     * @var array The metadata of the gateway request
-     * @deprecated in 1.1 Use [[request]] instead.
-     */
-    public array $metadata;
-
-    /**
      * @var Transaction The transaction being used as the base for request
      */
     public Transaction $transaction;
@@ -33,4 +27,9 @@ class BuildGatewayRequestEvent extends Event
      * @var array The request being used
      */
     public array $request;
+
+    /**
+     * @var string|null The type of request being made (payment_intent, setup_intent, checkout.session, etc)
+     */
+    public ?string $type = null;
 }

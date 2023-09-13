@@ -1,5 +1,26 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.0.0 - 2023-09-13
+
+- Added support for all of Stripe’s payment methods, including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
+- Added support for [Stripe Billing](https://stripe.com/billing).
+- Added support for [Stripe Checkout](https://stripe.com/payments/checkout).
+- Added support for syncing customer payment methods.
+- Plans are now kept in sync with Stripe plans. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
+- Customer information is now kept in sync with Stripe customers.
+- Improved logging.
+- Stripe now uses the `2022-11-15` version of the Stripe API.
+- Added the `commerce-stripe/customers/billing-portal-redirect` action.
+- Added the `commerce-stripe/customers/create-setup-intent` action.
+- Added the `commerce-stripe/sync/payment-methods` command.
+- Added `craft\commerce\stripe\events\BuildSetupIntentRequestEvent`.
+- Added `craft\commerce\stripe\gateways\PaymentIntents::getBillingPortalUrl()`.
+- Removed `craft\commerce\stripe\base\Gateway::normalizePaymentToken()`.
+- Removed `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. `BuildGatewayRequestEvent::$request` should be used instead.
+- Deprecated the `commerce-stripe/default/fetch-plans` action.
+- Deprecated creating new payment sources via the `commerce/subscriptions/subscribe` action. 
+- Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly-formatted data.
+
 ## 3.1.1 - 2023-05-10
 
 - Stripe customers’ default payment methods are now kept in sync with Craft users’ primary payment sources. ([#235](https://github.com/craftcms/commerce-stripe/issues/235))

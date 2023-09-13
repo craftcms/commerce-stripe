@@ -45,11 +45,6 @@ class PaymentIntent extends Model
     public ?int $gatewayId = null;
 
     /**
-     * @var int|null The order ID.
-     */
-    public ?int $orderId = null;
-
-    /**
      * @var string|null The Transaction Hash.
      */
     public ?string $transactionHash = null;
@@ -144,22 +139,7 @@ class PaymentIntent extends Model
 
         return $this->_customer;
     }
-
-    /**
-     * Returns the gateway associated with this payment intent.
-     *
-     * @return Order|null
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function getOrder(): ?Order
-    {
-        if (null === $this->_order) {
-            $this->_order = Commerce::getInstance()->getOrders()->getOrderById($this->orderId);
-        }
-
-        return $this->_order;
-    }
-
+    
     /**
      * Returns the transaction associated with this payment intent.
      *
@@ -183,7 +163,7 @@ class PaymentIntent extends Model
         $rules = parent::defineRules();
 
         $rules[] = [['reference'], UniqueValidator::class, 'targetClass' => PaymentIntentRecord::class];
-        $rules[] = [['gatewayId', 'customerId', 'reference', 'intentData', 'orderId', 'transactionHash'], 'required'];
+        $rules[] = [['gatewayId', 'customerId', 'reference', 'intentData', 'transactionHash'], 'required'];
 
         return $rules;
     }

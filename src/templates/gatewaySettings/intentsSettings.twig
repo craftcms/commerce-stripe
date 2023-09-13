@@ -1,42 +1,34 @@
-{% from "_includes/forms" import autosuggestField, booleanMenuField %}
+{% from "_includes/forms" import autosuggestField, booleanMenuField, selectField %}
 
 {{ autosuggestField({
-  label: "Publishable API Key"|t('commerce-stripe'),
-  instructions: "Your publishable Stripe API key."|t('commerce-stripe'),
-  id: 'publishableKey',
-  class: 'ltr',
-  name: 'publishableKey',
-  suggestEnvVars: true,
-  value: gateway.getPublishableKey(false),
-  errors: gateway.getErrors('publishableKey')
+    label: "Publishable API Key"|t('commerce-stripe'),
+    instructions: "Your publishable Stripe API key."|t('commerce-stripe'),
+    id: 'publishableKey',
+    class: 'ltr',
+    name: 'publishableKey',
+    suggestEnvVars: true,
+    value: gateway.getPublishableKey(false),
+    errors: gateway.getErrors('publishableKey')
 }) }}
 
 {{ autosuggestField({
-  label: "Secret API Key"|t('commerce-stripe'),
-  instructions: "Your Stripe API key."|t('commerce-stripe'),
-  id: 'apiKey',
-  class: 'ltr',
-  name: 'apiKey',
-  suggestEnvVars: true,
-  value: gateway.getApiKey(false),
-  errors: gateway.getErrors('apiKey')
+    label: "Secret API Key"|t('commerce-stripe'),
+    instructions: "Your Stripe API key."|t('commerce-stripe'),
+    id: 'apiKey',
+    class: 'ltr',
+    name: 'apiKey',
+    suggestEnvVars: true,
+    value: gateway.getApiKey(false),
+    errors: gateway.getErrors('apiKey')
 }) }}
 
 {{ autosuggestField({
-  label: "Webhook Signing Secret"|t("commerce"),
-  instructions: "Your webhook endpoint signing secret."|t("commerce"),
-  id: 'signingSecret',
-  name: 'signingSecret',
-  class: 'ltr',
-  suggestEnvVars: true,
-  value: gateway.getSigningSecret(false),
-  errors: gateway.getErrors('signingSecret')
-}) }}
-
-{{ booleanMenuField({
-  label: "Send Stripe's receipt email?"|t('commerce-stripe'),
-  name: 'sendReceiptEmail',
-  value: gateway.getSendReceiptEmail(false),
-  includeEnvVars: true,
-  errors: gateway.getErrors('sendReceiptEmail'),
+    label: "Webhook Signing Secret"|t("commerce"),
+    instructions: "Your webhook endpoint signing secret."|t("commerce"),
+    id: 'signingSecret',
+    name: 'signingSecret',
+    class: 'ltr',
+    suggestEnvVars: true,
+    value: gateway.getSigningSecret(false),
+    errors: gateway.getErrors('signingSecret')
 }) }}
