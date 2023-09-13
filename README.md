@@ -126,12 +126,31 @@ Your Stripe account must be configured to use at least [version `2022-11-15`](ht
 
 ### Subscriptions
 
-Support for creation of new payment sources in the same request as 
-Payment source creation at the time of subscription has been deprecated. Recommendation?
-- Set up a payment source before offering subscriptions;
-- Create a payment source over Ajax on the same page;
-- Show users what payment method the subscription will be associated with;
-- 
+Support for creation of new payment sources in the same request as a subscription has been deprecated due to inconsistencies with Stripe’s handling of default payment methods. In future versions, the subscription endpoint will focus solely on starting a subscription, not accepting payment information. **For now, custom subscription forms that use the legacy Charge workflow will continue to work.**
+
+We recommend one of the following strategies:
+
+1. **Set up a payment source before choosing a subscription.** Design your subscription process to capture payment details, _then_ select from plans.
+1. **Create a payment source over Ajax on the same page.** _This should only be supported when configuring the customer’s first payment method._ You may preflight an Ajax request to Commerce’s [`payment-sources/add` action](https://craftcms.com/docs/commerce/4.x/dev/controller-actions.html#post-payment-sources-add) to set up a payment method, then use the subscription form normally—Stripe will use that sole payment source with the subscription.
+1. **Show users what payment method the subscription will be associated with.** This is a great idea, regardless—confirm to the user which of their existing payment sources will be used. You can find the customer’s default payment source in Twig, like this:
+    ```twig
+    {# Assuming a `plan` variable exists in this context... #}
+    {% set paymentSources = craft.commerce.paymentSources.getAllGatewayPaymentSourcesByCustomerId(plan.gatewayId, currentUser.id) %}
+    {% set defaultPaymentSource = paymentSources | filter((ps) => ps.getIsPrimary()) | first %}
+
+    {% if defaultPaymentSource %}
+      {# Show some information about the source: #}
+      This subscription will be billed to: {{ defaultPaymentSource.description }}
+
+      {# Then, output the form! #}
+    {% else %}
+      <p>You must set up a payment method to start a subscription!</p>
+      {{ tag('a', {
+        href: siteUrl('account/payment-sources'),
+        text: 'Add a payment method',
+      }) }}
+    {% endif %}
+    ```
 
 ### Synchronization
 
