@@ -9,15 +9,20 @@ namespace craft\commerce\stripe;
 
 use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
 use craft\commerce\Plugin as CommercePlugin;
-use craft\commerce\services\Customers;
+use craft\commerce\services\Customers as CommerceCustomers;
 use craft\commerce\services\Gateways;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\gateways\PaymentIntents;
 use craft\commerce\stripe\models\Settings;
 use craft\commerce\stripe\plugin\Services;
+use craft\commerce\stripe\services\Customers;
+use craft\commerce\stripe\services\Invoices;
+use craft\commerce\stripe\services\PaymentMethods;
+use craft\commerce\stripe\utilities\Sync;
 use craft\events\RegisterComponentTypesEvent;
+use craft\services\Utilities;
+use Illuminate\Support\Collection;
 use yii\base\Event;
-use yii\base\InvalidConfigException;
 
 /**
  * Plugin represents the Stripe integration plugin.
@@ -38,13 +43,26 @@ class Plugin extends \craft\base\Plugin
     use Services;
 
     /**
+     * @inheritDoc
+     */
+    public static function config(): array
+    {
+        return [
+            'components' => [
+                'customers' => Customers::class,
+                'invoices' => Invoices::class,
+                'paymentIntents' => PaymentIntents::class,
+                'paymentMethods' => PaymentMethods::class,
+            ],
+        ];
+    }
+
+    /**
      * @inheritdoc
      */
     public function init(): void
     {
         parent::init();
-
-        $this->_setPluginComponents();
 
         Event::on(
             Gateways::class,
@@ -55,29 +73,32 @@ class Plugin extends \craft\base\Plugin
         );
 
         Event::on(
-            Customers::class,
-            Customers::EVENT_UPDATE_PRIMARY_PAYMENT_SOURCE,
-            [$this, 'handlePrimaryPaymentSourceUpdated']
+            Utilities::class,
+            Utilities::EVENT_REGISTER_UTILITY_TYPES,
+            function(RegisterComponentTypesEvent $event) {
+                $event->types[] = Sync::class;
+            }
+        );
+
+        Event::on(
+            CommerceCustomers::class,
+            CommerceCustomers::EVENT_UPDATE_PRIMARY_PAYMENT_SOURCE,
+            function(UpdatePrimaryPaymentSourceEvent $event) {
+                Plugin::getInstance()->getPaymentMethods()->handlePrimaryPaymentSourceUpdated($event);
+            }
         );
     }
 
     /**
-     * Whenever a payment source is set as primary in Commerce, lets make it the primary in the gateway too.
-     *
-     * @param UpdatePrimaryPaymentSourceEvent $event
-     * @return void
-     * @throws InvalidConfigException
+     * @return Collection<Gateway>
+     * @throws \yii\base\InvalidConfigException
      */
-    public function handlePrimaryPaymentSourceUpdated(UpdatePrimaryPaymentSourceEvent $event): void
+    public function getStripeGateways()
     {
-        $paymentSourceService = CommercePlugin::getInstance()->getPaymentSources();
-        $newPrimaryPaymentSource = $paymentSourceService->getPaymentSourceById($event->newPrimaryPaymentSourceId);
-        /** @var Gateway $gateway **/
-        $gateway = $newPrimaryPaymentSource->getGateway();
-        if ($gateway instanceof Gateway) {
-            $stripeCustomerReference = $this->getCustomers()->getCustomer($gateway->id, $event->customer)->reference;
-            $gateway->setPaymentSourceAsDefault($stripeCustomerReference, $newPrimaryPaymentSource->token);
-        }
+        return collect(CommercePlugin::getInstance()->getGateways()->getAllGateways())
+            ->filter(function($gateway) {
+                return $gateway instanceof Gateway;
+            });
     }
 
     /**

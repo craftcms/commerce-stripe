@@ -7,7 +7,7 @@
 
 namespace craft\commerce\stripe\models\forms\payment;
 
-use craft\commerce\models\payments\CreditCardPaymentForm;
+use craft\commerce\models\payments\BasePaymentForm;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\stripe\Plugin;
 
@@ -17,27 +17,24 @@ use craft\commerce\stripe\Plugin;
  * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
  * @since 2.0
  */
-class PaymentIntent extends CreditCardPaymentForm
+class PaymentIntent extends BasePaymentForm
 {
+    /**
+     * Defaults to 'card'.
+     *
+     * @var string
+     */
+    public string $paymentFormType = 'elements';
+
     /**
      * @var string|null $customer the Stripe customer token.
      */
     public ?string $customer = null;
 
     /**
-     * @var string|null $paymentMethodId the Stripe payment method id.
+     * @var string|null $paymentMethodId the Stripe payment method id if when using the legacy payment form.
      */
     public ?string $paymentMethodId = null;
-
-    /**
-     * @inheritdoc
-     */
-    protected function defineRules(): array
-    {
-        return [
-            [['paymentMethodId'], 'required'],
-        ];
-    }
 
     /**
      * @inheritdoc
