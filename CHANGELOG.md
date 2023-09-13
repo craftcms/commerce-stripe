@@ -18,6 +18,7 @@
 - Removed `craft\commerce\stripe\base\Gateway::normalizePaymentToken()`.
 - Removed `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. `BuildGatewayRequestEvent::$request` should be used instead.
 - Deprecated the `commerce-stripe/default/fetch-plans` action.
+- Deprecated creating new payment sources via the `commerce/subscriptions/subscribe` action. 
 - Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly-formatted data.
 
 ## 3.1.1 - 2023-05-10

@@ -32,22 +32,9 @@ class PaymentIntent extends BasePaymentForm
     public ?string $customer = null;
 
     /**
-     * @var string|null $paymentMethodId the Stripe payment method id.
+     * @var string|null $paymentMethodId the Stripe payment method id if when using the legacy payment form.
      */
     public ?string $paymentMethodId = null;
-
-    /**
-     * @inheritdoc
-     */
-    protected function defineRules(): array
-    {
-        // The legacy card process expects a payment method ID immediately
-        return [
-            [['paymentMethodId'], 'required', 'when' => function($model) {
-                return $model->paymentFormType === 'card';
-            }],
-        ];
-    }
 
     /**
      * @inheritdoc
