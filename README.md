@@ -101,7 +101,7 @@ Your local environment isn’t often exposed to the public internet, so Stripe w
 
 2. Use DDEV’s `share` command, and use the public Ngrok URL when configuring the webhook manually, in Stripe.
 
-## Uprading from 3.x
+## Upgrading from 3.x
 
 Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
 
