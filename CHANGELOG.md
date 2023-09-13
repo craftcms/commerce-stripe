@@ -2,14 +2,14 @@
 
 ## Unreleased
 
-- Stripe now uses the `2022-11-15` version of the Stripe API.
 - Added support for all Stripe payment methods including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
-- Added support for the Stripe Billing Portal.
-- Added support for Stripe Checkout.
+- Added support for [Stripe Billing](https://stripe.com/billing).
+- Added support for [Stripe Checkout](https://stripe.com/payments/checkout).
 - Added support for syncing customer payment methods.
 - Plans are now kept in sync with Stripe plans. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
 - Customer information is now kept in sync with Stripe customers.
 - Improved logging.
+- Stripe now uses the `2022-11-15` version of the Stripe API.
 - Added the `commerce-stripe/customers/billing-portal-redirect` action.
 - Added the `commerce-stripe/customers/create-setup-intent` action.
 - Added the `commerce-stripe/sync/payment-methods` command.
