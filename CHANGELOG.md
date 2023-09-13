@@ -2,24 +2,23 @@
 
 ## Unreleased
 
-- Stripe plugin now requires the `2022-11-15` version of the Stripe API.
-- Added support to all Stripe payment methods including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
-- Added support for the Stripe Billing Portal.
-- Added support for Stripe Checkout, a off-site checkout page.
-- When a plan is updated in Stripe, the associated Commerce plan is now also updated. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
-- Stripe customer information is now updated when the associated user is updated.
-- Added support for for syncing customer payment methods.
-- Added the `commerce-stripe/sync/payment-methods` console command.
+- Added support for all of Stripe’s payment methods, including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
+- Added support for [Stripe Billing](https://stripe.com/billing).
+- Added support for [Stripe Checkout](https://stripe.com/payments/checkout).
+- Added support for syncing customer payment methods.
+- Plans are now kept in sync with Stripe plans. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
+- Customer information is now kept in sync with Stripe customers.
+- Improved logging.
+- Stripe now uses the `2022-11-15` version of the Stripe API.
 - Added the `commerce-stripe/customers/billing-portal-redirect` action.
 - Added the `commerce-stripe/customers/create-setup-intent` action.
-- Added the `craft\commerce\stripe\events\BuildSetupIntentRequestEvent` event.
-- Added `craft\commerce\stripe\controllers\CustomersController`.
+- Added the `commerce-stripe/sync/payment-methods` command.
+- Added `craft\commerce\stripe\events\BuildSetupIntentRequestEvent`.
 - Added `craft\commerce\stripe\gateways\PaymentIntents::getBillingPortalUrl()`.
-- Removed `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. Use `BuildGatewayRequestEvent::$request` instead.
-- Removed `craft\commerce\stripe\base\Gateway::normalizePaymentToken`.
-- Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly formatted data.
+- Removed `craft\commerce\stripe\base\Gateway::normalizePaymentToken()`.
+- Removed `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. `BuildGatewayRequestEvent::$request` should be used instead.
 - Deprecated the `commerce-stripe/default/fetch-plans` action.
-- Added support for Stripe to log to the Craft log.
+- Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly-formatted data.
 
 ## 3.1.1 - 2023-05-10
 

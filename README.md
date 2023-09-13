@@ -70,14 +70,14 @@ Stripe provides different keys for testing—use those until you are ready to la
 
 ### Webhooks
 
-Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a new webhook in your Stripe dashboard. A signing secret will be generated for you—save this in your `.env` file with the other secrets, then return to the gateway’s settings screen and populate the **Webhook Signing Secret** field with the variable’s name.
+Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a [new webhook](https://stripe.com/docs/webhooks#webhooks-summary) in your Stripe dashboard. A signing secret will be generated for you—save this in your `.env` file with the other secrets, then return to the gateway’s settings screen and populate the **Webhook Signing Secret** field with the variable’s name.
 
 > [!WARNING]
 > Webhooks will not be processed if the signing secret is missing or invalid!
 
-We recommend enabling _all_ available events for the webhook. Unnecessary events will be ignored by the plugin.
+We recommend enabling _all_ available events for the webhook, in Stripe. Events that the plugin has no use for will be ignored.
 
-The webhook URL for your production environment will be different! It may also have a different ID than the one you use in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)). Run one of these Commerce console commands to view your gateway’s configuration:
+Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)). Run one of these Commerce console commands to view your gateway’s configuration:
 
 ```bash
 # Outputs a table with information about each gateway:
@@ -97,11 +97,11 @@ Your local environment isn’t often exposed to the public internet, so Stripe w
     stripe listen --forward-to "my-project.ddev.site/index.php?action=commerce/webhooks/process-webhook&gateway=1"
     ```
 
-  This command will create a temporary webhook and signing secret, which you should add to your `.env` file and  See Stripe’s [Testing Webhooks](https://stripe.com/docs/webhooks#test-webhook) article for more information.
+    This command will create a temporary webhook and signing secret, which you should add to your `.env` file and  See Stripe’s [Testing Webhooks](https://stripe.com/docs/webhooks#test-webhook) article for more information.
 
 2. Use DDEV’s `share` command, and use the public Ngrok URL when configuring the webhook manually, in Stripe.
 
-## Uprading from 3.x
+## Upgrading from 3.x
 
 Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
 
@@ -119,6 +119,10 @@ Now, output is a more flexible [Payment Element](https://stripe.com/docs/payment
 1. The Stripe JS SDK is initialized with the secret, and the customer is able to select from the available payment methods;
 
 Details on how to configure the new [payment form](#creating-a-stripe-payment-form) are below.
+
+### API Version
+
+Your Stripe account must be configured to use at least [version `2022-11-15`](https://stripe.com/docs/upgrades) of their API, due to the availability of certain Payment Intents features.
 
 ## Configuration Settings
 
