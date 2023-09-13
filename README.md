@@ -124,6 +124,19 @@ Details on how to configure the new [payment form](#creating-a-stripe-payment-fo
 
 Your Stripe account must be configured to use at least [version `2022-11-15`](https://stripe.com/docs/upgrades) of their API, due to the availability of certain Payment Intents features.
 
+### Subscriptions
+
+Support for creation of new payment sources in the same request as 
+Payment source creation at the time of subscription has been deprecated. Recommendation?
+- Set up a payment source before offering subscriptions;
+- Create a payment source over Ajax on the same page;
+- Show users what payment method the subscription will be associated with;
+- 
+
+### Synchronization
+
+After the update, we recommend running the new [payment method synchronization command](#syncing-customer-payment-methods) to ensure your store’s data is up-to-date with Stripe’s records.
+
 ## Configuration Settings
 
 These options are set via `config/commerce-stripe.php`.
@@ -137,20 +150,30 @@ For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours b
 
 ## Subscriptions
 
+The Stripe plugin provides an interface between Commerce’s subscriptions system and Stripe’s [Billing](https://stripe.com/docs/subscriptions) APIs.
+
 ### Creating a Subscription Plan
 
-1. Every subscription plan must first be [created in the Stripe dashboard](https://dashboard.stripe.com/test/subscriptions/products).
-1. In the Craft control panel, navigate to **Commerce** → **Settings** → **Subscription plans** and create a new subscription plan.
+Plans must first be configured in the [Stripe dashboard](https://dashboard.stripe.com/test/subscriptions/products).
+
+1. In the Craft control panel, navigate to **Commerce** → **Store Settings** → **Plans**, and click **+ New subscription plan**;
+1. Select **Stripe** from the **Gateway** dropdown;
+1. Choose a plan name from the **Gateway plan** dropdown;
+
+> [!NOTE]
+> Plans in Stripe are configured separately for live and test mode! You may see a different list of plans depending on which keys you’re working with.
 
 ### Subscription Options
 
-In addition to the values you POST to Commerce’s `commerce/subscriptions/subscribe` action, the Stripe gateway supports these options.
+In addition to the values you POST to Commerce’s [`commerce/subscriptions/subscribe` action](https://craftcms.com/docs/commerce/4.x/dev/controller-actions.html#post-subscriptions-subscribe), the Stripe gateway supports these options:
 
 #### `trialDays`
 
 The first full billing cycle will start once the number of trial days lapse. Default value is `0`.
 
 ### Cancellation Options
+
+In addition to the values you POST to Commerce’s [`commerce/subscriptions/cancel` action](https://craftcms.com/docs/commerce/4.x/dev/controller-actions.html#post-subscriptions-cancel), the Stripe gateway supports these options:
 
 #### `cancelImmediately`
 
@@ -161,14 +184,15 @@ If this parameter is set to `true`, the subscription is canceled immediately. St
 
 ### Plan-Switching Options
 
+In addition to the values you POST to Commerce’s [`commerce/subscriptions/switch` action](https://craftcms.com/docs/commerce/4.x/dev/controller-actions.html#post-subscriptions-switch), the Stripe gateway supports these options:
+
 #### `prorate`
 
 If this parameter is set to `true`, the subscription switch will be [prorated](https://stripe.com/docs/billing/subscriptions/upgrade-downgrade#proration). Defaults to `false`.
 
 #### `billImmediately`
 
-If this parameter is set to `true`, the subscription switch is billed immediately. Otherwise, the cost (or credit,
-if `prorate` is set to `true` and switching to a cheaper plan) is applied to the next invoice.
+If this parameter is set to `true`, the subscription switch is billed immediately. Otherwise, the cost (or credit, if `prorate` is set to `true` when switching to a cheaper plan) is applied to the next invoice.
 
 > [!WARNING]
 > If the billing periods differ, the plan switch will be billed immediately and this parameter will be ignored.
@@ -185,9 +209,7 @@ The plugin provides several events you can use to modify the behavior of your in
 
 #### `buildGatewayRequest`
 
-Plugins get a chance to provide additional metadata when communicating with Stripe in the course of creating a PaymentIntent.
-
-This gives you near-complete control over the data that Stripe sees, with the following considerations:
+Plugins get a chance to provide additional metadata when communicating with Stripe in the course of creating a Payment Intent. This gives you near-complete control over the data that Stripe sees, with the following considerations:
 
 - Changes to the `Transaction` model (available via the event’s `transaction` property) will not be saved;
 - The gateway automatically sets `order_id`, `order_number`, `order_short_number`, `transaction_id`, `transaction_reference`, `description`, and `client_ip` [metadata](https://stripe.com/docs/payments/payment-intents#storing-information-in-metadata) keys;
@@ -243,7 +265,7 @@ Event::on(
 
 #### `createInvoice`
 
-Plugins get a chance to do something when an invoice is created on the Stripe gateway.
+Plugins get a chance to do something when a Stripe invoice is created. This is typically emitted  in the course of handling a webhook.
 
 ```php
 use craft\commerce\stripe\events\CreateInvoiceEvent;
@@ -287,6 +309,8 @@ Event::on(
 );
 ```
 
+Commerce also has a [generic subscription event](https://docs.craftcms.com/commerce/api/v4/craft-commerce-services-subscriptions.html#event-after-create-subscription) that is emitted for subscriptions created via _any_ gateway.
+
 ## Billing Portal
 
 You can now generate a link to the [Stripe billing portal](https://stripe.com/docs/customer-management) for customers to manage their credit cards and plans.
@@ -312,7 +336,10 @@ A specific Stripe customer portal configuration can be chosen with the third `co
 
 ## Syncing Customer Payment Methods
 
-Payment methods created directly in the Stripe customer portal are now synchronized back to Commerce. Webhooks must be configured for this to work as expected!
+Payment methods created directly in the Stripe customer portal are now synchronized back to Commerce. Customers’ primary payment methods are also synchronized.
+
+> [!NOTE]
+> Webhooks must be configured for this to work as expected!
 
 To perform an initial sync, run the `commerce-stripe/sync/payment-sources` console command:
 
@@ -362,26 +389,13 @@ This assumes you have provided a means of selecting the gateway in a prior check
 
 Regardless of how you use this output, it will automatically register all the necessary Javascript to create the Payment Intent and bootstrap Stripe Elements.
 
-### Payment Form Contexts
-
-Commerce uses payment forms in three places:
-
-- Paying for a cart (`commerce/payments/pay`);
-- Adding a saved payment source (`commerce/payment-sources/add`);
-- Starting a subscription (`commerce/subscriptions/subscribe`);
-
-> [!NOTE]
-> When creating a subscription, you should only include the payment form HTML if the customer does not already have a saved payment source. Subscriptions are always created with the customer’s primary payment source.
-
-
-
 ## Customizing the Stripe Payment Form
 
-`getPaymentFormHtml()` accepts one argument, an array with any of the following keys:
+`getPaymentFormHtml()` accepts an array with any of the following keys:
 
 ### `paymentFormType`
 
-#### `elements`
+#### `elements` (default)
 
 Renders a Stripe Elements form with all the payment method types [enabled in your Stripe Dashboard](https://stripe.com/docs/payments/customize-payment-methods). Some methods may be hidden if the order total or currency don’t meet the method’s criteria—or if they aren’t supported in the current environment.
 
@@ -393,11 +407,11 @@ Renders a Stripe Elements form with all the payment method types [enabled in you
 {{ cart.gateway.getPaymentFormHtml(params)|raw }}
 ```
 
-This is the default `paymentFormType`, and most installations will not need to alter it.
+This is the default `paymentFormType`, and most installations will not need to declare or change it.
 
 #### `checkout`
 
-This generates a form ready to redirect to Stripe Checkout. This can only be used inside a `commerce/payments/pay` form. This option ignores all other params.
+This generates a form ready to redirect to a hosted [Stripe Checkout](https://stripe.com/docs/payments/checkout) page. This can only be used inside a `commerce/payments/pay` form. This option ignores all other params.
 
 ```twig
 {% set params = {
