@@ -7,8 +7,8 @@
 
 namespace craft\commerce\stripe\events;
 
-use craft\elements\User;
 use craft\commerce\base\Plan;
+use craft\elements\User;
 use yii\base\Event;
 
 /**

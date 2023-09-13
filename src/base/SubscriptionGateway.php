@@ -847,7 +847,7 @@ abstract class SubscriptionGateway extends Gateway
         do {
             // Handle cases when Stripe sends us a webhook so soon that we haven't processed the subscription that triggered the webhook
             sleep(1);
-            $subscription = Subscription::find()->reference($subscriptionReference)->anyStatus()->one();
+            $subscription = Subscription::find()->status(null)->reference($subscriptionReference)->one();
             $counter++;
         } while (!$subscription && $counter < $limit);
 
@@ -901,7 +901,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripeSubscription = $data['data']['object'];
 
-        $subscription = Subscription::find()->reference($stripeSubscription['id'])->status(null)->one();
+        $subscription = Subscription::find()->status(null)->reference($stripeSubscription['id'])->one();
 
         if (!$subscription) {
             Craft::warning('Subscription with the reference “' . $stripeSubscription['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
