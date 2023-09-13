@@ -44,7 +44,7 @@ $stripeButton.on('click', function (ev) {
                 response[i].reference +
                 '">' +
                 response[i].name +
-                '</option>',
+                '</option>'
             );
           } else {
             $planSelect.append(
@@ -52,7 +52,7 @@ $stripeButton.on('click', function (ev) {
                 response[i].reference +
                 '">' +
                 response[i].name +
-                '</option>',
+                '</option>'
             );
           }
 
