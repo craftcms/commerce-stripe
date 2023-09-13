@@ -206,33 +206,36 @@ class PaymentIntentsElements {
                 const savePaymentSourceCheckbox = this.container
                     .closest('form')
                     .querySelector('input[name="savePaymentSource"]');
-                savePaymentSourceCheckbox.addEventListener(
-                    'click',
-                    function () {
-                        updatePaymentIntentForm.append(
-                            'paymentIntent[setup_future_usage]',
-                            savePaymentSourceCheckbox.checked ? '1' : '0',
-                        );
 
-                        fetch(window.location.href, {
-                            method: 'post',
-                            body: updatePaymentIntentForm,
-                            headers: {
-                                Accept: 'application/json',
-                            },
-                        })
-                            .then((response) => response.json())
-                            .then((data) => {
-                                this.elements.fetchUpdates();
+                if (savePaymentSourceCheckbox) {
+                    savePaymentSourceCheckbox.addEventListener(
+                        'click',
+                        function () {
+                            updatePaymentIntentForm.append(
+                                'paymentIntent[setup_future_usage]',
+                                savePaymentSourceCheckbox.checked ? '1' : '0',
+                            );
+
+                            fetch(window.location.href, {
+                                method: 'post',
+                                body: updatePaymentIntentForm,
+                                headers: {
+                                    Accept: 'application/json',
+                                },
                             })
-                            .catch((error) => {
-                                console.error(
-                                    'There was an error updating the Payment Intent:',
-                                    error,
-                                );
-                            });
-                    }.bind(this),
-                );
+                                .then((response) => response.json())
+                                .then((data) => {
+                                    this.elements.fetchUpdates();
+                                })
+                                .catch((error) => {
+                                    console.error(
+                                        'There was an error updating the Payment Intent:',
+                                        error,
+                                    );
+                                });
+                        }.bind(this),
+                    );
+                }
 
                 this.container
                     .querySelector('.stripe-payment-elements-submit-button')
@@ -260,7 +263,7 @@ class PaymentIntentsElements {
                     });
             });
     }
-    
+
     handle() {
         const formData = this.getFormData();
         const action = formData.get('action');
