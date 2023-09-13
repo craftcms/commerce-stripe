@@ -136,11 +136,11 @@ We recommend one of the following strategies:
     ```twig
     {# Assuming a `plan` variable exists in this context... #}
     {% set paymentSources = craft.commerce.paymentSources.getAllGatewayPaymentSourcesByCustomerId(plan.gatewayId, currentUser.id) %}
-    {% set defaultPaymentSource = paymentSources | filter((ps) => ps.getIsPrimary()) | first %}
+    {% set primaryPaymentSource = paymentSources | filter((ps) => ps.getIsPrimary()) | first %}
 
-    {% if defaultPaymentSource %}
+    {% if primaryPaymentSource %}
       {# Show some information about the source: #}
-      This subscription will be billed to: {{ defaultPaymentSource.description }}
+      This subscription will be billed to: {{ primaryPaymentSource.description }}
 
       {# Then, output the form! #}
     {% else %}
@@ -151,6 +151,9 @@ We recommend one of the following strategies:
       }) }}
     {% endif %}
     ```
+
+    > [!NOTE]
+    > If your store uses multiple gateways, the customer’s default payment source may not always belong to the same gateway as the plan, so `primaryPaymentSource` _can_ be empty, even if they’ve selected one.
 
 ### Synchronization
 
