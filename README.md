@@ -77,15 +77,7 @@ Once the gateway has been saved (and it has an ID), revisiting its edit screen w
 
 We recommend enabling _all_ available events for the webhook, in Stripe. Events that the plugin has no use for will be ignored.
 
-Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)). Run one of these Commerce console commands to view your gateway’s configuration:
-
-```bash
-# Outputs a table with information about each gateway:
-php craft commerce/gateways/list
-
-# Outputs a single gateway’s webhook URL:
-php craft commerce/gateways/webhook-url myGatewayHandle
-```
+Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)).
 
 #### Local Development
 
