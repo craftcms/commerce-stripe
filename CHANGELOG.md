@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 4.0.1 - 2024-09-28
+## 4.0.1 - 2023-09-28
 - Fixed a PHP error that occurred when switching a subscription’s plan.
 
 ## 4.0.0 - 2023-09-13
