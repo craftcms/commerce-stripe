@@ -401,42 +401,37 @@ abstract class SubscriptionGateway extends Gateway
         $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
         /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
-        $stripeSubscription->items = [
+
+        $request = [];
+
+        $request['items'] = [
             [
                 'id' => $item->id,
                 'plan' => $plan->reference,
+                'quantity' => $parameters->quantity ?: $item->quantity,
             ],
         ];
 
-        /** @phpstan-ignore-next-line */
-        $stripeSubscription->prorate = (bool)$parameters->prorate;
-
         if ($parameters->billingCycleAnchor) {
-            $stripeSubscription->billing_cycle_anchor = $parameters->billingCycleAnchor;
-        }
-
-        if ($parameters->quantity) {
-            $stripeSubscription->items[0]['quantity'] = $parameters->quantity;
+            $request['billing_cycle_anchor'] = $parameters->billingCycleAnchor;
         }
 
         if ($parameters->prorationDate) {
-            /** @phpstan-ignore-next-line */
-            $stripeSubscription->proration_date = $parameters->prorationDate;
+            $request['proration_date'] = $parameters->prorationDate;
         }
 
-        $response = $this->createSubscriptionResponse($stripeSubscription->save());
-
-        // Bill immediately only for non-trials
-        if (!$subscription->getIsOnTrial() && $parameters->billImmediately) {
-            try {
-                $this->getStripeClient()->invoices->create([
-                    'customer' => $stripeSubscription->customer,
-                    'subscription' => $stripeSubscription->id,
-                ]);
-            } catch (Throwable $exception) {
-                // Or, maybe, Stripe already invoiced them because reasons.
+        if (!$parameters->prorate) {
+            $request['proration_behavior'] = 'none';
+        } else {
+            if ($parameters->billImmediately) {
+                $request['proration_behavior'] = 'always_invoice';
+            } else {
+                $request['proration_behavior'] = 'create_prorations';
             }
         }
+
+        $stripeSubscription = $this->getStripeClient()->subscriptions->update($stripeSubscription->id, $request);
+        $response = $this->createSubscriptionResponse($stripeSubscription);
 
         return $response;
     }

@@ -1,5 +1,8 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.0.1 - 2023-09-28
+- Fixed a PHP error that occurred when switching a subscription’s plan.
+
 ## 4.0.0 - 2023-09-13
 
 - Added support for all of Stripe’s payment methods, including Apple Pay and Google Wallet. ([#223](https://github.com/craftcms/commerce-stripe/issues/223), [#222](https://github.com/craftcms/commerce-stripe/issues/222),[#212](https://github.com/craftcms/commerce-stripe/issues/212))
