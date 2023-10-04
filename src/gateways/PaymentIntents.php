@@ -31,6 +31,7 @@ use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\CheckoutSessionResponse;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\elementsform\ElementsFormAsset;
+use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
@@ -79,6 +80,54 @@ class PaymentIntents extends BaseGateway
     public function showPaymentFormSubmitButton(): bool
     {
         return false;
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function getOldPaymentFormHtml(array $params): ?string
+    {
+        $defaults = [
+            'gateway' => $this,
+            'paymentForm' => $this->getPaymentFormModel(),
+            'scenario' => 'payment',
+            'handle' => $this->handle,
+        ];
+
+        $params = array_merge($defaults, $params);
+
+        // If there's no order passed, add the current cart if we're not messing around in backend.
+        if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
+            if ($cart = Commerce::getInstance()->getCarts()->getCart()) {
+                $billingAddress = $cart->getBillingAddress();
+
+                /** @var User|CustomerBehavior|null $user */
+                $user = $cart->getCustomer();
+                if (!$billingAddress && $user) {
+                    $billingAddress = $user->getPrimaryBillingAddress();
+                }
+            }
+        } else {
+            $billingAddress = $params['order']->getBillingAddress();
+        }
+
+        if ($billingAddress) {
+            $params['billingAddress'] = $billingAddress;
+        }
+
+        $view = Craft::$app->getView();
+
+        $previousMode = $view->getTemplateMode();
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
+        $view->registerAssetBundle(IntentsFormAsset::class);
+
+        $html = $view->renderTemplate('commerce-stripe/paymentForms/oldIntentsForm', $params);
+
+        $view->setTemplateMode($previousMode);
+
+        return $html;
     }
 
     /**

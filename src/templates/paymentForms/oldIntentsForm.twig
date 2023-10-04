@@ -1,0 +1,108 @@
+{% set paymentFormNamespace = handle|commercePaymentFormNamespace %}
+<div class="stripe-payment-intents-form"
+     data-payment-form-namespace="{{ paymentFormNamespace }}"
+     data-publishablekey="{{ parseEnv(gateway.getPublishableKey()) }}"
+     {% if clientSecret is defined %}data-client-secret="{{clientSecret}}" {% endif %}
+        {% if scenario is defined %}data-scenario="{{scenario}}" {% endif %}
+>
+
+    <div class="payment-form-fields hidden">
+        {% namespace paymentFormNamespace %}
+            {% import "_includes/forms" as forms %}
+
+            <fieldset class="card-holder">
+                <legend>{{ 'Card Holder'|t('commerce') }}</legend>
+
+                <div class="md:flex md:-mx-4">
+                    <!-- Card Holder Name -->
+                    <div class="md:w-1/2 md:mx-4 my-2">
+                        {{ forms.text({
+                            name: 'firstName',
+                            maxlength: 70,
+                            placeholder: "First Name"|t('commerce'),
+                            autocomplete: false,
+                            class: 'card-holder-first-name'~(paymentForm.getErrors('firstName') ? ' error'),
+
+                            required: true,
+                        }) }}
+                    </div>
+
+                    <div class="md:w-1/2 md:mx-4 my-2">
+                        {{ forms.text({
+                            name: 'lastName',
+                            maxlength: 70,
+                            placeholder: "Last Name"|t('commerce'),
+                            autocomplete: false,
+                            class: 'card-holder-last-name'~(paymentForm.getErrors('lastName') ? ' error'),
+
+                            required: true,
+                        }) }}
+                    </div>
+                </div>
+
+                {% set errors = [] %}
+                {% for attributeKey in ['firstName', 'lastName'] %}
+                    {% set errors = errors|merge(paymentForm.getErrors(attributeKey)) %}
+                {% endfor %}
+
+                {{ forms.errorList(errors) }}
+            </fieldset>
+
+            <!-- Card Number -->
+            <fieldset class="card-data">
+                <legend>{{ 'Card'|t('commerce') }}</legend>
+
+                <div>
+                    <div>
+                        {{ forms.text({
+                            name: 'number',
+                            maxlength: 19,
+                            placeholder: "Card Number"|t('commerce'),
+                            autocomplete: false,
+                            class: 'card-number'~(paymentForm.getErrors('number') ? ' error'),
+
+                        }) }}
+
+                    </div>
+
+                    <div>
+                        {{ forms.text({
+                            class: 'card-expiry'~(paymentForm.getErrors('month') or paymentForm.getErrors('year') ? ' error'),
+                            type: 'text',
+                            name: 'expiry',
+                            placeholder: "MM"|t('commerce')~' / '~"YYYY"|t('commerce'),
+
+                        }) }}
+
+                        {{ forms.text({
+                            type: 'tel',
+                            name: 'cvv',
+                            placeholder: "CVV"|t('commerce'),
+                            class: 'card-cvc'~(paymentForm.getErrors('cvv') ? ' error'),
+
+                        }) }}
+                    </div>
+                </div>
+
+                {% set errors = [] %}
+                {% for attributeKey in ['number', 'month', 'year', 'cvv'] %}
+                    {% set errors = errors|merge(paymentForm.getErrors(attributeKey)) %}
+                {% endfor %}
+
+                {{ forms.errorList(errors) }}
+
+            </fieldset>
+        {% endnamespace %}
+    </div>
+
+    <div class="card-errors" role="alert"></div>
+    {% if billingAddress is defined %}
+        <div class="stripe-address hidden">
+            <input type="hidden" name="stripe-line1" value="{{ billingAddress.addressLine1 }}" />
+            <input type="hidden" name="stripe-postal-code" value="{{ billingAddress.getPostalCode() }}" />
+            <input type="hidden" name="stripe-city" value="{{ billingAddress.getLocality() }}" />
+            <input type="hidden" name="stripe-country" value="{{ billingAddress.getCountryCode() }}" />
+            <input type="hidden" name="stripe-state" value="{{ billingAddress.getAdministrativeArea() }}" />
+        </div>
+    {% endif %}
+</div>
