@@ -41,7 +41,7 @@ class Sync extends Utility
      */
     public static function iconPath(): ?string
     {
-        return Craft::getAlias('@vendor') . '/craftcms/stripe/src/icon-mask.svg';
+        return Craft::getAlias('@vendor') . '/craftcms/commerce-stripe/src/icon-mask.svg';
     }
 
     /**
