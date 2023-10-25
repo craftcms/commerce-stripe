@@ -1,6 +1,12 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Restored support for backend payments using the old payment form.
+- Fixed missing icon.
+
 ## 4.0.1 - 2023-09-28
+
 - Fixed a PHP error that occurred when switching a subscription’s plan.
 
 ## 4.0.0 - 2023-09-13
