@@ -59,6 +59,10 @@ class PaymentIntentResponse implements RequestResponseInterface
             }
         }
 
+        if ((!array_key_exists('next_action', $this->data) || $this->data['next_action'] === null) && array_key_exists('status', $this->data) && $this->data['status'] === 'processing') {
+            return true;
+        }
+
         return false;
     }
 

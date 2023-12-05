@@ -1,5 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- It is now possible to create SEPA and Bacs Direct Debit payment sources.
+- Fixed a bug where it wasn’t possible to pay using the SEPA Direct Debit payment method. ([#265](https://github.com/craftcms/commerce/issues/265))
+- Added `craft\commerce\stripe\SubscriptionGateway::handlePaymentIntentSucceeded`.
+
 ## 4.0.1.1 - 2023-10-25
 
 - Restored support for backend payments using the old payment form.

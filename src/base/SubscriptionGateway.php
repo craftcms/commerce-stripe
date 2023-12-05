@@ -19,6 +19,7 @@ use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubs
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
+use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -31,6 +32,7 @@ use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\errors\ElementNotFoundException;
+use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\web\View;
@@ -484,6 +486,9 @@ abstract class SubscriptionGateway extends Gateway
             case 'payment_method.detached':
                 $this->handlePaymentMethodDetached($data);
                 break;
+            case 'payment_intent.succeeded':
+                $this->handlePaymentIntentSucceeded($data);
+                break;
             case 'charge.refunded':
                 $this->handleRefunded($data);
                 break;
@@ -515,6 +520,47 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         parent::handleWebhook($data);
+    }
+
+    /**
+     * @param array $data
+     * @return void
+     * @throws InvalidConfigException
+     * @since 4.1.0
+     */
+    public function handlePaymentIntentSucceeded(array $data): void
+    {
+        $paymentIntent = $data['data']['object'];
+        if ($paymentIntent['object'] === 'payment_intent') {
+            $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
+            $updateTransaction = null;
+
+            if ($transaction->parentId === null) {
+                $children = Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id);
+
+                if (empty($children) && $transaction->status === TransactionRecord::STATUS_PROCESSING) {
+                    $updateTransaction = $transaction;
+                }
+
+                foreach ($children as $child) {
+                    if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING && $paymentIntent['status'] === 'succeeded') {
+                        $updateTransaction = $child;
+
+                        break;
+                    }
+                }
+            }
+
+            if ($updateTransaction) {
+                $transactionRecord = TransactionRecord::findOne($updateTransaction->id);
+                $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                $transactionRecord->message = '';
+                $transactionRecord->response = $paymentIntent;
+
+                $transactionRecord->save(false);
+                $transaction->getOrder()->updateOrderPaidInformation();
+            }
+        }
     }
 
     /**
@@ -688,9 +734,15 @@ abstract class SubscriptionGateway extends Gateway
                 $paymentSource->customerId = $user->id;
                 $paymentSource->response = Json::encode($stripePaymentMethod);
 
-                if ($stripePaymentMethod['card']['brand'] && $stripePaymentMethod['card']['last4']) {
-                    $paymentSource->description = $stripePaymentMethod['card']['brand'] . ' ending in ' . $stripePaymentMethod['card']['last4'];
+                $description = 'Stripe payment source';
+
+                if ($stripePaymentMethod['type'] === 'card') {
+                    $description = ($stripePaymentMethod['card']['brand'] ?: 'Card') . ' ending in ' . $stripePaymentMethod['card']['last4'];
+                } elseif (isset($stripePaymentMethod[$stripePaymentMethod['type']], $stripePaymentMethod[$stripePaymentMethod['type']]['last4'])) {
+                    $description = 'Payment source ending in ' . $stripePaymentMethod[$stripePaymentMethod['type']]['last4'];
                 }
+
+                $paymentSource->description = $description;
 
                 $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($stripePaymentMethod['id']);
                 $paymentMethod->attach(['customer' => $stripeCustomer->id]);
