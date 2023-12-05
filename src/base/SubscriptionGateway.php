@@ -32,7 +32,6 @@ use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\errors\ElementNotFoundException;
-use craft\helpers\ArrayHelper;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\web\View;
