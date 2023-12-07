@@ -12,6 +12,7 @@ use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\behaviors\CustomerBehavior;
+use craft\commerce\elements\Order;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentSourceCreatedLaterException;
 use craft\commerce\errors\SubscriptionException;
@@ -34,6 +35,7 @@ use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\elementsform\ElementsFormAsset;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
@@ -136,6 +138,31 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormHtml(array $params): ?string
     {
+        /** @var ?Order $order */
+        $order = $params['order'] ?? null;
+        $billingDetails = null;
+        $businessDetails = null;
+        if($order && $order->getBillingAddress()) {
+            $defaultBillingAddressValues = [
+                'country' => $order->getBillingAddress()->getCountryCode() ?: '',
+                'line1' => $order->getBillingAddress()->addressLine1 ?? '',
+                'line2' => $order->getBillingAddress()->addressLine2 ?? '',
+                'city' => $order->getBillingAddress()->locality ?? '',
+                'postal_code' => $order->getBillingAddress()->postalCode ?? '',
+                'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
+            ];
+            $billingDetails = [
+                    'name' => $order->getBillingAddress()->fullName ?? '',
+                    'email' => $order->email,
+                    'address' => $defaultBillingAddressValues,
+            ];
+            if($order->getBillingAddress()->organization) {
+                $businessDetails = [
+                    'name' => $order->getBillingAddress()->organization,
+                ];
+            }
+        }
+
         $defaults = [
             'clientSecret' => '',
             'scenario' => 'payment',
@@ -149,15 +176,25 @@ class PaymentIntents extends BaseGateway
                 'layout' => [
                     'type' => 'tabs',
                 ],
+                'defaultValues' => [],
             ],
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'submitButtonText' => Craft::t('commerce', 'Pay'),
             'processingButtonText' => Craft::t('commerce', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
+
         ];
 
-        $params = array_merge($defaults, $params);
+        if($billingDetails) {
+            $defaults['elementOptions']['defaultValues']['billingDetails'] = $billingDetails;
+        }
+        if($businessDetails)
+        {
+            $defaults['elementOptions']['defaultValues']['businessDetails'] = $businessDetails;
+        }
+
+        $params = ArrayHelper::merge($defaults, $params);
 
         if ($params['scenario'] == '') {
             return Craft::t('commerce-stripe', 'Commerce Stripe 4.0+ requires a scenario is set on the payment form.');
@@ -446,6 +483,8 @@ class PaymentIntents extends BaseGateway
      */
     public function createPaymentIntent(Transaction $transaction, int $amount, array $metadata, bool $capture, PaymentIntentForm $form): PaymentIntent
     {
+        $order = $transaction->getOrder();
+
         // Base information for the payment intent
         $paymentIntentData = [
             'amount' => $amount,
