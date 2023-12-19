@@ -12,6 +12,7 @@ use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\behaviors\CustomerBehavior;
+use craft\commerce\elements\Order;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\PaymentSourceCreatedLaterException;
 use craft\commerce\errors\SubscriptionException;
@@ -34,6 +35,7 @@ use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\web\assets\elementsform\ElementsFormAsset;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
+use craft\helpers\ArrayHelper;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\helpers\UrlHelper;
@@ -155,9 +157,31 @@ class PaymentIntents extends BaseGateway
             'submitButtonText' => Craft::t('commerce', 'Pay'),
             'processingButtonText' => Craft::t('commerce', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
+
         ];
 
-        $params = array_merge($defaults, $params);
+        /** @var ?Order $order */
+        $order = $params['order'] ?? null;
+        if ($order && $order->getBillingAddress()) {
+            $defaultBillingAddressValues = [
+                'country' => $order->getBillingAddress()->getCountryCode() ?: '',
+                'line1' => $order->getBillingAddress()->addressLine1 ?? '',
+                'line2' => $order->getBillingAddress()->addressLine2 ?? '',
+                'city' => $order->getBillingAddress()->locality ?? '',
+                'postal_code' => $order->getBillingAddress()->postalCode ?? '',
+                'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
+            ];
+
+            $defaults['elementOptions']['defaultValues'] = [
+                'billingDetails' => [
+                    'name' => $order->getBillingAddress()->fullName ?? '',
+                    'email' => $order->email,
+                    'address' => $defaultBillingAddressValues,
+                ],
+            ];
+        }
+
+        $params = ArrayHelper::merge($defaults, $params);
 
         if ($params['scenario'] == '') {
             return Craft::t('commerce-stripe', 'Commerce Stripe 4.0+ requires a scenario is set on the payment form.');
@@ -165,16 +189,24 @@ class PaymentIntents extends BaseGateway
 
         $view = Craft::$app->getView();
         $previousMode = $view->getTemplateMode();
-        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+        if (Craft::$app->getRequest()->isCpRequest) {
+            $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+        }
 
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
-        if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT) {
-            $html = $view->renderTemplate('commerce-stripe/paymentForms/checkoutForm', $params);
-        } else {
+        if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_ELEMENTS) {
             $view->registerAssetBundle(ElementsFormAsset::class);
-            $html = $view->renderTemplate('commerce-stripe/paymentForms/elementsForm', $params);
         }
+
+        // Template mode needs to be CP for the payment form to work
+        $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $templatePath = ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT)
+            ? 'commerce-stripe/paymentForms/checkoutForm'
+            : 'commerce-stripe/paymentForms/elementsForm';
+
+        $html = $view->renderTemplate($templatePath, $params);
 
         $view->setTemplateMode($previousMode);
 
@@ -216,13 +248,17 @@ class PaymentIntents extends BaseGateway
     {
         $data = Json::decodeIfJson($transaction->response);
 
+        $paymentIntentOptions = [
+            'expand' => ['payment_method'],
+        ];
+
         if ($data['object'] == 'payment_intent') {
-            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id']);
+            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id'], $paymentIntentOptions);
         } else {
             // Likely a checkout object
             $checkoutSession = $this->getStripeClient()->checkout->sessions->retrieve($data['id']);
             $paymentIntent = $checkoutSession['payment_intent'];
-            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($paymentIntent);
+            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($paymentIntent, $paymentIntentOptions);
         }
 
         return $this->createPaymentResponseFromApiResource($paymentIntent);
