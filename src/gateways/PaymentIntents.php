@@ -142,7 +142,7 @@ class PaymentIntents extends BaseGateway
         $order = $params['order'] ?? null;
         $billingDetails = null;
         $businessDetails = null;
-        if($order && $order->getBillingAddress()) {
+        if ($order && $order->getBillingAddress()) {
             $defaultBillingAddressValues = [
                 'country' => $order->getBillingAddress()->getCountryCode() ?: '',
                 'line1' => $order->getBillingAddress()->addressLine1 ?? '',
@@ -156,7 +156,7 @@ class PaymentIntents extends BaseGateway
                     'email' => $order->email,
                     'address' => $defaultBillingAddressValues,
             ];
-            if($order->getBillingAddress()->organization) {
+            if ($order->getBillingAddress()->organization) {
                 $businessDetails = [
                     'name' => $order->getBillingAddress()->organization,
                 ];
@@ -186,11 +186,10 @@ class PaymentIntents extends BaseGateway
 
         ];
 
-        if($billingDetails) {
+        if ($billingDetails) {
             $defaults['elementOptions']['defaultValues']['billingDetails'] = $billingDetails;
         }
-        if($businessDetails)
-        {
+        if ($businessDetails) {
             $defaults['elementOptions']['defaultValues']['businessDetails'] = $businessDetails;
         }
 
