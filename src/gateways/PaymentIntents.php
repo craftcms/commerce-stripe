@@ -171,16 +171,16 @@ class PaymentIntents extends BaseGateway
 
         $view->registerScript('', View::POS_END, ['src' => 'https://js.stripe.com/v3/']); // we need this to load at end of body
 
-        $templatePath = ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT)
-            ? 'commerce-stripe/paymentForms/checkoutForm'
-            : 'commerce-stripe/paymentForms/elementsForm';
-
         if ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_ELEMENTS) {
             $view->registerAssetBundle(ElementsFormAsset::class);
         }
 
         // Template mode needs to be CP for the payment form to work
         $view->setTemplateMode(View::TEMPLATE_MODE_CP);
+
+        $templatePath = ($params['paymentFormType'] == self::PAYMENT_FORM_TYPE_CHECKOUT)
+            ? 'commerce-stripe/paymentForms/checkoutForm'
+            : 'commerce-stripe/paymentForms/elementsForm';
 
         $html = $view->renderTemplate($templatePath, $params);
 
@@ -227,7 +227,7 @@ class PaymentIntents extends BaseGateway
         $paymentIntentOptions = [
             'expand' => ['payment_method'],
         ];
-        
+
         if ($data['object'] == 'payment_intent') {
             $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id'], $paymentIntentOptions);
         } else {
