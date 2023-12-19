@@ -67,6 +67,10 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isRedirect(): bool
     {
+        if (array_key_exists('last_payment_error', $this->data) && !empty($this->data['last_payment_error'])) {
+            return false;
+        }
+
         if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
             return true;
         }
