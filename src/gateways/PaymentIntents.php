@@ -480,8 +480,6 @@ class PaymentIntents extends BaseGateway
      */
     public function createPaymentIntent(Transaction $transaction, int $amount, array $metadata, bool $capture, PaymentIntentForm $form): PaymentIntent
     {
-        $order = $transaction->getOrder();
-
         // Base information for the payment intent
         $paymentIntentData = [
             'amount' => $amount,
