@@ -171,14 +171,13 @@ class PaymentIntents extends BaseGateway
                 'postal_code' => $order->getBillingAddress()->postalCode ?? '',
                 'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
             ];
-            $billingDetails = [
-                'name' => $order->getBillingAddress()->fullName ?? '',
-                'email' => $order->email,
-                'address' => $defaultBillingAddressValues,
-            ];
 
             $defaults['elementOptions']['defaultValues'] = [
-                'billingDetails' => $billingDetails,
+                'billingDetails' => [
+                    'name' => $order->getBillingAddress()->fullName ?? '',
+                    'email' => $order->email,
+                    'address' => $defaultBillingAddressValues,
+                ],
             ];
         }
 
