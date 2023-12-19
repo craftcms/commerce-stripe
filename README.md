@@ -490,6 +490,38 @@ The default `elementOptions` value only defines a layout:
 } %}
 ```
 
+### `order` (optional)
+
+The `order` key should be a reference to a Commerce `Order` model, which would usually be the current `cart` variable in your template.
+
+If supplied, the [billing details](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options-defaultValues) are added to `elementOptions`’s default `defaultValues` array.
+
+```twig
+{% set params = {
+  order: cart,
+} %}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
+```
+
+If you do not pass an `order` into the payment form, you can opt to manually populate the [billing details](https://stripe.com/docs/js/elements_object/create_payment_element#payment_element_create-options-defaultValues) using the `elementOptions`’s `defaultValues` key:
+
+```twig
+{% set params = {
+  elementOptions: {
+    defaultValues: {
+      name: 'Jane Doe',
+      address: {
+        line1: '123 Main St',
+        city: 'Anytown',
+        state: 'NY',
+        postal_code: '12345',
+        country: 'US',
+      },
+    }
+    ...
+```
+
 ### `errorMessageClasses`
 
 Error messages are displayed in a container above the form. You can add classes to this element to alter its style.

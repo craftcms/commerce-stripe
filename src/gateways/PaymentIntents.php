@@ -180,11 +180,6 @@ class PaymentIntents extends BaseGateway
             $defaults['elementOptions']['defaultValues'] = [
                 'billingDetails' => $billingDetails,
             ];
-            if ($order->getBillingAddress()->organization) {
-                $defaults['elementOptions']['defaultValues']['businessDetails'] = [
-                    'name' => $order->getBillingAddress()->organization,
-                ];
-            }
         }
 
         $params = ArrayHelper::merge($defaults, $params);
