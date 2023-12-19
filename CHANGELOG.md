@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Fixed a bug where failed PayPal payments would cause infinite redirects. ([#266](https://github.com/craftcms/commerce-stripe/issues/266))
+- Payment method data is now stored in expanded form within transaction response data. ([#276](https://github.com/craftcms/commerce-stripe/pull/276))
+- Fixed a bug where JavaScript files were being served incorrectly. ([#270](https://github.com/craftcms/commerce-stripe/issues/270))
 
 ## 4.0.1.1 - 2023-10-25
 
@@ -31,7 +33,7 @@
 - Removed `craft\commerce\stripe\base\Gateway::normalizePaymentToken()`.
 - Removed `craft\commerce\stripe\events\BuildGatewayRequestEvent::$metadata`. `BuildGatewayRequestEvent::$request` should be used instead.
 - Deprecated the `commerce-stripe/default/fetch-plans` action.
-- Deprecated creating new payment sources via the `commerce/subscriptions/subscribe` action. 
+- Deprecated creating new payment sources via the `commerce/subscriptions/subscribe` action.
 - Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly-formatted data.
 
 ## 3.1.1 - 2023-05-10
