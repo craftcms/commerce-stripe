@@ -9,7 +9,7 @@
 - Fixed a bug where it wasn’t possible to pay using the SEPA Direct Debit payment method. ([#265](https://github.com/craftcms/commerce/issues/265))
 - Fixed a bug where failed PayPal payments would cause infinite redirects. ([#266](https://github.com/craftcms/commerce-stripe/issues/266))
 - Fixed a bug where JavaScript files were being served incorrectly. ([#270](https://github.com/craftcms/commerce-stripe/issues/270))
-- Added `craft\commerce\stripe\SubscriptionGateway::handlePaymentIntentSucceeded`.
+- Added `craft\commerce\stripe\SubscriptionGateway::handlePaymentIntentSucceeded()`.
 
 ## 4.0.1.1 - 2023-10-25
 
