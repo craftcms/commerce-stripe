@@ -59,6 +59,10 @@ class PaymentIntentResponse implements RequestResponseInterface
             }
         }
 
+        if ((!array_key_exists('next_action', $this->data) || $this->data['next_action'] === null) && array_key_exists('status', $this->data) && $this->data['status'] === 'processing') {
+            return true;
+        }
+
         return false;
     }
 
@@ -67,6 +71,10 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function isRedirect(): bool
     {
+        if (array_key_exists('last_payment_error', $this->data) && !empty($this->data['last_payment_error']) && (!array_key_exists('next_action', $this->data) || empty($this->data['next_action']))) {
+            return false;
+        }
+
         if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
             return true;
         }
