@@ -138,31 +138,6 @@ class PaymentIntents extends BaseGateway
      */
     public function getPaymentFormHtml(array $params): ?string
     {
-        /** @var ?Order $order */
-        $order = $params['order'] ?? null;
-        $billingDetails = null;
-        $businessDetails = null;
-        if ($order && $order->getBillingAddress()) {
-            $defaultBillingAddressValues = [
-                'country' => $order->getBillingAddress()->getCountryCode() ?: '',
-                'line1' => $order->getBillingAddress()->addressLine1 ?? '',
-                'line2' => $order->getBillingAddress()->addressLine2 ?? '',
-                'city' => $order->getBillingAddress()->locality ?? '',
-                'postal_code' => $order->getBillingAddress()->postalCode ?? '',
-                'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
-            ];
-            $billingDetails = [
-                    'name' => $order->getBillingAddress()->fullName ?? '',
-                    'email' => $order->email,
-                    'address' => $defaultBillingAddressValues,
-            ];
-            if ($order->getBillingAddress()->organization) {
-                $businessDetails = [
-                    'name' => $order->getBillingAddress()->organization,
-                ];
-            }
-        }
-
         $defaults = [
             'clientSecret' => '',
             'scenario' => 'payment',
@@ -176,7 +151,6 @@ class PaymentIntents extends BaseGateway
                 'layout' => [
                     'type' => 'tabs',
                 ],
-                'defaultValues' => [],
             ],
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
@@ -186,11 +160,31 @@ class PaymentIntents extends BaseGateway
 
         ];
 
-        if ($billingDetails) {
-            $defaults['elementOptions']['defaultValues']['billingDetails'] = $billingDetails;
-        }
-        if ($businessDetails) {
-            $defaults['elementOptions']['defaultValues']['businessDetails'] = $businessDetails;
+        /** @var ?Order $order */
+        $order = $params['order'] ?? null;
+        if ($order && $order->getBillingAddress()) {
+            $defaultBillingAddressValues = [
+                'country' => $order->getBillingAddress()->getCountryCode() ?: '',
+                'line1' => $order->getBillingAddress()->addressLine1 ?? '',
+                'line2' => $order->getBillingAddress()->addressLine2 ?? '',
+                'city' => $order->getBillingAddress()->locality ?? '',
+                'postal_code' => $order->getBillingAddress()->postalCode ?? '',
+                'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
+            ];
+            $billingDetails = [
+                'name' => $order->getBillingAddress()->fullName ?? '',
+                'email' => $order->email,
+                'address' => $defaultBillingAddressValues,
+            ];
+
+            $defaults['elementOptions']['defaultValues'] = [
+                'billingDetails' => $billingDetails,
+            ];
+            if ($order->getBillingAddress()->organization) {
+                $defaults['elementOptions']['defaultValues']['businessDetails'] = [
+                    'name' => $order->getBillingAddress()->organization,
+                ];
+            }
         }
 
         $params = ArrayHelper::merge($defaults, $params);
@@ -255,7 +249,7 @@ class PaymentIntents extends BaseGateway
         $paymentIntentOptions = [
             'expand' => ['payment_method'],
         ];
-        
+
         if ($data['object'] == 'payment_intent') {
             $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id'], $paymentIntentOptions);
         } else {
