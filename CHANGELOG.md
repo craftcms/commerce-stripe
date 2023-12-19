@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Stripe for Craft Commerce now requires Commerce 4.3.3 or later.
 - It is now possible to create SEPA and Bacs Direct Debit payment sources.
 - Fixed a bug where it wasn’t possible to pay using the SEPA Direct Debit payment method. ([#265](https://github.com/craftcms/commerce/issues/265))
 - Added `craft\commerce\stripe\SubscriptionGateway::handlePaymentIntentSucceeded`.
