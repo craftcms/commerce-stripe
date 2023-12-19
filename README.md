@@ -21,7 +21,7 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 ## Requirements
 
 - Craft CMS 4.0 or later
-- Craft Commerce 4.3 or later
+- Craft Commerce 4.3.3 or later
 - Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
 
 ## Installation

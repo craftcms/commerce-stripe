@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 4.1.0 - 2023-12-19
 
 - Stripe for Craft Commerce now requires Commerce 4.3.3 or later.
 - It is now possible to create SEPA and Bacs Direct Debit payment sources.
