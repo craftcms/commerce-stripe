@@ -252,13 +252,17 @@ class PaymentIntents extends BaseGateway
     {
         $data = Json::decodeIfJson($transaction->response);
 
+        $paymentIntentOptions = [
+            'expand' => ['payment_method'],
+        ];
+        
         if ($data['object'] == 'payment_intent') {
-            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id']);
+            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($data['id'], $paymentIntentOptions);
         } else {
             // Likely a checkout object
             $checkoutSession = $this->getStripeClient()->checkout->sessions->retrieve($data['id']);
             $paymentIntent = $checkoutSession['payment_intent'];
-            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($paymentIntent);
+            $paymentIntent = $this->getStripeClient()->paymentIntents->retrieve($paymentIntent, $paymentIntentOptions);
         }
 
         return $this->createPaymentResponseFromApiResource($paymentIntent);
