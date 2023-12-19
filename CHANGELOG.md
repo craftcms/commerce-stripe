@@ -1,8 +1,10 @@
 # Release Notes for Stripe for Craft Commerce
 
 ## Unreleased
+
 - Payment method data is now stored in expanded form within transaction response data. ([#276](https://github.com/craftcms/commerce-stripe/pull/276))
 - Billing address information is now passed to the payment intent. ([#257](https://github.com/craftcms/commerce-stripe/issues/257), [#258](https://github.com/craftcms/commerce-stripe/issues/263))
+- Fixed a bug where JavaScript files were being served incorrectly. ([#270](https://github.com/craftcms/commerce-stripe/issues/270))
 
 ## 4.0.1.1 - 2023-10-25
 
