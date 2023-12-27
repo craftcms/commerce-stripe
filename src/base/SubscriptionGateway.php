@@ -812,10 +812,12 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripeCustomer = $data['data']['object'];
 
-        // Set the primary payment source for the user if it has changed
-        if (isset($stripeCustomer['invoice_settings']['default_payment_method'])) {
-            $paymentMethodId = $stripeCustomer['invoice_settings']['default_payment_method'];
+        $defaultPaymentMethod = $stripeCustomer['invoice_settings']['default_payment_method']
+            ?? $stripeCustomer['default_source']
+            ?? null;
 
+        // Set the primary payment source for the user if it has changed
+        if ($defaultPaymentMethod) {
             $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripeCustomer['id'], $this->id);
             if (!$customer) {
                 return;
@@ -827,7 +829,7 @@ abstract class SubscriptionGateway extends Gateway
                 return;
             }
 
-            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($paymentMethodId, $this->id);
+            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($defaultPaymentMethod, $this->id);
             if (!$paymentSource) {
                 return;
             }
