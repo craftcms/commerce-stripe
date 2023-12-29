@@ -42,6 +42,7 @@ use Stripe\Product as StripeProduct;
 use Stripe\Refund;
 use Stripe\SubscriptionItem;
 use Throwable;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use function count;
 
@@ -707,6 +708,13 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripePaymentMethod = $data;
 
+        $lockName = "stripePaymentMethod:{$stripePaymentMethod['id']}";
+
+        // TODO: get int from stripe timeout
+        if (!Craft::$app->getMutex()->acquire($lockName, 5)) {
+            throw new Exception("Unable to acquire mutex lock: $lockName");
+        }
+
         // We only care about payment methods that have a customer
         if ($stripePaymentMethod['customer']) {
 
@@ -753,6 +761,8 @@ abstract class SubscriptionGateway extends Gateway
                 }
             }
         }
+
+        Craft::$app->getMutex()->release($lockName);
     }
 
     /**
