@@ -19,7 +19,6 @@ use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubs
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
-use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
