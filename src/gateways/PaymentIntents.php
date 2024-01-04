@@ -333,8 +333,7 @@ class PaymentIntents extends BaseGateway
         try {
             $lockName = "commerceTransaction:{$sourceData->paymentMethodId}";
 
-            // TODO: get int from stripe timeout
-            if (!Craft::$app->getMutex()->acquire($lockName, 5)) {
+            if (!Craft::$app->getMutex()->acquire($lockName, 15)) {
                 throw new Exception("Unable to acquire mutex lock: $lockName");
             }
 
