@@ -12,6 +12,7 @@ use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\Plugin;
+use Craft;
 
 /**
  * Payment sources service.
@@ -41,7 +42,17 @@ class PaymentMethods
             );
 
             foreach ($stripePaymentMethods as $stripePaymentMethod) {
+
+                $lockName = "commerceTransaction:{$stripePaymentMethod['id']}";
+
+                if (!Craft::$app->getMutex()->acquire($lockName, 5)) {
+                    throw new Exception("Unable to acquire mutex lock: $lockName");
+                }
+
                 $gateway->handlePaymentMethodUpdated($stripePaymentMethod->toArray());
+
+                Craft::$app->getMutex()->release($lockName);
+
                 $count++;
             }
         }

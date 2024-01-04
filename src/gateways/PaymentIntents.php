@@ -331,7 +331,7 @@ class PaymentIntents extends BaseGateway
 
         /** @var PaymentIntentForm $sourceData */
         try {
-            $lockName = "stripePaymentMethod:{$sourceData->paymentMethodId}";
+            $lockName = "commerceTransaction:{$sourceData->paymentMethodId}";
 
             // TODO: get int from stripe timeout
             if (!Craft::$app->getMutex()->acquire($lockName, 5)) {

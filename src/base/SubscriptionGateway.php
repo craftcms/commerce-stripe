@@ -33,6 +33,7 @@ use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\errors\ElementNotFoundException;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
+use craft\helpers\StringHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Invoice as StripeInvoice;
@@ -707,13 +708,6 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripePaymentMethod = $data;
 
-        $lockName = "stripePaymentMethod:{$stripePaymentMethod['id']}";
-
-        // TODO: get int from stripe timeout
-        if (!Craft::$app->getMutex()->acquire($lockName, 5)) {
-            throw new Exception("Unable to acquire mutex lock: $lockName");
-        }
-
         // We only care about payment methods that have a customer
         if ($stripePaymentMethod['customer']) {
 
@@ -728,40 +722,46 @@ abstract class SubscriptionGateway extends Gateway
             $user = Craft::$app->getUsers()->getUserById($customer->userId);
             $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
 
+            if (!$stripeCustomer) {
+                return;
+            }
+
             // See if we have a Commerce payment source for this stripe payment method already or create one
             $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id);
+
             if (!$paymentSource) {
                 $paymentSource = new PaymentSource();
             }
 
-            if ($stripeCustomer) {
-                $paymentSource->gatewayId = $this->id;
-                $paymentSource->token = $stripePaymentMethod['id'];
-                $paymentSource->customerId = $user->id;
-                $paymentSource->response = Json::encode($stripePaymentMethod);
+            $paymentSource->gatewayId = $this->id;
+            $paymentSource->token = $stripePaymentMethod['id'];
+            $paymentSource->customerId = $user->id;
+            $paymentSource->response = Json::encode($stripePaymentMethod);
 
+            if(!$paymentSource->id || $paymentSource->description == '') {
                 $description = 'Stripe payment source';
 
                 if ($stripePaymentMethod['type'] === 'card') {
-                    $description = ($stripePaymentMethod['card']['brand'] ?: 'Card') . ' ending in ' . $stripePaymentMethod['card']['last4'];
+                    $last4 = $stripePaymentMethod['card']['last4'];
+                    $brand = $stripePaymentMethod['card']['brand'] ?: 'Card';
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($brand), 'last4' => $last4]);
                 } elseif (isset($stripePaymentMethod[$stripePaymentMethod['type']], $stripePaymentMethod[$stripePaymentMethod['type']]['last4'])) {
-                    $description = 'Payment source ending in ' . $stripePaymentMethod[$stripePaymentMethod['type']]['last4'];
+                    $last4 = $stripePaymentMethod[$stripePaymentMethod['type']]['last4'];
+                    $description = Craft::t('commerce-stripe', 'Payment method ending in ••••{last4}', ['last4' => $last4]);
                 }
 
                 $paymentSource->description = $description;
+            }
 
-                $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($stripePaymentMethod['id']);
-                $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+            // No harm in making sure it is attached to the customer.
+            $this->getStripeClient()->paymentMethods->attach($stripePaymentMethod['id'], ['customer' => $stripeCustomer->id]);
 
-                $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+            $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
 
-                if (!$result) {
-                    Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
-                }
+            if (!$result) {
+                Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
             }
         }
-
-        Craft::$app->getMutex()->release($lockName);
     }
 
     /**
