@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
+
 ## 4.1.0 - 2023-12-19
 
 - Stripe for Craft Commerce now requires Commerce 4.3.3 or later.
