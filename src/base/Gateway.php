@@ -465,7 +465,7 @@ abstract class Gateway extends BaseGateway
             $transactionHash = null;
         }
 
-        if(!$transactionHash) {
+        if (!$transactionHash) {
             // Use the object ID as the unique ID of the stripe object for the transaction hash so we can enforce a mutex
             // in \craft\commerce\services\Webhooks::processWebhook() which call this method.
             $transactionHash = ArrayHelper::getValue($data, 'data.object.id');

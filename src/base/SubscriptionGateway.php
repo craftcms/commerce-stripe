@@ -42,7 +42,6 @@ use Stripe\Product as StripeProduct;
 use Stripe\Refund;
 use Stripe\SubscriptionItem;
 use Throwable;
-use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use function count;
 
@@ -738,7 +737,7 @@ abstract class SubscriptionGateway extends Gateway
             $paymentSource->customerId = $user->id;
             $paymentSource->response = Json::encode($stripePaymentMethod);
 
-            if(!$paymentSource->id || $paymentSource->description == '') {
+            if (!$paymentSource->id || $paymentSource->description == '') {
                 $description = 'Stripe payment source';
 
                 if ($stripePaymentMethod['type'] === 'card') {
