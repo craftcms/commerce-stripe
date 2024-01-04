@@ -331,6 +331,12 @@ class PaymentIntents extends BaseGateway
 
         /** @var PaymentIntentForm $sourceData */
         try {
+            $lockName = "commerceTransaction:{$sourceData->paymentMethodId}";
+
+            if (!Craft::$app->getMutex()->acquire($lockName, 15)) {
+                throw new Exception("Unable to acquire mutex lock: $lockName");
+            }
+
             $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($sourceData->paymentMethodId);
             $paymentMethod = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
@@ -363,9 +369,11 @@ class PaymentIntents extends BaseGateway
             $paymentSource->response = $paymentMethod->toJSON() ?? '';
             $paymentSource->description = $description;
 
+            Craft::$app->getMutex()->release($lockName);
 
             return $paymentSource;
         } catch (Throwable $exception) {
+            Craft::$app->getMutex()->release($lockName);
             throw new PaymentSourceException($exception->getMessage());
         }
     }
