@@ -298,7 +298,7 @@ function initStripe() {
           container.dataset.publishablekey,
           container
         );
-        container.dataset.handlerInstance = handlerInstance;
+        container.handlerInstance = handlerInstance;
         handlerInstance.handle();
       });
   }
