@@ -672,7 +672,6 @@ abstract class Gateway extends BaseGateway
     {
         $defaults = [
             'usage' => 'off_session',
-            'payment_method_types' => ['card'],
         ];
 
         $params = array_merge($defaults, $params);
