@@ -348,7 +348,11 @@ class PaymentIntents extends BaseGateway
                     $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($card->brand), 'last4' => $card->last4]);
                     break;
                 default:
-                    $description = $paymentMethod->type;
+                    if (isset($paymentMethod->{$paymentMethod->type}, $paymentMethod->{$paymentMethod->type}->last4)) {
+                        $description = Craft::t('commerce-stripe', 'Payment method ending in ••••{last4}', ['last4' => $paymentMethod->{$paymentMethod->type}->last4]);
+                    } else {
+                        $description = $paymentMethod->type;
+                    }
             }
 
             // Make it the default in Stripe if its the only one for this gateway
