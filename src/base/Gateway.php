@@ -672,9 +672,10 @@ abstract class Gateway extends BaseGateway
     {
         $defaults = [
             'usage' => 'off_session',
+            'automatic_payment_methods' => ['enabled' => true],
         ];
 
-        $params = array_merge($defaults, $params);
+        $params = ArrayHelper::merge($defaults, $params);
 
         $event = new BuildSetupIntentRequestEvent([
             'request' => $params,

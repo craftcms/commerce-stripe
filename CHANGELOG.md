@@ -5,7 +5,7 @@
 - Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
 - Fixed a bug that could cause duplicate payment sources to be created. ([#281](https://github.com/craftcms/commerce-stripe/pull/281))
 - Fixed a bug where it wasn’t possible to access the Stripe instance from JavaScript. ([#275](https://github.com/craftcms/commerce-stripe/issues/275))
-- Fixed a bug where not all enabled payment methods were being shown when creating a payment source. ([#251](https://github.com/craftcms/commerce-stripe/issues/251))
+- Fixed a bug where not all enabled payment methods were being shown when creating a payment source. ([#251](https://github.com/craftcms/commerce-stripe/issues/251), ([#160](https://github.com/craftcms/commerce-stripe/pull/160)))
 
 ## 4.1.0 - 2023-12-19
 

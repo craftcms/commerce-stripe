@@ -97,7 +97,7 @@ class PaymentIntents extends BaseGateway
             'handle' => $this->handle,
         ];
 
-        $params = array_merge($defaults, $params);
+        $params = ArrayHelper::merge($defaults, $params);
 
         // If there's no order passed, add the current cart if we're not messing around in backend.
         if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
