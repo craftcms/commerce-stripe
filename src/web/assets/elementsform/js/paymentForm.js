@@ -8,10 +8,18 @@ class PaymentIntentsElements {
     this.completeActionUrl = this.container.dataset.completePaymentActionUrl;
     this.processingButtonText = this.container.dataset.processingButtonText;
     this.hiddenClass = this.container.dataset.hiddenClass;
-    this.$submitButton = this.container.querySelector('.stripe-payment-elements-submit-button');
-    this.$savePaymentSourceField = this.container.closest('form').querySelector('input[name="savePaymentSource"]');
-    this.$paymentAmountField = this.container.closest('form').querySelector('[name="paymentAmount"]');
-    this.$paymentCurrencyField = this.container.closest('form').querySelector('[name="paymentCurrency"]');
+    this.$submitButton = this.container.querySelector(
+      '.stripe-payment-elements-submit-button'
+    );
+    this.$savePaymentSourceField = this.container
+      .closest('form')
+      .querySelector('input[name="savePaymentSource"]');
+    this.$paymentAmountField = this.container
+      .closest('form')
+      .querySelector('[name="paymentAmount"]');
+    this.$paymentCurrencyField = this.container
+      .closest('form')
+      .querySelector('[name="paymentCurrency"]');
   }
 
   getFormData() {
@@ -109,36 +117,35 @@ class PaymentIntentsElements {
 
         this.createStripeElementsForm(options);
 
-        this.$submitButton
-          .addEventListener('click', async (event) => {
-            event.preventDefault();
+        this.$submitButton.addEventListener('click', async (event) => {
+          event.preventDefault();
 
-            const submitText = this.$submitButton.innerText;
-            this.$submitButton.innerText = this.processingButtonText;
+          const submitText = this.$submitButton.innerText;
+          this.$submitButton.innerText = this.processingButtonText;
 
-            const elements = this.elements;
-            const form = this.getFormData();
-            const formDataArray = [...form.entries()];
-            const params = formDataArray
-              .map(
-                (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
-              )
-              .join('&');
+          const elements = this.elements;
+          const form = this.getFormData();
+          const formDataArray = [...form.entries()];
+          const params = formDataArray
+            .map(
+              (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
+            )
+            .join('&');
 
-            this.stripeInstance
-              .confirmSetup({
-                elements,
-                confirmParams: {
-                  return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
-                },
-              })
-              .then((result) => {
-                if (result.error) {
-                  this.showErrorMessage(result.error.message);
-                  this.$submitButton.innerText = submitText;
-                }
-              });
-          });
+          this.stripeInstance
+            .confirmSetup({
+              elements,
+              confirmParams: {
+                return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
+              },
+            })
+            .then((result) => {
+              if (result.error) {
+                this.showErrorMessage(result.error.message);
+                this.$submitButton.innerText = submitText;
+              }
+            });
+        });
       });
   }
 
@@ -223,7 +230,10 @@ class PaymentIntentsElements {
           .querySelector('input[name="savePaymentSource"]');
 
         if (this.$savePaymentSourceField) {
-          this.$savePaymentSourceField.removeEventListener('click', function () {});
+          this.$savePaymentSourceField.removeEventListener(
+            'click',
+            function () {}
+          );
           this.$savePaymentSourceField.addEventListener(
             'click',
             function () {
@@ -253,23 +263,22 @@ class PaymentIntentsElements {
           );
         }
 
-        this.$submitButton
-          .addEventListener('click', async (event) => {
-            event.preventDefault();
+        this.$submitButton.addEventListener('click', async (event) => {
+          event.preventDefault();
 
-            const submitText = this.$submitButton.innerText;
-            this.$submitButton.innerText = this.processingButtonText;
+          const submitText = this.$submitButton.innerText;
+          this.$submitButton.innerText = this.processingButtonText;
 
-            const elements = this.elements;
-            const {error} = await this.stripeInstance.confirmPayment({
-              elements,
-              confirmParams: {
-                return_url: this.completeActionUrl,
-              },
-            });
-            this.$submitButton.innerText = submitText;
-            this.showErrorMessage(error.message);
+          const elements = this.elements;
+          const {error} = await this.stripeInstance.confirmPayment({
+            elements,
+            confirmParams: {
+              return_url: this.completeActionUrl,
+            },
           });
+          this.$submitButton.innerText = submitText;
+          this.showErrorMessage(error.message);
+        });
       });
   }
 
