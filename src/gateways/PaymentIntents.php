@@ -46,7 +46,6 @@ use Stripe\Checkout\Session as StripeCheckoutSession;
 use Stripe\PaymentIntent;
 use Throwable;
 use yii\base\NotSupportedException;
-use function count;
 
 /**
  * This class represents the Stripe Payment Intents gateway
@@ -390,9 +389,13 @@ class PaymentIntents extends BaseGateway
     {
         /** @var SubscriptionForm $parameters */
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
-        $paymentMethods = $this->getStripeClient()->paymentMethods->all(['customer' => $customer->reference, 'type' => 'card']);
+        $stripeCustomer = $this->getStripeClient()->customers->retrieve($customer->reference);
 
-        if (count($paymentMethods->data) === 0) {
+        $defaultPaymentMethod = $stripeCustomer['invoice_settings']['default_payment_method']
+            ?? $stripeCustomer['default_source'] // backward compatible
+            ?? null;
+
+        if (!$defaultPaymentMethod) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 
