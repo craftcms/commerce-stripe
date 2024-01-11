@@ -38,8 +38,7 @@ class PaymentMethods
 
         foreach ($customers->autoPagingIterator() as $customer) {
             $stripePaymentMethods = $customer->allPaymentMethods(
-                $customer->id,
-                ['type' => 'card'],
+                $customer->id
             );
 
             foreach ($stripePaymentMethods as $stripePaymentMethod) {
