@@ -7,11 +7,13 @@
 
 namespace craft\commerce\stripe\services;
 
+use Craft;
 use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\stripe\base\Gateway;
 use craft\commerce\stripe\base\SubscriptionGateway;
 use craft\commerce\stripe\Plugin;
+use Exception;
 
 /**
  * Payment sources service.
@@ -36,12 +38,20 @@ class PaymentMethods
 
         foreach ($customers->autoPagingIterator() as $customer) {
             $stripePaymentMethods = $customer->allPaymentMethods(
-                $customer->id,
-                ['type' => 'card'],
+                $customer->id
             );
 
             foreach ($stripePaymentMethods as $stripePaymentMethod) {
+                $lockName = "commerceTransaction:{$stripePaymentMethod['id']}";
+
+                if (!Craft::$app->getMutex()->acquire($lockName, 15)) {
+                    throw new Exception("Unable to acquire mutex lock: $lockName");
+                }
+
                 $gateway->handlePaymentMethodUpdated($stripePaymentMethod->toArray());
+
+                Craft::$app->getMutex()->release($lockName);
+
                 $count++;
             }
         }

@@ -19,7 +19,6 @@ use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubs
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
-use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -34,6 +33,7 @@ use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\errors\ElementNotFoundException;
 use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
+use craft\helpers\StringHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Invoice as StripeInvoice;
@@ -719,38 +719,48 @@ abstract class SubscriptionGateway extends Gateway
             }
 
             $user = Craft::$app->getUsers()->getUserById($customer->userId);
+
+            // Ensure customer actually exists in Stripe
             $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
+
+            if (!$stripeCustomer) {
+                return;
+            }
 
             // See if we have a Commerce payment source for this stripe payment method already or create one
             $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($stripePaymentMethod['id'], $this->id);
+
             if (!$paymentSource) {
                 $paymentSource = new PaymentSource();
             }
 
-            if ($stripeCustomer) {
-                $paymentSource->gatewayId = $this->id;
-                $paymentSource->token = $stripePaymentMethod['id'];
-                $paymentSource->customerId = $user->id;
-                $paymentSource->response = Json::encode($stripePaymentMethod);
+            $paymentSource->gatewayId = $this->id;
+            $paymentSource->token = $stripePaymentMethod['id'];
+            $paymentSource->customerId = $user->id;
+            $paymentSource->response = Json::encode($stripePaymentMethod);
 
+            if (!$paymentSource->id || !$paymentSource->description) {
                 $description = 'Stripe payment source';
 
                 if ($stripePaymentMethod['type'] === 'card') {
-                    $description = ($stripePaymentMethod['card']['brand'] ?: 'Card') . ' ending in ' . $stripePaymentMethod['card']['last4'];
+                    $last4 = $stripePaymentMethod['card']['last4'];
+                    $brand = $stripePaymentMethod['card']['brand'] ?: 'Card';
+                    $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($brand), 'last4' => $last4]);
                 } elseif (isset($stripePaymentMethod[$stripePaymentMethod['type']], $stripePaymentMethod[$stripePaymentMethod['type']]['last4'])) {
-                    $description = 'Payment source ending in ' . $stripePaymentMethod[$stripePaymentMethod['type']]['last4'];
+                    $last4 = $stripePaymentMethod[$stripePaymentMethod['type']]['last4'];
+                    $description = Craft::t('commerce-stripe', 'Payment method ending in ••••{last4}', ['last4' => $last4]);
                 }
 
                 $paymentSource->description = $description;
+            }
 
-                $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($stripePaymentMethod['id']);
-                $paymentMethod->attach(['customer' => $stripeCustomer->id]);
+            // No harm in making sure it is attached to the customer.
+            $this->getStripeClient()->paymentMethods->attach($stripePaymentMethod['id'], ['customer' => $stripeCustomer->id]);
 
-                $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+            $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
 
-                if (!$result) {
-                    Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
-                }
+            if (!$result) {
+                Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
             }
         }
     }
@@ -812,10 +822,12 @@ abstract class SubscriptionGateway extends Gateway
     {
         $stripeCustomer = $data['data']['object'];
 
-        // Set the primary payment source for the user if it has changed
-        if (isset($stripeCustomer['invoice_settings']['default_payment_method'])) {
-            $paymentMethodId = $stripeCustomer['invoice_settings']['default_payment_method'];
+        $defaultPaymentMethod = $stripeCustomer['invoice_settings']['default_payment_method']
+            ?? $stripeCustomer['default_source']
+            ?? null;
 
+        // Set the primary payment source for the user if it has changed
+        if ($defaultPaymentMethod) {
             $customer = StripePlugin::getInstance()->getCustomers()->getCustomerByReference($stripeCustomer['id'], $this->id);
             if (!$customer) {
                 return;
@@ -827,7 +839,7 @@ abstract class SubscriptionGateway extends Gateway
                 return;
             }
 
-            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($paymentMethodId, $this->id);
+            $paymentSource = CommercePlugin::getInstance()->getPaymentSources()->getPaymentSourceByTokenAndGatewayId($defaultPaymentMethod, $this->id);
             if (!$paymentSource) {
                 return;
             }

@@ -46,7 +46,6 @@ use Stripe\Checkout\Session as StripeCheckoutSession;
 use Stripe\PaymentIntent;
 use Throwable;
 use yii\base\NotSupportedException;
-use function count;
 
 /**
  * This class represents the Stripe Payment Intents gateway
@@ -97,7 +96,7 @@ class PaymentIntents extends BaseGateway
             'handle' => $this->handle,
         ];
 
-        $params = array_merge($defaults, $params);
+        $params = ArrayHelper::merge($defaults, $params);
 
         // If there's no order passed, add the current cart if we're not messing around in backend.
         if (!isset($params['order']) && !Craft::$app->getRequest()->getIsCpRequest()) {
@@ -152,12 +151,12 @@ class PaymentIntents extends BaseGateway
                     'type' => 'tabs',
                 ],
             ],
+            'hiddenClass' => 'hidden',
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'submitButtonText' => Craft::t('commerce', 'Pay'),
             'processingButtonText' => Craft::t('commerce', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
-
         ];
 
         /** @var ?Order $order */
@@ -331,6 +330,12 @@ class PaymentIntents extends BaseGateway
 
         /** @var PaymentIntentForm $sourceData */
         try {
+            $lockName = "commerceTransaction:{$sourceData->paymentMethodId}";
+
+            if (!Craft::$app->getMutex()->acquire($lockName, 15)) {
+                throw new Exception("Unable to acquire mutex lock: $lockName");
+            }
+
             $stripeCustomer = $this->getStripeCustomer($customerId);
             $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($sourceData->paymentMethodId);
             $paymentMethod = $paymentMethod->attach(['customer' => $stripeCustomer->id]);
@@ -342,7 +347,11 @@ class PaymentIntents extends BaseGateway
                     $description = Craft::t('commerce-stripe', '{cardType} ending in ••••{last4}', ['cardType' => StringHelper::upperCaseFirst($card->brand), 'last4' => $card->last4]);
                     break;
                 default:
-                    $description = $paymentMethod->type;
+                    if (isset($paymentMethod->{$paymentMethod->type}, $paymentMethod->{$paymentMethod->type}->last4)) {
+                        $description = Craft::t('commerce-stripe', 'Payment method ending in ••••{last4}', ['last4' => $paymentMethod->{$paymentMethod->type}->last4]);
+                    } else {
+                        $description = $paymentMethod->type;
+                    }
             }
 
             // Make it the default in Stripe if its the only one for this gateway
@@ -363,9 +372,11 @@ class PaymentIntents extends BaseGateway
             $paymentSource->response = $paymentMethod->toJSON() ?? '';
             $paymentSource->description = $description;
 
+            Craft::$app->getMutex()->release($lockName);
 
             return $paymentSource;
         } catch (Throwable $exception) {
+            Craft::$app->getMutex()->release($lockName);
             throw new PaymentSourceException($exception->getMessage());
         }
     }
@@ -378,9 +389,13 @@ class PaymentIntents extends BaseGateway
     {
         /** @var SubscriptionForm $parameters */
         $customer = StripePlugin::getInstance()->getCustomers()->getCustomer($this->id, $user);
-        $paymentMethods = $this->getStripeClient()->paymentMethods->all(['customer' => $customer->reference, 'type' => 'card']);
+        $stripeCustomer = $this->getStripeClient()->customers->retrieve($customer->reference);
 
-        if (count($paymentMethods->data) === 0) {
+        $defaultPaymentMethod = $stripeCustomer['invoice_settings']['default_payment_method']
+            ?? $stripeCustomer['default_source'] // backward compatible
+            ?? null;
+
+        if (!$defaultPaymentMethod) {
             throw new PaymentSourceException(Craft::t('commerce-stripe', 'No payment sources are saved to use for subscriptions.'));
         }
 

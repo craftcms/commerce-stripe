@@ -128,7 +128,6 @@ class CustomersController extends BaseController
             $gateway = CommercePlugin::getInstance()->getGateways()->getGatewayById((int)$gatewayId);
             $setupIntent = [
                 'customer' => $customer->reference,
-                'payment_method_types' => ['bancontact', 'card', 'ideal'],
             ];
             return $this->asJson($gateway->createSetupIntent($setupIntent));
         } catch (Throwable $e) {

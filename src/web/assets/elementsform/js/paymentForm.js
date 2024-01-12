@@ -7,6 +7,19 @@ class PaymentIntentsElements {
     this.scenario = this.container.dataset.clientScenario;
     this.completeActionUrl = this.container.dataset.completePaymentActionUrl;
     this.processingButtonText = this.container.dataset.processingButtonText;
+    this.hiddenClass = this.container.dataset.hiddenClass;
+    this.$submitButton = this.container.querySelector(
+      '.stripe-payment-elements-submit-button'
+    );
+    this.$savePaymentSourceField = this.container
+      .closest('form')
+      .querySelector('input[name="savePaymentSource"]');
+    this.$paymentAmountField = this.container
+      .closest('form')
+      .querySelector('[name="paymentAmount"]');
+    this.$paymentCurrencyField = this.container
+      .closest('form')
+      .querySelector('[name="paymentCurrency"]');
   }
 
   getFormData() {
@@ -14,9 +27,9 @@ class PaymentIntentsElements {
   }
 
   showErrorMessage(message) {
-    this.container.classList.remove('hidden');
+    this.container.classList.remove(this.hiddenClass);
     const errorMessage = this.container.querySelector('.stripe-error-message');
-    errorMessage.classList.remove('hidden');
+    errorMessage.classList.remove(this.hiddenClass);
     errorMessage.innerText = message;
   }
 
@@ -64,9 +77,7 @@ class PaymentIntentsElements {
     this.showErrorMessage(
       'Can not use the Stripe payment form to subscribe. Please create a payment source first.'
     );
-    this.container
-      .querySelector('.stripe-payment-elements-submit-button')
-      .classList.add('hidden');
+    this.$submitButton.classList.add(this.hiddenClass);
   }
 
   setupIntentFlow() {
@@ -106,47 +117,55 @@ class PaymentIntentsElements {
 
         this.createStripeElementsForm(options);
 
-        this.container
-          .querySelector('.stripe-payment-elements-submit-button')
-          .addEventListener('click', async (event) => {
-            event.preventDefault();
+        this.$submitButton.addEventListener('click', async (event) => {
+          event.preventDefault();
 
-            const submitText = this.container.querySelector(
-              '.stripe-payment-elements-submit-button'
-            ).innerText;
-            this.container.querySelector(
-              '.stripe-payment-elements-submit-button'
-            ).innerText = this.processingButtonText;
+          const submitText = this.$submitButton.innerText;
+          this.$submitButton.innerText = this.processingButtonText;
 
-            const elements = this.elements;
-            const form = this.getFormData();
-            const formDataArray = [...form.entries()];
-            const params = formDataArray
-              .map(
-                (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
-              )
-              .join('&');
+          const elements = this.elements;
+          const form = this.getFormData();
+          const formDataArray = [...form.entries()];
+          const params = formDataArray
+            .map(
+              (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
+            )
+            .join('&');
 
-            this.stripeInstance
-              .confirmSetup({
-                elements,
-                confirmParams: {
-                  return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
-                },
-              })
-              .then((result) => {
-                if (result.error) {
-                  this.showErrorMessage(result.error.message);
-                  this.container.querySelector(
-                    '.stripe-payment-elements-submit-button'
-                  ).innerText = submitText;
-                }
-              });
-          });
+          this.stripeInstance
+            .confirmSetup({
+              elements,
+              confirmParams: {
+                return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
+              },
+            })
+            .then((result) => {
+              if (result.error) {
+                this.showErrorMessage(result.error.message);
+                this.$submitButton.innerText = submitText;
+              }
+            });
+        });
       });
   }
 
   cartPaymentFlow() {
+    if (this.$paymentAmountField) {
+      this.$paymentAmountField.addEventListener('change', (event) => {
+        this._callPayAction();
+      });
+    }
+
+    if (this.$paymentCurrencyField) {
+      this.$paymentCurrencyField.addEventListener('change', (event) => {
+        this._callPayAction();
+      });
+    }
+
+    this._callPayAction();
+  }
+
+  _callPayAction() {
     const form = this.getFormData();
     let responseError = false;
 
@@ -165,7 +184,7 @@ class PaymentIntentsElements {
       })
       .then((json) => {
         if (responseError) {
-          this.container.classList.add('hidden');
+          this.container.classList.add(this.hiddenClass);
           this.showErrorMessage(json.message);
           return;
         }
@@ -210,13 +229,17 @@ class PaymentIntentsElements {
           .closest('form')
           .querySelector('input[name="savePaymentSource"]');
 
-        if (savePaymentSourceCheckbox) {
-          savePaymentSourceCheckbox.addEventListener(
+        if (this.$savePaymentSourceField) {
+          this.$savePaymentSourceField.removeEventListener(
+            'click',
+            function () {}
+          );
+          this.$savePaymentSourceField.addEventListener(
             'click',
             function () {
               updatePaymentIntentForm.append(
                 'paymentIntent[setup_future_usage]',
-                savePaymentSourceCheckbox.checked ? '1' : '0'
+                this.$savePaymentSourceField.checked ? '1' : '0'
               );
 
               fetch(window.location.href, {
@@ -240,30 +263,22 @@ class PaymentIntentsElements {
           );
         }
 
-        this.container
-          .querySelector('.stripe-payment-elements-submit-button')
-          .addEventListener('click', async (event) => {
-            event.preventDefault();
+        this.$submitButton.addEventListener('click', async (event) => {
+          event.preventDefault();
 
-            const submitText = this.container.querySelector(
-              '.stripe-payment-elements-submit-button'
-            ).innerText;
-            this.container.querySelector(
-              '.stripe-payment-elements-submit-button'
-            ).innerText = this.processingButtonText;
+          const submitText = this.$submitButton.innerText;
+          this.$submitButton.innerText = this.processingButtonText;
 
-            const elements = this.elements;
-            const {error} = await this.stripeInstance.confirmPayment({
-              elements,
-              confirmParams: {
-                return_url: this.completeActionUrl,
-              },
-            });
-            this.container.querySelector(
-              '.stripe-payment-elements-submit-button'
-            ).innerText = submitText;
-            this.showErrorMessage(error.message);
+          const elements = this.elements;
+          const {error} = await this.stripeInstance.confirmPayment({
+            elements,
+            confirmParams: {
+              return_url: this.completeActionUrl,
+            },
           });
+          this.$submitButton.innerText = submitText;
+          this.showErrorMessage(error.message);
+        });
       });
   }
 
@@ -298,7 +313,7 @@ function initStripe() {
           container.dataset.publishablekey,
           container
         );
-        container.dataset.handlerInstance = handlerInstance;
+        container.handlerInstance = handlerInstance;
         handlerInstance.handle();
       });
   }

@@ -1,12 +1,20 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.1.1 - 2024-01-12
+
+- Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
+- Fixed a bug that could cause duplicate payment sources to be created. ([#281](https://github.com/craftcms/commerce-stripe/pull/281))
+- Fixed a bug where it wasn’t possible to access the Stripe instance from JavaScript. ([#275](https://github.com/craftcms/commerce-stripe/issues/275))
+- Fixed a bug where not all enabled payment methods types were being shown when creating a payment source. ([#251](https://github.com/craftcms/commerce-stripe/issues/251), [#160](https://github.com/craftcms/commerce-stripe/pull/160))
+- Fixed a bug where changing a partial payment amount wouldn’t update the payment intent. ([#279](https://github.com/craftcms/commerce-stripe/issues/279))
+
 ## 4.1.0 - 2023-12-19
 
 - Stripe for Craft Commerce now requires Commerce 4.3.3 or later.
 - It is now possible to create SEPA and Bacs Direct Debit payment sources.
 - Payment method data is now stored in expanded form within transaction response data. ([#276](https://github.com/craftcms/commerce-stripe/pull/276))
 - Billing address information is now passed to the payment intent. ([#257](https://github.com/craftcms/commerce-stripe/issues/257), [#258](https://github.com/craftcms/commerce-stripe/issues/263))
-- Fixed a bug where it wasn’t possible to pay using the SEPA Direct Debit payment method. ([#265](https://github.com/craftcms/commerce/issues/265))
+- Fixed a bug where it wasn’t possible to pay using the SEPA Direct Debit payment method. ([#265](https://github.com/craftcms/commerce-stripe/issues/265))
 - Fixed a bug where failed PayPal payments would cause infinite redirects. ([#266](https://github.com/craftcms/commerce-stripe/issues/266))
 - Fixed a bug where JavaScript files were being served incorrectly. ([#270](https://github.com/craftcms/commerce-stripe/issues/270))
 - Added `craft\commerce\stripe\SubscriptionGateway::handlePaymentIntentSucceeded()`.
