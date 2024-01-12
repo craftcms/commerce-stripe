@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 4.1.1 - 2024-01-12
 
 - Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
 - Fixed a bug that could cause duplicate payment sources to be created. ([#281](https://github.com/craftcms/commerce-stripe/pull/281))
