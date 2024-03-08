@@ -285,44 +285,40 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionPlans(): array
     {
-        $plans = $this->getStripeClient()->plans->all([
-            'limit' => 100,
-        ]);
+
+        $allPlans = [];
+        $startingAfter = null;
+
+        do {
+            if ($startingAfter === null) {
+                $response = $this->getStripeClient()->prices->all([
+                    'limit' => 3,
+                    'type' => 'recurring',
+                ]);
+            } else {
+                $response = $this->getStripeClient()->prices->all([
+                    'limit' => 3,
+                    'type' => 'recurring',
+                    'starting_after' => $startingAfter,
+                ]);
+            }
+            foreach ($response->data as $plan) {
+                    $allPlans[] = $plan;
+                    $productIds[] = $plan->product;
+            }
+
+            if (count($response->data) > 0) {
+                $startingAfter = end($response->data)->id;
+            }
+
+        } while ($response->has_more);
+
         $output = [];
-
-        $planProductMap = [];
-        $planList = [];
-
-        if (count($plans->data)) {
-            foreach ($plans->data as $plan) {
-                /** @var StripePlan $plan */
-                $plan = $plan->toArray();
-                $planProductMap[$plan['id']] = $plan['product'];
-                $planList[] = $plan;
-            }
-
-            $products = $this->getStripeClient()->products->all([
-                'limit' => 100,
-                'ids' => array_values($planProductMap),
-            ]);
-
-            $productList = [];
-
-            if (count($products->data)) {
-                foreach ($products->data as $product) {
-                    /** @var StripeProduct $product */
-                    $product = $product->toArray();
-                    $productList[$product['id']] = $product;
-                }
-            }
-
-            foreach ($planList as $plan) {
-                $productName = $productList[$plan['product']]['name'];
-                $planName = null !== $plan['nickname'] ? ' (' . $plan['nickname'] . ')' : '';
-                $output[] = ['name' => $productName . $planName, 'reference' => $plan['id']];
-            }
+        foreach ($allPlans as $plan) {
+            $planName = null !== $plan['nickname'] ? $plan['nickname']  : $plan['id'] . ' (No nickname set)';
+            $output[] = ['name' => $planName, 'reference' => $plan['id']];
         }
-
+        
         return $output;
     }
 

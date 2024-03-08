@@ -4,6 +4,7 @@
 
 - Fixed a bug where redirects could break when adding a new payment source. ([#259](https://github.com/craftcms/commerce-stripe/issues/259), [#289](https://github.com/craftcms/commerce-stripe/issues/289))
 - Fixed a bug where payment history was not being updated when a payment was made on a subscription. ([#144](https://github.com/craftcms/commerce-stripe/issues/144))
+- Subscription plans now return more than 100 plans. ([#104](https://github.com/craftcms/commerce-stripe/issues/104))
 
 ## 4.1.1 - 2024-01-12
 
