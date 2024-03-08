@@ -588,6 +588,7 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         $this->refreshSubscriptionData($subscription);
+        $this->refreshpaymenthistory($subscription);
     }
 
     /**
@@ -921,6 +922,7 @@ abstract class SubscriptionGateway extends Gateway
         $payment = $this->createSubscriptionPayment($invoice->invoiceData, $currency);
 
         CommercePlugin::getInstance()->getSubscriptions()->receivePayment($subscription, $payment, DateTimeHelper::toDateTime($stripeSubscription['current_period_end']));
+        $this->refreshpaymenthistory($subscription);
     }
 
     /**
@@ -1016,6 +1018,8 @@ abstract class SubscriptionGateway extends Gateway
         }
 
         CommercePlugin::getInstance()->getSubscriptions()->updateSubscription($subscription);
+
+        $this->refreshpaymenthistory($subscription);
     }
 
     /**
