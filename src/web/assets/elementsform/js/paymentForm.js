@@ -132,11 +132,15 @@ class PaymentIntentsElements {
             )
             .join('&');
 
+          const baseUrl = this.container.dataset.confirmSetupIntentUrl;
+          const hasQueryString = baseUrl.includes('?');
+          const returnUrl = `${baseUrl}${hasQueryString ? '&' : '?'}${params}`;
+
           this.stripeInstance
             .confirmSetup({
               elements,
               confirmParams: {
-                return_url: `${this.container.dataset.confirmSetupIntentUrl}&${params}`,
+                return_url: `${returnUrl}`,
               },
             })
             .then((result) => {

@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where redirects could break when adding a new payment source. ([#259](https://github.com/craftcms/commerce-stripe/issues/259), [#289](https://github.com/craftcms/commerce-stripe/issues/289))
+
 ## 4.1.1 - 2024-01-12
 
 - Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
