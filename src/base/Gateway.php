@@ -495,6 +495,7 @@ abstract class Gateway extends BaseGateway
      */
     protected function buildRequestData(Transaction $transaction): array
     {
+        $currencyService = Commerce::getInstance()->getCurrencies();
         $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
@@ -514,7 +515,7 @@ abstract class Gateway extends BaseGateway
         }
 
         $request = [
-            'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+            'amount' => $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency)),
             'currency' => $transaction->paymentCurrency,
             'description' => Craft::t('commerce-stripe', 'Order') . ' #' . $transaction->orderId,
             'metadata' => $metadata,
