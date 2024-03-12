@@ -26,9 +26,9 @@
   "prefer-stable": true,
   "require": {
     "php": "^8.0.2",
-    "craftcms/cms": "^4.0.0",
-    "stripe/stripe-php": "^10.0",
-    "craftcms/commerce": "^4.3.3"
+    "craftcms/cms": "^5.0.0-beta.6",
+    "stripe/stripe-php": "^13.0",
+    "craftcms/commerce": "^5.0.0-beta.1"
   },
   "require-dev": {
     "craftcms/phpstan": "dev-main",

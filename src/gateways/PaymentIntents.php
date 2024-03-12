@@ -205,6 +205,7 @@ class PaymentIntents extends BaseGateway
             ? 'commerce-stripe/paymentForms/checkoutForm'
             : 'commerce-stripe/paymentForms/elementsForm';
 
+        Craft::dd($params);
         $html = $view->renderTemplate($templatePath, $params);
 
         $view->setTemplateMode($previousMode);

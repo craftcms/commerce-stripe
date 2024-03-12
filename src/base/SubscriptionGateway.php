@@ -35,6 +35,7 @@ use craft\helpers\DateTimeHelper;
 use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\View;
+use Money\Money;
 use Stripe\ApiResource;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Plan as StripePlan;
@@ -143,15 +144,16 @@ abstract class SubscriptionGateway extends Gateway
     {
         $data = $subscription->getSubscriptionData();
         $currencyCode = strtoupper($data['plan']['currency']);
-        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
+        $currencyService = CommercePlugin::getInstance()->getCurrencies();
+        $currency = $currencyService->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
             Craft::warning('Unsupported currency - ' . $currencyCode, 'stripe');
 
-            return (float)0;
+            return 0.0;
         }
 
-        return $data['plan']['amount'] / (10 ** $currency->minorUnit) . ' ' . $currencyCode;
+        return $data['plan']['amount'] / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
     }
 
     /**
@@ -463,8 +465,8 @@ abstract class SubscriptionGateway extends Gateway
         ]);
 
         $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
-
-        return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
+        $minorUnits = CommercePlugin::getInstance()->getCurrencies()->getSubunitFor($currency);
+        return $currency ? $invoice->total / (10 ** $minorUnits) : $invoice->total;
     }
 
     /**
@@ -648,14 +650,16 @@ abstract class SubscriptionGateway extends Gateway
      * Create a subscription payment model from invoice.
      *
      * @param array $data
-     * @param Currency $currency the currency used for payment
+     * @param \Money\Currency $currency the currency used for payment
      *
      * @return SubscriptionPayment
      */
-    protected function createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
+    protected function createSubscriptionPayment(array $data, \Money\Currency $currency): SubscriptionPayment
     {
+        $currencyService = CommercePlugin::getInstance()->getCurrencies();
+        $subUnits = $currencyService->getSubunitFor($currency);
         return new SubscriptionPayment([
-            'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
+            'paymentAmount' => $data['amount_due'] / (10 ** $subUnits),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
             'paymentReference' => $data['charge'],
