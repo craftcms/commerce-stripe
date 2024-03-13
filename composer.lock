@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "9affb78a7d1147d394cbd197108688d8",
+    "content-hash": "a5a4c5f0d6f1190b372d594ea8f3906f",
     "packages": [
         {
             "name": "bacon/bacon-qr-code",
@@ -331,16 +331,16 @@
         },
         {
             "name": "craftcms/cms",
-            "version": "5.0.0-beta.6",
+            "version": "5.0.0-beta.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/craftcms/cms.git",
-                "reference": "f43e6c811e95faeeacc702ddc80490928b3b99a6"
+                "reference": "073d95792490ec6a16439d3e3b42fdbaaed8f7dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/craftcms/cms/zipball/f43e6c811e95faeeacc702ddc80490928b3b99a6",
-                "reference": "f43e6c811e95faeeacc702ddc80490928b3b99a6",
+                "url": "https://api.github.com/repos/craftcms/cms/zipball/073d95792490ec6a16439d3e3b42fdbaaed8f7dc",
+                "reference": "073d95792490ec6a16439d3e3b42fdbaaed8f7dc",
                 "shasum": ""
             },
             "require": {
@@ -449,7 +449,7 @@
                 "rss": "https://github.com/craftcms/cms/releases.atom",
                 "source": "https://github.com/craftcms/cms"
             },
-            "time": "2024-03-05T20:13:35+00:00"
+            "time": "2024-03-12T23:16:29+00:00"
         },
         {
             "name": "craftcms/commerce",
@@ -1706,16 +1706,16 @@
         },
         {
             "name": "illuminate/collections",
-            "version": "v10.47.0",
+            "version": "v10.48.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/collections.git",
-                "reference": "7bc2e907285b6a38acb3b386dcc577b185bf3d73"
+                "reference": "36651526fa6bb5445ffc6d51899d80291f8e0486"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/illuminate/collections/zipball/7bc2e907285b6a38acb3b386dcc577b185bf3d73",
-                "reference": "7bc2e907285b6a38acb3b386dcc577b185bf3d73",
+                "url": "https://api.github.com/repos/illuminate/collections/zipball/36651526fa6bb5445ffc6d51899d80291f8e0486",
+                "reference": "36651526fa6bb5445ffc6d51899d80291f8e0486",
                 "shasum": ""
             },
             "require": {
@@ -1757,11 +1757,11 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2024-03-04T18:11:18+00:00"
+            "time": "2024-03-10T15:34:39+00:00"
         },
         {
             "name": "illuminate/conditionable",
-            "version": "v10.47.0",
+            "version": "v10.48.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/conditionable.git",
@@ -1807,7 +1807,7 @@
         },
         {
             "name": "illuminate/contracts",
-            "version": "v10.47.0",
+            "version": "v10.48.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/contracts.git",
@@ -1855,7 +1855,7 @@
         },
         {
             "name": "illuminate/macroable",
-            "version": "v10.47.0",
+            "version": "v10.48.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/illuminate/macroable.git",
@@ -7502,5 +7502,8 @@
         "php": "^8.2"
     },
     "platform-dev": [],
+    "platform-overrides": {
+        "php": "8.2"
+    },
     "plugin-api-version": "2.3.0"
 }
