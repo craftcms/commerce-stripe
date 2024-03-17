@@ -1,8 +1,10 @@
 ---
 name: Bug Report
 about: Report an issue or unexpected behavior
-labels: bug
-
+labels:
+  - bug
+  - Craft Commerce → Stripe # Linear
+  - Bug # Linear
 ---
 
 ### Description
