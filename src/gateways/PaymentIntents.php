@@ -621,7 +621,7 @@ class PaymentIntents extends BaseGateway
     protected function authorizeOrPurchase(Transaction $transaction, PaymentIntentForm|BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
         $currencyService = Commerce::getInstance()->getCurrencies();
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+        $currency = $currencyService->getCurrencyByIso($transaction->paymentCurrency);
         $user = Craft::$app->getUser()->getIdentity();
 
         // This is the metadata that will be sent to Stripe for checkout and payment intents

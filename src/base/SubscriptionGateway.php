@@ -442,7 +442,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $currencyService = CommercePlugin::getInstance()->getCurrencies();
         $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
-        /** @var SubscriptionItem\ $item */
+        /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
 
         $items = [
