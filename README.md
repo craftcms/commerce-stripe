@@ -93,13 +93,9 @@ Your local environment isn’t often exposed to the public internet, so Stripe w
 
 2. Use DDEV’s `share` command, and use the public Ngrok URL when configuring the webhook manually, in Stripe.
 
-## Upgrading from 3.x to 4.x
-
-Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
-
 ## Upgrading from 4.x to 5.x
 
-Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
+Version 5.0 is largely backward-compatible with 4.x. Review the following sections to ensure your site (and any customizations) remain functional.
 
 ### Payment Forms
 
