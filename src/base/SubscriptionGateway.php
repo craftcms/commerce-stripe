@@ -13,7 +13,6 @@ use craft\commerce\base\PlanInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
 use craft\commerce\errors\SubscriptionException;
-use craft\commerce\models\Currency;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
@@ -37,8 +36,6 @@ use craft\helpers\StringHelper;
 use craft\web\View;
 use Stripe\ApiResource;
 use Stripe\Invoice as StripeInvoice;
-use Stripe\Plan as StripePlan;
-use Stripe\Product as StripeProduct;
 use Stripe\Refund;
 use Stripe\SubscriptionItem;
 use Throwable;
@@ -143,15 +140,16 @@ abstract class SubscriptionGateway extends Gateway
     {
         $data = $subscription->getSubscriptionData();
         $currencyCode = strtoupper($data['plan']['currency']);
-        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso($currencyCode);
+        $currencyService = CommercePlugin::getInstance()->getCurrencies();
+        $currency = $currencyService->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
             Craft::warning('Unsupported currency - ' . $currencyCode, 'stripe');
 
-            return (float)0;
+            return 0.0;
         }
 
-        return $data['plan']['amount'] / (10 ** $currency->minorUnit) . ' ' . $currencyCode;
+        return $data['plan']['amount'] / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
     }
 
     /**
@@ -285,7 +283,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function getSubscriptionPlans(): array
     {
-
         $allPlans = [];
         $startingAfter = null;
 
@@ -303,19 +300,18 @@ abstract class SubscriptionGateway extends Gateway
                 ]);
             }
             foreach ($response->data as $plan) {
-                    $allPlans[] = $plan;
-                    $productIds[] = $plan->product;
+                $allPlans[] = $plan;
+                $productIds[] = $plan->product;
             }
 
             if (count($response->data) > 0) {
                 $startingAfter = end($response->data)->id;
             }
-
         } while ($response->has_more);
 
         $output = [];
         foreach ($allPlans as $plan) {
-            $planName = null !== $plan['nickname'] ? $plan['nickname']  : $plan['id'] . ' (No nickname set)';
+            $planName = null !== $plan['nickname'] ? $plan['nickname'] : $plan['id'] . ' (No nickname set)';
             $output[] = ['name' => $planName, 'reference' => $plan['id']];
         }
         
@@ -444,6 +440,7 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function previewSwitchCost(Subscription $subscription, BasePlan $plan): float
     {
+        $currencyService = CommercePlugin::getInstance()->getCurrencies();
         $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve($subscription->reference);
         /** @var SubscriptionItem $item */
         $item = $stripeSubscription->items->data[0];
@@ -462,9 +459,8 @@ abstract class SubscriptionGateway extends Gateway
             'subscription_billing_cycle_anchor' => 'now',
         ]);
 
-        $currency = CommercePlugin::getInstance()->getCurrencies()->getCurrencyByIso(strtoupper($invoice->currency));
-
-        return $currency ? $invoice->total / (10 ** $currency->minorUnit) : $invoice->total;
+        $currency = $currencyService->getCurrencyByIso(strtoupper($invoice->currency));
+        return $currency ? $invoice->total / (10 ** $currencyService->getSubunitFor($currency)) : $invoice->total;
     }
 
     /**
@@ -648,14 +644,16 @@ abstract class SubscriptionGateway extends Gateway
      * Create a subscription payment model from invoice.
      *
      * @param array $data
-     * @param Currency $currency the currency used for payment
+     * @param \Money\Currency $currency the currency used for payment
      *
      * @return SubscriptionPayment
      */
-    protected function createSubscriptionPayment(array $data, Currency $currency): SubscriptionPayment
+    protected function createSubscriptionPayment(array $data, \Money\Currency $currency): SubscriptionPayment
     {
+        $currencyService = CommercePlugin::getInstance()->getCurrencies();
+        $subUnits = $currencyService->getSubunitFor($currency);
         return new SubscriptionPayment([
-            'paymentAmount' => $data['amount_due'] / (10 ** $currency->minorUnit),
+            'paymentAmount' => $data['amount_due'] / (10 ** $subUnits),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
             'paymentReference' => $data['charge'],
