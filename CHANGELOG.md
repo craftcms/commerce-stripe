@@ -1,5 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.1.2 - 2024-03-25
+
+- Fixed a bug where redirects could break when adding a new payment source. ([#259](https://github.com/craftcms/commerce-stripe/issues/259), [#289](https://github.com/craftcms/commerce-stripe/issues/289))
+- Fixed a bug where payment history was not being updated when a payment was made on a subscription. ([#144](https://github.com/craftcms/commerce-stripe/issues/144))
+- Subscription plans queries now return more than 100 plans. ([#104](https://github.com/craftcms/commerce-stripe/issues/104))
+
 ## 4.1.1 - 2024-01-12
 
 - Fixed a bug where legacy default payment methods were not being set as default. ([#280](https://github.com/craftcms/commerce-stripe/pull/280))
