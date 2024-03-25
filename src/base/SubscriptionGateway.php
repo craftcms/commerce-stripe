@@ -869,7 +869,8 @@ abstract class SubscriptionGateway extends Gateway
             ]));
         }
 
-        $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoice['billing'] === 'charge_automatically';
+        $stripeInvoiceBilling = $stripeInvoice['billing'] ?? null;
+        $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoiceBilling === 'charge_automatically';
 
         if (StripePlugin::getInstance()->getSettings()->chargeInvoicesImmediately && $canBePaid) {
             $invoice = $this->getStripeClient()->invoices->retrieve($stripeInvoice['id']);
