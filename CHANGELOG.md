@@ -1,8 +1,11 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 4.1.2 - 2024-03-25
+## 5.0.0
 
 - Stripe now requires Craft Commerce 5.0.0-beta.1 or later.
+
+## 4.1.2 - 2024-03-25
+
 - Fixed a bug where redirects could break when adding a new payment source. ([#259](https://github.com/craftcms/commerce-stripe/issues/259), [#289](https://github.com/craftcms/commerce-stripe/issues/289))
 - Fixed a bug where payment history was not being updated when a payment was made on a subscription. ([#144](https://github.com/craftcms/commerce-stripe/issues/144))
 - Subscription plans queries now return more than 100 plans. ([#104](https://github.com/craftcms/commerce-stripe/issues/104))
