@@ -20,8 +20,8 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 
 ## Requirements
 
-- Craft CMS 4.0 or later
-- Craft Commerce 4.3.3 or later
+- Craft CMS 5.0 or later
+- Craft Commerce 5.0 or later
 - Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
 
 ## Installation
@@ -93,9 +93,9 @@ Your local environment isn’t often exposed to the public internet, so Stripe w
 
 2. Use DDEV’s `share` command, and use the public Ngrok URL when configuring the webhook manually, in Stripe.
 
-## Upgrading from 3.x
+## Upgrading from 4.x to 5.x
 
-Version 4.0 is largely backward-compatible with 3.x. Review the following sections to ensure your site (and any customizations) remain functional.
+Version 5.0 is largely backward-compatible with 4.x. Review the following sections to ensure your site (and any customizations) remain functional.
 
 ### Payment Forms
 

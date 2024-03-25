@@ -276,18 +276,19 @@ class PaymentIntents extends BaseGateway
      */
     public function refund(Transaction $transaction): RequestResponseInterface
     {
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+        $currencyService = Commerce::getInstance()->getCurrencies();
+        $currency = $currencyService->getCurrencyByIso($transaction->paymentCurrency);
 
         if (!$currency) {
             throw new NotSupportedException('The currency “' . $transaction->paymentCurrency . '” is not supported!');
         }
 
         // Are we dealing with a transaction that was created under the previous 'Charge' gateway?
-        if (substr($transaction->reference, 0, 3) === "ch_") {
+        if (str_starts_with($transaction->reference, "ch_")) {
             try {
                 $request = [
                     'charge' => $transaction->reference,
-                    'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+                    'amount' => $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency)),
                 ];
                 $refund = $this->getStripeClient()->refunds->create($request);
 
@@ -303,7 +304,7 @@ class PaymentIntents extends BaseGateway
             if ($stripePaymentIntent->status == 'succeeded') {
                 $refund = $this->getStripeClient()->refunds->create([
                     'payment_intent' => $stripePaymentIntent->id,
-                    'amount' => $transaction->paymentAmount * (10 ** $currency->minorUnit),
+                    'amount' => $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency)),
                 ]);
 
                 return $this->createPaymentResponseFromApiResource($refund);
@@ -619,7 +620,8 @@ class PaymentIntents extends BaseGateway
      */
     protected function authorizeOrPurchase(Transaction $transaction, PaymentIntentForm|BasePaymentForm $form, bool $capture = true): RequestResponseInterface
     {
-        $currency = Commerce::getInstance()->getCurrencies()->getCurrencyByIso($transaction->paymentCurrency);
+        $currencyService = Commerce::getInstance()->getCurrencies();
+        $currency = $currencyService->getCurrencyByIso($transaction->paymentCurrency);
         $user = Craft::$app->getUser()->getIdentity();
 
         // This is the metadata that will be sent to Stripe for checkout and payment intents
@@ -638,7 +640,7 @@ class PaymentIntents extends BaseGateway
         }
 
         // Normalized amount for Stripe into minor units
-        $amount = $transaction->paymentAmount * (10 ** $currency->minorUnit);
+        $amount = $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency));
 
         /** @var PaymentIntentForm $form */
         if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {
