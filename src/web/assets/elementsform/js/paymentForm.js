@@ -53,7 +53,7 @@ class PaymentIntentsElements {
     paymentElement.on('change', layoutChangeHandler);
 
     // Show the container:
-    this.container.classList.remove('hidden');
+    this.container.classList.remove(this.hiddenClass);
   }
 
   async requiresActionFlow() {
