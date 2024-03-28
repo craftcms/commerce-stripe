@@ -288,7 +288,7 @@ class PaymentIntents extends BaseGateway
             try {
                 $request = [
                     'charge' => $transaction->reference,
-                    'amount' => $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency)),
+                    'amount' => (int) bcmul($transaction->paymentAmount, 10 ** $currencyService->getSubunitFor($currency)),
                 ];
                 $refund = $this->getStripeClient()->refunds->create($request);
 
@@ -304,7 +304,7 @@ class PaymentIntents extends BaseGateway
             if ($stripePaymentIntent->status == 'succeeded') {
                 $refund = $this->getStripeClient()->refunds->create([
                     'payment_intent' => $stripePaymentIntent->id,
-                    'amount' => $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency)),
+                    'amount' => (int) bcmul($transaction->paymentAmount, 10 ** $currencyService->getSubunitFor($currency)),
                 ]);
 
                 return $this->createPaymentResponseFromApiResource($refund);
@@ -640,7 +640,7 @@ class PaymentIntents extends BaseGateway
         }
 
         // Normalized amount for Stripe into minor units
-        $amount = $transaction->paymentAmount * (10 ** $currencyService->getSubunitFor($currency));
+        $amount = (int) bcmul($transaction->paymentAmount, 10 ** $currencyService->getSubunitFor($currency));
 
         /** @var PaymentIntentForm $form */
         if ($form->paymentFormType == self::PAYMENT_FORM_TYPE_CHECKOUT) {

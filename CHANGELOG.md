@@ -1,8 +1,16 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where floating point rounding precision could cause payments/refunds to fail. ([#296](https://github.com/craftcms/commerce-stripe/pull/296))
+
 ## 5.0.0
 
 - Stripe now requires Craft Commerce 5.0.0-beta.1 or later.
+
+## 4.1.2.1 - 2024-03-28
+
+- Fixed a bug where floating point precision could cause payments/refunds to fail. ([#296](https://github.com/craftcms/commerce-stripe/pull/296))
 
 ## 4.1.2 - 2024-03-25
 
