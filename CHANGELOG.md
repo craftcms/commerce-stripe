@@ -1,8 +1,21 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 5.0.0
+## 5.0.1 - 2024-04-09
+
+- Fixed a bug where floating point rounding precision could cause payments/refunds to fail. ([#296](https://github.com/craftcms/commerce-stripe/pull/296))
+- Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
+
+## 5.0.0 - 2024-03-25
 
 - Stripe now requires Craft Commerce 5.0.0-beta.1 or later.
+
+## 4.1.2.2 - 2024-04-09
+
+- Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
+
+## 4.1.2.1 - 2024-03-28
+
+- Fixed a bug where floating point precision could cause payments/refunds to fail. ([#296](https://github.com/craftcms/commerce-stripe/pull/296))
 
 ## 4.1.2 - 2024-03-25
 
@@ -58,6 +71,11 @@
 - Deprecated the `commerce-stripe/default/fetch-plans` action.
 - Deprecated creating new payment sources via the `commerce/subscriptions/subscribe` action.
 - Fixed a bug where `craft\commerce\stripe\base\SubscriptionGateway::getSubscriptionPlans()` was returning incorrectly-formatted data.
+
+## 3.1.2 - 2024-04-09
+
+- Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
+- Plans’ data is now updated when the associated plan is updated in Stripe. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
 
 ## 3.1.1 - 2023-05-10
 
