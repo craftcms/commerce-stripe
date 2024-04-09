@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
 - Plans’ data is now updated when the associated plan is updated in Stripe. ([#240](https://github.com/craftcms/commerce-stripe/issues/240))
 
 ## 3.1.1 - 2023-05-10
