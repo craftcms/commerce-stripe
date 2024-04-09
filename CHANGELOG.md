@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
+
 ## 2.4.4.1 - 2023-03-19
 
 - Fixed a PHP error that could occur when making a payment. ([#226](https://github.com/craftcms/commerce-stripe/issues/226))
