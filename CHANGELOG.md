@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a PHP error that occurred when opening the payment form modal on the Edit Order page with Craft Commerce 4.x installed. ([#303](https://github.com/craftcms/commerce/issues/303))
+
 ## 3.1.2 - 2024-04-09
 
 - Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))

@@ -135,6 +135,16 @@ class PaymentIntents extends BaseGateway
     }
 
     /**
+     * Since Commerce 4 can be installed and still have Stripe 3.x installed as well,
+     * we need to provide a way to get the old payment form model call to keep working,
+     * even though the current payment form is the future old payment form.
+     */
+    public function getOldPaymentFormModel(): BasePaymentForm
+    {
+        return $this->getPaymentFormModel();
+    }
+
+    /**
      * @inheritdoc
      */
     public function getPaymentFormModel(): BasePaymentForm
