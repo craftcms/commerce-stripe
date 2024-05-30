@@ -2,7 +2,7 @@
     window.csrfTokenName = "{{ craft.app.config.general.csrfTokenName }}";
     window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 </script>
-<div class="stripe-payment-elements-form hidden"
+<div class="stripe-payment-elements-form {{ hiddenClass }}"
      data-publishablekey="{{ gateway.getPublishableKey() }}"
      data-complete-payment-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
      data-confirm-setup-intent-url="{{ actionUrl('commerce-stripe/customers/confirm-setup-intent') }}"
@@ -15,7 +15,7 @@
      data-processing-button-text="{{ processingButtonText }}"
      data-hidden-class="{{ hiddenClass }}"
 >
-    <div class="hidden stripe-error-message {{ errorMessageClasses }}">
+    <div class="{{ hiddenClass }} stripe-error-message {{ errorMessageClasses }}">
         {# Error messages are displayed to your customers, here. #}
     </div>
     <div class="stripe-payment-form">
