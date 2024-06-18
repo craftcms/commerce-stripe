@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 2.4.5.1 - 2025-06-18
+
+- Fixed a SQL performance issue when upgrading. ([#190](https://github.com/craftcms/commerce-stripe/issues/190))
+
 ## 2.4.5 - 2024-04-09
 
 - Fixed a PHP error that could occur when handling a webhook request. ([#294](https://github.com/craftcms/commerce-stripe/issues/294))
