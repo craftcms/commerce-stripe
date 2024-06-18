@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a SQL performance issue that occurred when upgrading. ([#190](https://github.com/craftcms/commerce-stripe/issues/190))
+
 ## 5.0.1 - 2024-04-09
 
 - Fixed a bug where floating point rounding precision could cause payments/refunds to fail. ([#296](https://github.com/craftcms/commerce-stripe/pull/296))
