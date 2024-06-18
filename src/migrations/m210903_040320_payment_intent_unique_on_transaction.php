@@ -19,9 +19,6 @@ class m210903_040320_payment_intent_unique_on_transaction extends Migration
             $this->addColumn('{{%stripe_paymentintents}}', 'transactionHash', $this->string()->after('orderId'));
         }
 
-        MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_paymentintents}}', $this);
-        MigrationHelper::dropAllIndexesOnTable('{{%stripe_paymentintents}}', $this);
-
         $transactionsTable = '{{%commerce_transactions}}';
         $stripePaymentIntentsTable = '{{%stripe_paymentintents}}';
 
@@ -44,6 +41,9 @@ SQL;
         }
 
         $this->execute($sql);
+
+        MigrationHelper::dropAllForeignKeysOnTable('{{%stripe_paymentintents}}', $this);
+        MigrationHelper::dropAllIndexesOnTable('{{%stripe_paymentintents}}', $this);
 
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'gatewayId', '{{%commerce_gateways}}', 'id', 'CASCADE', null);
         $this->addForeignKey(null, '{{%stripe_paymentintents}}', 'customerId', '{{%stripe_customers}}', 'id', 'CASCADE', null);
