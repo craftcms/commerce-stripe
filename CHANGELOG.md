@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## 2.4.5.1 - 2025-06-18
+## 2.4.5.1 - 2024-06-18
 
 - Fixed a SQL performance issue when upgrading. ([#190](https://github.com/craftcms/commerce-stripe/issues/190))
 
