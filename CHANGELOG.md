@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 3.1.3.1 - 2025-06-18
+
+- Fixed a SQL performance issue when upgrading. ([#190](https://github.com/craftcms/commerce-stripe/issues/190))
+
 ## 3.1.3 - 2024-05-27
 
 - Fixed a PHP error that occurred when opening the payment form modal on the Edit Order page with Craft Commerce 4.x installed. ([#303](https://github.com/craftcms/commerce/issues/303))
