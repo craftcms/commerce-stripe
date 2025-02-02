@@ -721,6 +721,10 @@ abstract class SubscriptionGateway extends Gateway
 
             $user = Craft::$app->getUsers()->getUserById($customer->userId);
 
+            if (!$user) {
+                return;
+            }
+
             // Ensure customer actually exists in Stripe
             $stripeCustomer = $this->getStripeClient()->customers->retrieve($stripePaymentMethod['customer']);
 
