@@ -1,7 +1,8 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.0.4.3 - 2025-02-03
 
+- Fixed a JavaScript error that could occur when attempting to make a payment on a completed order. ([#312](https://github.com/craftcms/commerce-stripe/issues/312))
 - Fixed a PHP error that could occur when syncing remote payment methods for customers that don't exist in Craft Commerce. ([#316](https://github.com/craftcms/commerce-stripe/issues/316))
 
 ## 5.0.4.3 - 2024-09-17
