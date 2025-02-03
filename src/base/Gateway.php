@@ -310,7 +310,8 @@ abstract class Gateway extends BaseGateway
 
         if (!$secret || !$stripeSignature) {
             Craft::warning('Webhook not signed or signing secret not set.', 'stripe');
-            $response->data = 'ok';
+            $response->data = 'Webhook not signed or signing secret not set.';
+            $response->statusCode = 403;
 
             return $response;
         }
@@ -320,7 +321,8 @@ abstract class Gateway extends BaseGateway
             Webhook::constructEvent($rawData, $stripeSignature, $secret);
         } catch (Exception $exception) {
             Craft::warning('Webhook signature check failed: ' . $exception->getMessage(), 'stripe');
-            $response->data = 'ok';
+            $response->data = 'Webhook signature check failed.';
+            $response->statusCode = 403;
 
             return $response;
         }
