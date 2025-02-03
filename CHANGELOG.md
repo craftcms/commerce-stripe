@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.0.5 - 2025-03-02
 
 - Stripe now returns the correct HTTP error codes for invalid webhook requests. ([#314](https://github.com/craftcms/commerce-stripe/issues/314))
 - Fixed a PHP error that occurred when receiving webhook events for invoices that did not originate from Craft Commerce. ([#317](https://github.com/craftcms/commerce-stripe/issues/317))
