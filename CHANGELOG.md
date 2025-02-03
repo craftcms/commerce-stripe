@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Stripe now returns the correct HTTP error codes for invalid webhook requests.
+- Stripe now returns the correct HTTP error codes for invalid webhook requests. ([#314](https://github.com/craftcms/commerce-stripe/issues/314))
 - Fixed a PHP error that occurred when receiving webhook events for invoices that did not originate from Craft Commerce. ([#317](https://github.com/craftcms/commerce-stripe/issues/317))
 
 ## 5.0.4.4 - 2025-02-03
