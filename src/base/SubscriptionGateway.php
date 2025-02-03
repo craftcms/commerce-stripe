@@ -913,6 +913,11 @@ abstract class SubscriptionGateway extends Gateway
 
         $subscriptionReference = $stripeInvoice['subscription'];
 
+        // We currently only care about invoices for subscriptions
+        if (!$subscriptionReference) {
+            return;
+        }
+
         $counter = 0;
         $limit = 5;
 

@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a PHP error that occurred when receiving webhook events for invoices that did not originate from Craft Commerce. ([#317](https://github.com/craftcms/commerce-stripe/issues/317))
+
 ## 5.0.4.4 - 2025-02-03
 
 - Fixed a JavaScript error that could occur when attempting to make a payment on a completed order. ([#312](https://github.com/craftcms/commerce-stripe/issues/312))
