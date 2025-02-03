@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a JavaScript error that could occur when attempting to make a payment on a completed order. ([#312](https://github.com/craftcms/commerce-stripe/issues/312))
+
 ## 4.1.5.1 - 2024-11-13
 
 - Fixed a bug where free orders that completed immediately were not redirecting to the order success page. ([#313](https://github.com/craftcms/commerce-stripe/issues/313))

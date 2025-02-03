@@ -117,7 +117,6 @@ class PaymentIntentsElements {
       this.showErrorMessage(error.message);
       this.$submitButton.classList.remove(this.hiddenClass);
     });
-
   }
 
   deprecatedSubscribeFlow() {
@@ -240,7 +239,11 @@ class PaymentIntentsElements {
           return;
         }
 
-        if(json.redirect && json.cart.isCompleted === true) {
+        if (
+          json.redirect &&
+          typeof json.cart !== 'undefined' &&
+          json.cart.isCompleted === true
+        ) {
           window.location.href = json.redirect;
           return;
         }
