@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed the performance of loading plans. ([#322](https://github.com/craftcms/commerce-stripe/issues/322))
+
 ## 5.0.5 - 2025-03-02
 
 - Stripe now returns the correct HTTP error codes for invalid webhook requests. ([#314](https://github.com/craftcms/commerce-stripe/issues/314))

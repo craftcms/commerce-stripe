@@ -287,24 +287,22 @@ abstract class SubscriptionGateway extends Gateway
         $startingAfter = null;
 
         do {
-            if ($startingAfter === null) {
-                $response = $this->getStripeClient()->prices->all([
-                    'limit' => 3,
-                    'type' => 'recurring',
-                ]);
-            } else {
-                $response = $this->getStripeClient()->prices->all([
-                    'limit' => 3,
-                    'type' => 'recurring',
-                    'starting_after' => $startingAfter,
-                ]);
-            }
-            foreach ($response->data as $plan) {
-                $allPlans[] = $plan;
-                $productIds[] = $plan->product;
+            $params = [
+                'limit' => 50,
+                'type' => 'recurring',
+            ];
+
+            if ($startingAfter !== null) {
+                $params['starting_after'] = $startingAfter;
             }
 
-            if (count($response->data) > 0) {
+            $response = $this->getStripeClient()->prices->all($params);
+
+            foreach ($response->data as $plan) {
+                $allPlans[] = $plan;
+            }
+
+            if (!empty($response->data)) {
                 $startingAfter = end($response->data)->id;
             }
         } while ($response->has_more);
