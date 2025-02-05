@@ -314,7 +314,7 @@ abstract class SubscriptionGateway extends Gateway
             $planName = null !== $plan['nickname'] ? $plan['nickname'] : $plan['id'] . ' (No nickname set)';
             $output[] = ['name' => $planName, 'reference' => $plan['id']];
         }
-        
+
         return $output;
     }
 
@@ -527,7 +527,10 @@ abstract class SubscriptionGateway extends Gateway
             $updateTransaction = null;
 
             if ($transaction->parentId === null) {
-                $children = Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id);
+                // Try and retrieve child transactions if this is a saved transaction
+                $children = $transaction->id
+                    ? Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
+                    : [];
 
                 if (empty($children) && $transaction->status === TransactionRecord::STATUS_PROCESSING) {
                     $updateTransaction = $transaction;
