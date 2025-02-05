@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 4.1.5.3 - 2025-02-05
 
 - Fixed a PHP error that could occur when handling a webhook request.
 
