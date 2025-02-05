@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Fixed a bug where choosing bank transfer as a payment method wouldn’t complete an order. ([#315](https://github.com/craftcms/commerce-stripe/issues/315))
+- Added `craft\commerce\stripe\SubscriptionGateway::handleCustomerCashBalanceTransaction()`.
+- Added `craft\commerce\stripe\SubscriptionGateway::transactionSupportsRefund()`.
 
 ## 4.1.5.3 - 2025-02-05
 

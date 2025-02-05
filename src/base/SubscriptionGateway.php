@@ -12,13 +12,18 @@ use craft\commerce\base\Plan as BasePlan;
 use craft\commerce\base\PlanInterface;
 use craft\commerce\base\SubscriptionResponseInterface;
 use craft\commerce\elements\Subscription;
+use craft\commerce\errors\CurrencyException;
+use craft\commerce\errors\OrderStatusException;
 use craft\commerce\errors\SubscriptionException;
+use craft\commerce\errors\TransactionException;
+use craft\commerce\helpers\Currency as CurrencyHelper;
 use craft\commerce\models\Currency;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
+use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
@@ -36,10 +41,12 @@ use craft\helpers\Json;
 use craft\helpers\StringHelper;
 use craft\web\View;
 use Stripe\ApiResource;
+use Stripe\CustomerCashBalanceTransaction;
 use Stripe\Invoice as StripeInvoice;
 use Stripe\Refund;
 use Stripe\SubscriptionItem;
 use Throwable;
+use yii\base\Exception;
 use yii\base\InvalidConfigException;
 use function count;
 
@@ -480,6 +487,9 @@ abstract class SubscriptionGateway extends Gateway
             case 'payment_intent.succeeded':
                 $this->handlePaymentIntentSucceeded($data);
                 break;
+            case CustomerCashBalanceTransaction::OBJECT_NAME . '.created':
+                $this->handleCustomerCashBalanceTransaction($data);
+                break;
             case 'charge.refunded':
                 $this->handleRefunded($data);
                 break;
@@ -528,6 +538,7 @@ abstract class SubscriptionGateway extends Gateway
 
             if ($transaction->parentId === null) {
                 // Try and retrieve child transactions if this is a saved transaction
+                /** @var Transaction[] $children */
                 $children = $transaction->id
                     ? Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
                     : [];
@@ -551,10 +562,104 @@ abstract class SubscriptionGateway extends Gateway
                 $transactionRecord->message = '';
                 $transactionRecord->response = $paymentIntent;
 
-                $transactionRecord->save(false);
+                if ($transactionRecord->save(false) ) {
+                    // Silently drop successful child transactions as they are now consolidated into the parent transaction
+                    TransactionRecord::deleteAll([
+                        'parentId' => $updateTransaction->id,
+                        'status' => TransactionRecord::STATUS_SUCCESS,
+                    ]);
+                }
+
                 $transaction->getOrder()->updateOrderPaidInformation();
             }
         }
+    }
+
+    /**
+     * @param array $data
+     * @return void
+     * @throws ElementNotFoundException
+     * @throws InvalidConfigException
+     * @throws Throwable
+     * @throws CurrencyException
+     * @throws OrderStatusException
+     * @throws TransactionException
+     * @throws Exception
+     * @since 4.1.6
+     */
+    protected function handleCustomerCashBalanceTransaction(array $data): void
+    {
+        $cashBalance = $data['data']['object'];
+        if ($cashBalance['object'] === CustomerCashBalanceTransaction::OBJECT_NAME && $cashBalance['type'] === CustomerCashBalanceTransaction::TYPE_APPLIED_TO_PAYMENT) {
+            if (!array_key_exists('applied_to_payment', $cashBalance) || !array_key_exists('payment_intent', $cashBalance['applied_to_payment'])) {
+                return;
+            }
+
+            $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($cashBalance['applied_to_payment']['payment_intent']);
+            if (!$transaction || $transaction->parentId !== null) {
+                return;
+            }
+
+            $children = Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id);
+
+            if (empty($children)) {
+                return;
+            }
+
+            // Find processing transaction with the same reference
+            $childTransaction = null;
+            foreach ($children as $child) {
+                if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING) {
+                    $childTransaction = $child;
+                    break;
+                }
+            }
+
+            if ($childTransaction === null) {
+                return;
+            }
+
+            // Inspect the partial payment data to create a new child transaction
+            $transaction = Plugin::getInstance()->getTransactions()->createTransaction($childTransaction->getOrder(), $childTransaction);
+
+            $currency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso(strtoupper($cashBalance['currency']));
+
+            // Flip `$cash['net_amount']` to a positive value
+            $paymentAmount = $cashBalance['net_amount'] > 0 ? $cashBalance['net_amount'] : $cashBalance['net_amount'] * -1;
+            // Convert from minor unit
+            $paymentAmount = $paymentAmount / (10 ** $currency->minorUnit);
+
+            $transaction->amount = $paymentAmount;
+            if ($transaction->currency != $transaction->paymentCurrency) {
+                $orderCurrency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso($transaction->currency);
+                $amount = CurrencyHelper::round($paymentAmount / $transaction->paymentRate, $orderCurrency);
+                $transaction->amount = $amount;
+            }
+
+            $transaction->paymentAmount = $paymentAmount;
+            $transaction->status = TransactionRecord::STATUS_SUCCESS;
+            $transaction->response = $cashBalance;
+
+
+            Plugin::getInstance()->getTransactions()->saveTransaction($transaction, false);
+        }
+    }
+
+    /**
+     * @inheritdoc
+     */
+    public function transactionSupportsRefund(Transaction $transaction): bool
+    {
+        if ($transaction->response && $transaction->status === TransactionRecord::STATUS_SUCCESS) {
+            $response = Json::decodeIfJson($transaction->response);
+
+            // If this is a bank transfer funded payment, we can't refund it.
+            if (isset($response['object']) && $response['object'] === CustomerCashBalanceTransaction::OBJECT_NAME && isset($response['type']) && $response['type'] === CustomerCashBalanceTransaction::TYPE_APPLIED_TO_PAYMENT) {
+                return false;
+            }
+        }
+
+        return parent::transactionSupportsRefund($transaction);
     }
 
     /**
