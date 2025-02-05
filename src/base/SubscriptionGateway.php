@@ -562,7 +562,7 @@ abstract class SubscriptionGateway extends Gateway
                 $transactionRecord->message = '';
                 $transactionRecord->response = $paymentIntent;
 
-                if ($transactionRecord->save(false) ) {
+                if ($transactionRecord->save(false)) {
                     // Silently drop successful child transactions as they are now consolidated into the parent transaction
                     TransactionRecord::deleteAll([
                         'parentId' => $updateTransaction->id,
