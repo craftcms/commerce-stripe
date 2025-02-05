@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where choosing bank transfer as a payment method wouldn’t complete an order. ([#315](https://github.com/craftcms/commerce-stripe/issues/315))
+
 ## 4.1.5.3 - 2025-02-05
 
 - Fixed a PHP error that could occur when handling a webhook request.
