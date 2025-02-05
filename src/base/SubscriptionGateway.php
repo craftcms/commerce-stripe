@@ -17,7 +17,6 @@ use craft\commerce\errors\OrderStatusException;
 use craft\commerce\errors\SubscriptionException;
 use craft\commerce\errors\TransactionException;
 use craft\commerce\helpers\Currency as CurrencyHelper;
-use craft\commerce\models\Currency;
 use craft\commerce\models\PaymentSource;
 use craft\commerce\models\subscriptions\CancelSubscriptionForm as BaseCancelSubscriptionForm;
 use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm;
@@ -627,7 +626,7 @@ abstract class SubscriptionGateway extends Gateway
             // Inspect the partial payment data to create a new child transaction
             $transaction = Plugin::getInstance()->getTransactions()->createTransaction($childTransaction->getOrder(), $childTransaction);
 
-            $currency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso(strtoupper($cashBalance['currency']));
+            $currency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso(strtoupper($cashBalance['currency']), $transaction->getOrder()->getStore()->id);
 
             // Flip `$cash['net_amount']` to a positive value
             $paymentAmount = $cashBalance['net_amount'] > 0 ? $cashBalance['net_amount'] : $cashBalance['net_amount'] * -1;
@@ -636,7 +635,7 @@ abstract class SubscriptionGateway extends Gateway
 
             $transaction->amount = $paymentAmount;
             if ($transaction->currency != $transaction->paymentCurrency) {
-                $orderCurrency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso($transaction->currency);
+                $orderCurrency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso($transaction->currency, $transaction->getOrder()->getStore()->id);
                 $amount = CurrencyHelper::round($paymentAmount / $transaction->paymentRate, $orderCurrency);
                 $transaction->amount = $amount;
             }

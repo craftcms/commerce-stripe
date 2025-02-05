@@ -8,7 +8,6 @@
 - Added `craft\commerce\stripe\SubscriptionGateway::handleCustomerCashBalanceTransaction()`.
 - Added `craft\commerce\stripe\SubscriptionGateway::transactionSupportsRefund()`.
 
-
 ## 5.0.5 - 2025-03-02
 
 - Stripe now returns the correct HTTP error codes for invalid webhook requests. ([#314](https://github.com/craftcms/commerce-stripe/issues/314))
