@@ -9,6 +9,7 @@ namespace craft\commerce\stripe\responses;
 
 use craft\commerce\base\RequestResponseInterface;
 use craft\commerce\errors\NotImplementedException;
+use Stripe\PaymentIntent;
 use Stripe\Refund;
 
 class PaymentIntentResponse implements RequestResponseInterface
@@ -60,6 +61,12 @@ class PaymentIntentResponse implements RequestResponseInterface
         }
 
         if ((!array_key_exists('next_action', $this->data) || $this->data['next_action'] === null) && array_key_exists('status', $this->data) && $this->data['status'] === 'processing') {
+            return true;
+        }
+
+        if (array_key_exists('object', $this->data) && $this->data['object'] == PaymentIntent::OBJECT_NAME
+            && array_key_exists('next_action', $this->data) && is_array($this->data['next_action'])
+            && array_key_exists('type', $this->data['next_action']) && $this->data['next_action']['type'] == 'display_bank_transfer_instructions') {
             return true;
         }
 
