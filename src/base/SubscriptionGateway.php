@@ -659,7 +659,11 @@ abstract class SubscriptionGateway extends Gateway
             }
         }
 
-        return parent::transactionSupportsRefund($transaction);
+        if (method_exists(parent::class, 'transactionSupportsRefund')) {
+            return parent::transactionSupportsRefund($transaction);
+        }
+
+        return true;
     }
 
     /**
