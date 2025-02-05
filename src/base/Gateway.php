@@ -454,7 +454,7 @@ abstract class Gateway extends BaseGateway
 
         $rawData = Craft::$app->getRequest()->getRawBody();
         $data = Json::decodeIfJson($rawData);
-        
+
         if ($data) {
             $transactionHash = ArrayHelper::getValue($data, 'data.object.metadata.transaction_reference');
             if (!$transactionHash || !is_string($transactionHash)) {
