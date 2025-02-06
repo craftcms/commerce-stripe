@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a bug where checkout session completion would not mark transactions as successful from webhooks. ([]())
 - Fixed the performance of loading plans in the control panel. ([#322](https://github.com/craftcms/commerce-stripe/issues/322))
 - Fixed a PHP error that could occur when handling a webhook request.
 - Fixed a bug where choosing bank transfer as a payment method wouldn’t complete an order. ([#315](https://github.com/craftcms/commerce-stripe/issues/315))
