@@ -25,6 +25,7 @@ use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
+use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
@@ -533,6 +534,19 @@ abstract class SubscriptionGateway extends Gateway
     {
         $paymentIntent = $data['data']['object'];
         if ($paymentIntent['object'] === 'payment_intent') {
+
+            // Before we treat this as a normal payment intent, lets see if it was checkout session payment intent
+            $sessions = $this->getStripeClient()->checkout->sessions->all([
+                'payment_intent' => $paymentIntent['id'],
+            ]);
+
+            if ($session = $sessions->data[0] ?? null) {
+                $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($session['id']);
+                $error = '';
+                Plugin::getInstance()->getPayments()->completePayment($transaction, $error);
+                return;
+            }
+
             $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
             $updateTransaction = null;
 
