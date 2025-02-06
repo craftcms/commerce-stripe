@@ -46,7 +46,6 @@ use Stripe\SubscriptionItem;
 use Throwable;
 use yii\base\Exception;
 use yii\base\InvalidConfigException;
-use function count;
 
 /**
  * This class represents the abstract Stripe base gateway
@@ -889,7 +888,7 @@ abstract class SubscriptionGateway extends Gateway
             if ($result) {
                 /** @phpstan-ignore-next-line */
                 if (!$user->getPrimaryPaymentSourceId()) {
-                    Plugin::getInstance()->getCustomers()->savePrimaryPaymentSourceId($user, $paymentSource->id);
+                    CommercePlugin::getInstance()->getCustomers()->savePrimaryPaymentSourceId($user, $paymentSource->id);
                 }
             }
 
