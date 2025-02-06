@@ -24,8 +24,6 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\subscriptions\SubscriptionPayment;
 use craft\commerce\models\subscriptions\SwitchPlansForm;
 use craft\commerce\models\Transaction;
-use craft\commerce\Plugin;
-use craft\commerce\Plugin;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\events\CreateInvoiceEvent;
@@ -541,13 +539,13 @@ abstract class SubscriptionGateway extends Gateway
             ]);
 
             if ($session = $sessions->data[0] ?? null) {
-                $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($session['id']);
+                $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($session['id']);
                 $error = '';
-                Plugin::getInstance()->getPayments()->completePayment($transaction, $error);
+                CommercePlugin::getInstance()->getPayments()->completePayment($transaction, $error);
                 return;
             }
 
-            $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
+            $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
 
             if (!$transaction?->id) {
                 Craft::warning('Transaction with the reference “' . $paymentIntent['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
@@ -560,7 +558,7 @@ abstract class SubscriptionGateway extends Gateway
                 // Try and retrieve child transactions if this is a saved transaction
                 /** @var Transaction[] $children */
                 $children = $transaction->id
-                    ? Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
+                    ? CommercePlugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
                     : [];
 
                 if (empty($children) && $transaction->status === TransactionRecord::STATUS_PROCESSING) {
@@ -615,12 +613,12 @@ abstract class SubscriptionGateway extends Gateway
                 return;
             }
 
-            $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($cashBalance['applied_to_payment']['payment_intent']);
+            $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($cashBalance['applied_to_payment']['payment_intent']);
             if (!$transaction || $transaction->parentId !== null) {
                 return;
             }
 
-            $children = Plugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id);
+            $children = CommercePlugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id);
 
             if (empty($children)) {
                 return;
@@ -640,9 +638,9 @@ abstract class SubscriptionGateway extends Gateway
             }
 
             // Inspect the partial payment data to create a new child transaction
-            $transaction = Plugin::getInstance()->getTransactions()->createTransaction($childTransaction->getOrder(), $childTransaction);
+            $transaction = CommercePlugin::getInstance()->getTransactions()->createTransaction($childTransaction->getOrder(), $childTransaction);
 
-            $currency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso(strtoupper($cashBalance['currency']));
+            $currency = CommercePlugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso(strtoupper($cashBalance['currency']));
 
             // Flip `$cash['net_amount']` to a positive value
             $paymentAmount = $cashBalance['net_amount'] > 0 ? $cashBalance['net_amount'] : $cashBalance['net_amount'] * -1;
@@ -651,7 +649,7 @@ abstract class SubscriptionGateway extends Gateway
 
             $transaction->amount = $paymentAmount;
             if ($transaction->currency != $transaction->paymentCurrency) {
-                $orderCurrency = Plugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso($transaction->currency);
+                $orderCurrency = CommercePlugin::getInstance()->getPaymentCurrencies()->getPaymentCurrencyByIso($transaction->currency);
                 $amount = CurrencyHelper::round($paymentAmount / $transaction->paymentRate, $orderCurrency);
                 $transaction->amount = $amount;
             }
@@ -661,7 +659,7 @@ abstract class SubscriptionGateway extends Gateway
             $transaction->response = $cashBalance;
 
 
-            Plugin::getInstance()->getTransactions()->saveTransaction($transaction, false);
+            CommercePlugin::getInstance()->getTransactions()->saveTransaction($transaction, false);
         }
     }
 
@@ -882,7 +880,7 @@ abstract class SubscriptionGateway extends Gateway
             // No harm in making sure it is attached to the customer.
             $this->getStripeClient()->paymentMethods->attach($stripePaymentMethod['id'], ['customer' => $stripeCustomer->id]);
 
-            $result = Plugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
+            $result = CommercePlugin::getInstance()->paymentSources->savePaymentSource($paymentSource);
 
             if (!$result) {
                 Craft::error('Could not save payment source: ' . Json::encode($paymentSource->getErrors()), 'commerce-stripe');
