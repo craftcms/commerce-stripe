@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.0.6 - 2025-03-06
 
 - Improved the performance of loading plans in the control panel. ([#322](https://github.com/craftcms/commerce-stripe/issues/322))
 - Fixed a bug where checkout session completion would not mark transactions as successful from webhooks. ([#318](https://github.com/craftcms/commerce-stripe/issues/318))
