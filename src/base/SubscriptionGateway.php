@@ -537,7 +537,7 @@ abstract class SubscriptionGateway extends Gateway
                 'payment_intent' => $paymentIntent['id'],
             ]);
 
-            if($session = $sessions->data[0] ?? null)
+            if($session = $sessions->data[0] ?? null) {
                 $transaction = Plugin::getInstance()->getTransactions()->getTransactionByReference($session['id']);
                 $error = '';
                 Plugin::getInstance()->getPayments()->completePayment($transaction, $error);
