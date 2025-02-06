@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a bug where checkout session completion would not mark transactions as successful from webhooks. ([#318](https://github.com/craftcms/commerce-stripe/issues/318))
 - Fixed a bug where choosing bank transfer as a payment method wouldn’t complete an order. ([#315](https://github.com/craftcms/commerce-stripe/issues/315))
 - Added `craft\commerce\stripe\SubscriptionGateway::handleCustomerCashBalanceTransaction()`.
 - Added `craft\commerce\stripe\SubscriptionGateway::transactionSupportsRefund()`.
