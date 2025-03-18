@@ -9,6 +9,8 @@ class PaymentIntentsElements {
       this.container.dataset.completePaymentActionUrl;
     this.completeSubscriptionActionUrl =
       this.container.dataset.completeSubscriptionActionUrl;
+    this.usersSessionInfoUrl =
+      this.container.dataset.usersSessionInfoUrl;
     this.subscription = this.container.dataset.subscription;
     this.processingButtonText = this.container.dataset.processingButtonText;
     this.hiddenClass = this.container.dataset.hiddenClass;
@@ -127,76 +129,78 @@ class PaymentIntentsElements {
   }
 
   setupIntentFlow() {
-    const form = this.getFormData();
-    const setupIntentFormData = new FormData();
-    setupIntentFormData.append(
-      'action',
-      'commerce-stripe/customers/create-setup-intent'
-    );
-    setupIntentFormData.append(window.csrfTokenName, window.csrfTokenValue);
-    setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
-    let responseError = false;
+    this._resolveCsrf().then((userSessionJson) => {
+      const form = this.getFormData();
+      const setupIntentFormData = new FormData();
+      setupIntentFormData.append(
+        'action',
+        'commerce-stripe/customers/create-setup-intent'
+      );
+      setupIntentFormData.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+      setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
+      let responseError = false;
 
-    fetch(window.location.href, {
-      method: 'post',
-      body: setupIntentFormData,
-      headers: {
-        Accept: 'application/json',
-      },
-    })
-      .then((res) => {
-        if (res.status !== 200) {
-          responseError = true;
-        }
-        return res.json();
+      fetch(window.location.href, {
+        method: 'post',
+        body: setupIntentFormData,
+        headers: {
+          Accept: 'application/json',
+        },
       })
-      .then((json) => {
-        if (responseError) {
-          this.showErrorMessage(json.error);
-          return;
-        }
+        .then((res) => {
+          if (res.status !== 200) {
+            responseError = true;
+          }
+          return res.json();
+        })
+        .then((json) => {
+          if (responseError) {
+            this.showErrorMessage(json.error);
+            return;
+          }
 
-        const options = {
-          clientSecret: json.client_secret,
-          appearance: JSON.parse(this.container.dataset.appearance),
-        };
+          const options = {
+            clientSecret: json.client_secret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+          };
 
-        this.createStripeElementsForm(options);
+          this.createStripeElementsForm(options);
 
-        this.$submitButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+          this.$submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
 
-          const submitText = this.$submitButton.innerText;
-          this.$submitButton.innerText = this.processingButtonText;
+            const submitText = this.$submitButton.innerText;
+            this.$submitButton.innerText = this.processingButtonText;
 
-          const elements = this.elements;
-          const form = this.getFormData();
-          const formDataArray = [...form.entries()];
-          const params = formDataArray
-            .map(
-              (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
-            )
-            .join('&');
+            const elements = this.elements;
+            const form = this.getFormData();
+            const formDataArray = [...form.entries()];
+            const params = formDataArray
+              .map(
+                (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
+              )
+              .join('&');
 
-          const baseUrl = this.container.dataset.confirmSetupIntentUrl;
-          const hasQueryString = baseUrl.includes('?');
-          const returnUrl = `${baseUrl}${hasQueryString ? '&' : '?'}${params}`;
+            const baseUrl = this.container.dataset.confirmSetupIntentUrl;
+            const hasQueryString = baseUrl.includes('?');
+            const returnUrl = `${baseUrl}${hasQueryString ? '&' : '?'}${params}`;
 
-          this.stripeInstance
-            .confirmSetup({
-              elements,
-              confirmParams: {
-                return_url: `${returnUrl}`,
-              },
-            })
-            .then((result) => {
-              if (result.error) {
-                this.showErrorMessage(result.error.message);
-                this.$submitButton.innerText = submitText;
-              }
-            });
+            this.stripeInstance
+              .confirmSetup({
+                elements,
+                confirmParams: {
+                  return_url: `${returnUrl}`,
+                },
+              })
+              .then((result) => {
+                if (result.error) {
+                  this.showErrorMessage(result.error.message);
+                  this.$submitButton.innerText = submitText;
+                }
+              });
+          });
         });
-      });
+    });
   }
 
   cartPaymentFlow() {
@@ -216,35 +220,21 @@ class PaymentIntentsElements {
   }
 
   async _resolveCsrf() {
-    // find the `<craft-csrf-input>` element as that tells us the CSRF token is loaded asynchronously
-    const csrfInput = document.querySelector('craft-csrf-input');
-
-    // if the input doesn't exist resolve the promise immediately
-    if (!csrfInput) {
-      return Promise.resolve();
-    }
-
-    return new Promise((resolve) => {
-      // wait until `<craft-csrf-input>` no longer exists in the DOM
-      const observer = new MutationObserver(() => {
-        if (!document.querySelector('craft-csrf-input')) {
-          observer.disconnect();
-          resolve();
-        }
-      });
-
-      // start observing the DOM
-      observer.observe(document.body, {
-        childList: true,
-        subtree: true,
-      });
+    return fetch(this.usersSessionInfoUrl, {
+      headers: {
+        Accept: 'application/json',
+      }
+    }).then((res) => {
+      return res.json();
     });
   }
 
   _callPayAction() {
 
-    this._resolveCsrf().finally(() => {
+    this._resolveCsrf().then((userSessionJson) => {
       const form = this.getFormData();
+      form.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+
       let responseError = false;
       fetch(window.location.href, {
         method: 'post',
@@ -299,14 +289,9 @@ class PaymentIntentsElements {
             'commerce-stripe/payments/save-payment-intent'
           );
 
-          let csrfTokenName = window.csrfTokenName;
-          let csrfTokenValue = window.csrfTokenValue;
-
-          console.log(csrfTokenName, csrfTokenValue);
-
           updatePaymentIntentForm.append(
-            window.csrfTokenName,
-            window.csrfTokenValue
+            userSessionJson.csrfTokenName,
+            userSessionJson.csrfTokenValue
           );
           updatePaymentIntentForm.append(
             'paymentIntentId',
