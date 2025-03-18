@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed an error that could occur when attempting a payment while using a async CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))
+
 ## 4.1.6 - 2025-02-06
 
 - Fixed a bug where checkout session completion would not mark transactions as successful from webhooks. ([#318](https://github.com/craftcms/commerce-stripe/issues/318))
