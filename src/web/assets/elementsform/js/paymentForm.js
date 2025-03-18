@@ -9,8 +9,7 @@ class PaymentIntentsElements {
       this.container.dataset.completePaymentActionUrl;
     this.completeSubscriptionActionUrl =
       this.container.dataset.completeSubscriptionActionUrl;
-    this.usersSessionInfoUrl =
-      this.container.dataset.usersSessionInfoUrl;
+    this.usersSessionInfoUrl = this.container.dataset.usersSessionInfoUrl;
     this.subscription = this.container.dataset.subscription;
     this.processingButtonText = this.container.dataset.processingButtonText;
     this.hiddenClass = this.container.dataset.hiddenClass;
@@ -136,7 +135,10 @@ class PaymentIntentsElements {
         'action',
         'commerce-stripe/customers/create-setup-intent'
       );
-      setupIntentFormData.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+      setupIntentFormData.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
       setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
       let responseError = false;
 
@@ -183,7 +185,9 @@ class PaymentIntentsElements {
 
             const baseUrl = this.container.dataset.confirmSetupIntentUrl;
             const hasQueryString = baseUrl.includes('?');
-            const returnUrl = `${baseUrl}${hasQueryString ? '&' : '?'}${params}`;
+            const returnUrl = `${baseUrl}${
+              hasQueryString ? '&' : '?'
+            }${params}`;
 
             this.stripeInstance
               .confirmSetup({
@@ -223,17 +227,19 @@ class PaymentIntentsElements {
     return fetch(this.usersSessionInfoUrl, {
       headers: {
         Accept: 'application/json',
-      }
+      },
     }).then((res) => {
       return res.json();
     });
   }
 
   _callPayAction() {
-
     this._resolveCsrf().then((userSessionJson) => {
       const form = this.getFormData();
-      form.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+      form.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
 
       let responseError = false;
       fetch(window.location.href, {
@@ -265,7 +271,9 @@ class PaymentIntentsElements {
             return;
           }
 
-          const completePaymentActionUrl = new URL(this.completePaymentActionUrl);
+          const completePaymentActionUrl = new URL(
+            this.completePaymentActionUrl
+          );
           completePaymentActionUrl.searchParams.append(
             'commerceTransactionHash',
             json.transactionHash
