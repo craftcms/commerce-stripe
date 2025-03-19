@@ -1,8 +1,8 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 4.1.7 - 2025-03-19
 
-- Fixed an error that could occur when attempting a payment while using a async CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))
+- Fixed an error that could occur when attempting a payment while using asynchronous CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))
 
 ## 4.1.6 - 2025-02-06
 
