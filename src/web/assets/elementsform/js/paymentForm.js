@@ -9,6 +9,7 @@ class PaymentIntentsElements {
       this.container.dataset.completePaymentActionUrl;
     this.completeSubscriptionActionUrl =
       this.container.dataset.completeSubscriptionActionUrl;
+    this.usersSessionInfoUrl = this.container.dataset.usersSessionInfoUrl;
     this.subscription = this.container.dataset.subscription;
     this.processingButtonText = this.container.dataset.processingButtonText;
     this.hiddenClass = this.container.dataset.hiddenClass;
@@ -127,76 +128,83 @@ class PaymentIntentsElements {
   }
 
   setupIntentFlow() {
-    const form = this.getFormData();
-    const setupIntentFormData = new FormData();
-    setupIntentFormData.append(
-      'action',
-      'commerce-stripe/customers/create-setup-intent'
-    );
-    setupIntentFormData.append(window.csrfTokenName, window.csrfTokenValue);
-    setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
-    let responseError = false;
+    this._resolveCsrf().then((userSessionJson) => {
+      const form = this.getFormData();
+      const setupIntentFormData = new FormData();
+      setupIntentFormData.append(
+        'action',
+        'commerce-stripe/customers/create-setup-intent'
+      );
+      setupIntentFormData.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
+      setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
+      let responseError = false;
 
-    fetch(window.location.href, {
-      method: 'post',
-      body: setupIntentFormData,
-      headers: {
-        Accept: 'application/json',
-      },
-    })
-      .then((res) => {
-        if (res.status !== 200) {
-          responseError = true;
-        }
-        return res.json();
+      fetch(window.location.href, {
+        method: 'post',
+        body: setupIntentFormData,
+        headers: {
+          Accept: 'application/json',
+        },
       })
-      .then((json) => {
-        if (responseError) {
-          this.showErrorMessage(json.error);
-          return;
-        }
+        .then((res) => {
+          if (res.status !== 200) {
+            responseError = true;
+          }
+          return res.json();
+        })
+        .then((json) => {
+          if (responseError) {
+            this.showErrorMessage(json.error);
+            return;
+          }
 
-        const options = {
-          clientSecret: json.client_secret,
-          appearance: JSON.parse(this.container.dataset.appearance),
-        };
+          const options = {
+            clientSecret: json.client_secret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+          };
 
-        this.createStripeElementsForm(options);
+          this.createStripeElementsForm(options);
 
-        this.$submitButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+          this.$submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
 
-          const submitText = this.$submitButton.innerText;
-          this.$submitButton.innerText = this.processingButtonText;
+            const submitText = this.$submitButton.innerText;
+            this.$submitButton.innerText = this.processingButtonText;
 
-          const elements = this.elements;
-          const form = this.getFormData();
-          const formDataArray = [...form.entries()];
-          const params = formDataArray
-            .map(
-              (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
-            )
-            .join('&');
+            const elements = this.elements;
+            const form = this.getFormData();
+            const formDataArray = [...form.entries()];
+            const params = formDataArray
+              .map(
+                (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
+              )
+              .join('&');
 
-          const baseUrl = this.container.dataset.confirmSetupIntentUrl;
-          const hasQueryString = baseUrl.includes('?');
-          const returnUrl = `${baseUrl}${hasQueryString ? '&' : '?'}${params}`;
+            const baseUrl = this.container.dataset.confirmSetupIntentUrl;
+            const hasQueryString = baseUrl.includes('?');
+            const returnUrl = `${baseUrl}${
+              hasQueryString ? '&' : '?'
+            }${params}`;
 
-          this.stripeInstance
-            .confirmSetup({
-              elements,
-              confirmParams: {
-                return_url: `${returnUrl}`,
-              },
-            })
-            .then((result) => {
-              if (result.error) {
-                this.showErrorMessage(result.error.message);
-                this.$submitButton.innerText = submitText;
-              }
-            });
+            this.stripeInstance
+              .confirmSetup({
+                elements,
+                confirmParams: {
+                  return_url: `${returnUrl}`,
+                },
+              })
+              .then((result) => {
+                if (result.error) {
+                  this.showErrorMessage(result.error.message);
+                  this.$submitButton.innerText = submitText;
+                }
+              });
+          });
         });
-      });
+    });
   }
 
   cartPaymentFlow() {
@@ -215,130 +223,149 @@ class PaymentIntentsElements {
     this._callPayAction();
   }
 
-  _callPayAction() {
-    const form = this.getFormData();
-    let responseError = false;
-
-    fetch(window.location.href, {
-      method: 'post',
-      body: form,
+  async _resolveCsrf() {
+    return fetch(this.usersSessionInfoUrl, {
       headers: {
         Accept: 'application/json',
       },
-    })
-      .then((res) => {
-        if (res.status !== 200) {
-          responseError = true;
-        }
-        return res.json();
+    }).then((res) => {
+      return res.json();
+    });
+  }
+
+  _callPayAction() {
+    this._resolveCsrf().then((userSessionJson) => {
+      const form = this.getFormData();
+      form.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
+
+      let responseError = false;
+      fetch(window.location.href, {
+        method: 'post',
+        body: form,
+        headers: {
+          Accept: 'application/json',
+        },
       })
-      .then((json) => {
-        if (responseError) {
-          this.container.classList.add(this.hiddenClass);
-          this.showErrorMessage(json.message);
-          return;
-        }
+        .then((res) => {
+          if (res.status !== 200) {
+            responseError = true;
+          }
+          return res.json();
+        })
+        .then((json) => {
+          if (responseError) {
+            this.container.classList.add(this.hiddenClass);
+            this.showErrorMessage(json.message);
+            return;
+          }
 
-        if (
-          json.redirect &&
-          typeof json.cart !== 'undefined' &&
-          json.cart.isCompleted === true
-        ) {
-          window.location.href = json.redirect;
-          return;
-        }
+          if (
+            json.redirect &&
+            typeof json.cart !== 'undefined' &&
+            json.cart.isCompleted === true
+          ) {
+            window.location.href = json.redirect;
+            return;
+          }
 
-        const completePaymentActionUrl = new URL(this.completePaymentActionUrl);
-        completePaymentActionUrl.searchParams.append(
-          'commerceTransactionHash',
-          json.transactionHash
-        );
-        completePaymentActionUrl.searchParams.append(
-          'commerceTransactionId',
-          json.transactionId
-        );
-        this.completePaymentActionUrl = completePaymentActionUrl.toString();
-
-        const options = {
-          clientSecret: json.redirectData.client_secret,
-          appearance: JSON.parse(this.container.dataset.appearance),
-        };
-
-        this.createStripeElementsForm(options);
-
-        const updatePaymentIntentForm = new FormData();
-        updatePaymentIntentForm.append(
-          'action',
-          'commerce-stripe/payments/save-payment-intent'
-        );
-        updatePaymentIntentForm.append(
-          window.csrfTokenName,
-          window.csrfTokenValue
-        );
-        updatePaymentIntentForm.append(
-          'paymentIntentId',
-          json.redirectData.payment_intent
-        );
-        updatePaymentIntentForm.append(
-          'gatewayId',
-          this.container.dataset.gatewayId
-        );
-
-        const savePaymentSourceCheckbox = this.container
-          .closest('form')
-          .querySelector('input[name="savePaymentSource"]');
-
-        if (this.$savePaymentSourceField) {
-          this.$savePaymentSourceField.removeEventListener(
-            'click',
-            function () {}
+          const completePaymentActionUrl = new URL(
+            this.completePaymentActionUrl
           );
-          this.$savePaymentSourceField.addEventListener(
-            'click',
-            function () {
-              updatePaymentIntentForm.append(
-                'paymentIntent[setup_future_usage]',
-                this.$savePaymentSourceField.checked ? '1' : '0'
-              );
+          completePaymentActionUrl.searchParams.append(
+            'commerceTransactionHash',
+            json.transactionHash
+          );
+          completePaymentActionUrl.searchParams.append(
+            'commerceTransactionId',
+            json.transactionId
+          );
+          this.completePaymentActionUrl = completePaymentActionUrl.toString();
 
-              fetch(window.location.href, {
-                method: 'post',
-                body: updatePaymentIntentForm,
-                headers: {
-                  Accept: 'application/json',
-                },
-              })
-                .then((response) => response.json())
-                .then((data) => {
-                  this.elements.fetchUpdates();
+          const options = {
+            clientSecret: json.redirectData.client_secret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+          };
+
+          this.createStripeElementsForm(options);
+
+          const updatePaymentIntentForm = new FormData();
+          updatePaymentIntentForm.append(
+            'action',
+            'commerce-stripe/payments/save-payment-intent'
+          );
+
+          updatePaymentIntentForm.append(
+            userSessionJson.csrfTokenName,
+            userSessionJson.csrfTokenValue
+          );
+          updatePaymentIntentForm.append(
+            'paymentIntentId',
+            json.redirectData.payment_intent
+          );
+          updatePaymentIntentForm.append(
+            'gatewayId',
+            this.container.dataset.gatewayId
+          );
+
+          const savePaymentSourceCheckbox = this.container
+            .closest('form')
+            .querySelector('input[name="savePaymentSource"]');
+
+          if (this.$savePaymentSourceField) {
+            this.$savePaymentSourceField.removeEventListener(
+              'click',
+              function () {}
+            );
+            this.$savePaymentSourceField.addEventListener(
+              'click',
+              function () {
+                updatePaymentIntentForm.append(
+                  'paymentIntent[setup_future_usage]',
+                  this.$savePaymentSourceField.checked ? '1' : '0'
+                );
+
+                fetch(window.location.href, {
+                  method: 'post',
+                  body: updatePaymentIntentForm,
+                  headers: {
+                    Accept: 'application/json',
+                  },
                 })
-                .catch((error) => {
-                  console.error(
-                    'There was an error updating the Payment Intent:',
-                    error
-                  );
-                });
-            }.bind(this)
-          );
-        }
+                  .then((response) => response.json())
+                  .then((data) => {
+                    this.elements.fetchUpdates();
+                  })
+                  .catch((error) => {
+                    console.error(
+                      'There was an error updating the Payment Intent:',
+                      error
+                    );
+                  });
+              }.bind(this)
+            );
+          }
 
-        this.$submitButton.addEventListener('click', async (event) => {
-          event.preventDefault();
+          this.$submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
 
-          const submitText = this.$submitButton.innerText;
-          this.$submitButton.innerText = this.processingButtonText;
+            const submitText = this.$submitButton.innerText;
+            this.$submitButton.innerText = this.processingButtonText;
 
-          const elements = this.elements;
-          const {error} = await this.stripeInstance.confirmPayment({
-            elements,
-            confirmParams: {
-              return_url: this.completePaymentActionUrl,
-            },
+            const elements = this.elements;
+            const {error} = await this.stripeInstance.confirmPayment({
+              elements,
+              confirmParams: {
+                return_url: this.completePaymentActionUrl,
+              },
+            });
+            this.$submitButton.innerText = submitText;
+            this.showErrorMessage(error.message);
           });
-          this.$submitButton.innerText = submitText;
-          this.showErrorMessage(error.message);
         });
-      });
+    });
   }
 
   handle() {

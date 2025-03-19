@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed an error that could occur when attempting a payment while using asynchronous CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))
+
 ## 5.0.6 - 2025-03-06
 
 - Improved the performance of loading plans in the control panel. ([#322](https://github.com/craftcms/commerce-stripe/issues/322))

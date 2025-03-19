@@ -1,4 +1,5 @@
 <script type="text/javascript">
+    {# @TODO remove at next breaking change as the plugin code no longer references these #}
     window.csrfTokenName = "{{ craft.app.config.general.csrfTokenName }}";
     window.csrfTokenValue = "{{ craft.app.request.csrfToken }}";
 </script>
@@ -7,6 +8,7 @@
      data-complete-payment-action-url="{{ actionUrl('commerce/payments/complete-payment') }}"
      data-complete-subscription-action-url="{{ actionUrl('commerce/subscriptions/complete-subscription') }}"
      data-confirm-setup-intent-url="{{ actionUrl('commerce-stripe/customers/confirm-setup-intent') }}"
+     data-users-session-info-url="{{ actionUrl('users/session-info') }}"
      data-payment-form-namespace="{{ handle|commercePaymentFormNamespace }}"
      data-gateway-id="{{ gateway.id }}"
      data-appearance="{{ appearance|json_encode }}"
