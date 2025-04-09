@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Stripe API version are now set on all client requests. ([#340](https://github.com/craftcms/commerce-stripe/issues/340))
+
 ## 5.0.7 - 2025-03-19
 
 - Fixed an error that could occur when attempting a payment while using asynchronous CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))

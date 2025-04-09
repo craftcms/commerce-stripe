@@ -180,6 +180,7 @@ abstract class Gateway extends BaseGateway
 
             $this->_stripeClient = new StripeClient([
                 'api_key' => $this->getApiKey(),
+                'stripe_version' => self::STRIPE_API_VERSION,
             ]);
         }
 
