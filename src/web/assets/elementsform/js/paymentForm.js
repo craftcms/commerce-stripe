@@ -99,6 +99,7 @@ class PaymentIntentsElements {
     const options = {
       clientSecret: this.container.dataset.clientSecret,
       appearance: JSON.parse(this.container.dataset.appearance),
+      fonts: JSON.parse(this.container.dataset.fonts)
     };
 
     this.createStripeElementsForm(options);
@@ -164,6 +165,7 @@ class PaymentIntentsElements {
           const options = {
             clientSecret: json.client_secret,
             appearance: JSON.parse(this.container.dataset.appearance),
+            fonts: JSON.parse(this.container.dataset.fonts),
           };
 
           this.createStripeElementsForm(options);
@@ -287,6 +289,7 @@ class PaymentIntentsElements {
           const options = {
             clientSecret: json.redirectData.client_secret,
             appearance: JSON.parse(this.container.dataset.appearance),
+            fonts: JSON.parse(this.container.dataset.fonts)
           };
 
           this.createStripeElementsForm(options);

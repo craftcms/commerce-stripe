@@ -153,6 +153,7 @@ class PaymentIntents extends BaseGateway
                 ],
             ],
             'hiddenClass' => 'hidden',
+            'fonts' => [],
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
             'submitButtonText' => Craft::t('commerce', 'Pay'),
@@ -544,7 +545,9 @@ class PaymentIntents extends BaseGateway
             $event->request['currency'] = $paymentIntentData['currency'];
         }
 
-        return $this->getStripeClient()->paymentIntents->create($event->request);
+        return $this->getStripeClient()->paymentIntents->create($event->request, [
+            'idempotency_key' => $transaction->hash,
+        ]);
     }
 
     /**
