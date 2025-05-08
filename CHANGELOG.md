@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Stripe API version are now set on all client requests. ([#340](https://github.com/craftcms/commerce-stripe/issues/340))
+- Added support for fonts in the Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
 
 ## 5.0.7 - 2025-03-19
 
