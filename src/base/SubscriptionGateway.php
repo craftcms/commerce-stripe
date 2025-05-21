@@ -530,6 +530,8 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function handlePaymentIntentSucceeded(array $data): void
     {
+        Craft::info('PaymentIntent succeeded webhook received with data: ' . json_encode($data), 'stripe');
+
         $paymentIntent = $data['data']['object'];
         if ($paymentIntent['object'] === 'payment_intent') {
 
@@ -547,6 +549,10 @@ abstract class SubscriptionGateway extends Gateway
 
             $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
 
+            Craft::info('Transaction found for payment intent: ' . json_encode([
+                    'transactionId' => $transaction->id,
+                ]), 'stripe');
+
             if (!$transaction?->id) {
                 Craft::warning('Transaction with the reference “' . $paymentIntent['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
                 return;
@@ -555,6 +561,8 @@ abstract class SubscriptionGateway extends Gateway
             $updateTransaction = null;
 
             if ($transaction->parentId === null) {
+                Craft::info('Transaction had no parent as expected', 'stripe');
+
                 // Try and retrieve child transactions if this is a saved transaction
                 /** @var Transaction[] $children */
                 $children = $transaction->id
@@ -568,19 +576,29 @@ abstract class SubscriptionGateway extends Gateway
                 foreach ($children as $child) {
                     if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
-
+                        Craft::info('Transaction found for payment intent: ' . json_encode([
+                                'childTransactionId' => $updateTransaction->id,
+                            ]), 'stripe');
                         break;
                     }
                 }
             }
 
             if ($updateTransaction) {
+                Craft::info('Update transaction found: ' . json_encode([
+                        'updateTransactionId' => $updateTransaction->id,
+                    ]), 'stripe');
+
                 $transactionRecord = TransactionRecord::findOne($updateTransaction->id);
                 $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
                 $transactionRecord->message = '';
                 $transactionRecord->response = $paymentIntent;
 
                 if ($transactionRecord->save(false)) {
+                    Craft::info('Transaction saved as successful: ' . json_encode([
+                            'transactionRecordId' => $transactionRecord->id,
+                        ]), 'stripe');
+
                     // Silently drop successful child transactions as they are now consolidated into the parent transaction
                     TransactionRecord::deleteAll([
                         'parentId' => $updateTransaction->id,
