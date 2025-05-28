@@ -549,14 +549,15 @@ abstract class SubscriptionGateway extends Gateway
 
             $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
 
+            if (!$transaction?->id) {
+                Craft::warning('Transaction with the reference "' . $paymentIntent['id'] . '" not found when processing webhook ' . $data['id'], 'stripe');
+                return;
+            }
+
+            // FIXED: Moved after null check
             Craft::info('Transaction found for payment intent: ' . json_encode([
                     'transactionId' => $transaction->id,
                 ]), 'stripe');
-
-            if (!$transaction?->id) {
-                Craft::warning('Transaction with the reference “' . $paymentIntent['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
-                return;
-            }
 
             $updateTransaction = null;
 
@@ -569,7 +570,7 @@ abstract class SubscriptionGateway extends Gateway
                     ? CommercePlugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
                     : [];
 
-                if (empty($children) && $transaction->status === TransactionRecord::STATUS_PROCESSING) {
+                if (empty($children) && ($transaction->status === TransactionRecord::STATUS_PROCESSING || $transaction->status === TransactionRecord::STATUS_REDIRECT)) {
                     $updateTransaction = $transaction;
                 }
 
@@ -577,7 +578,8 @@ abstract class SubscriptionGateway extends Gateway
                     Craft::info('Looking for child: ' . json_encode([
                             'childTransactionId' => $updateTransaction->id,
                         ]), 'stripe');
-                    if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING && $paymentIntent['status'] === 'succeeded') {
+
+                    if ($child->reference === $transaction->reference && ($child->status === TransactionRecord::STATUS_PROCESSING || $child->status === TransactionRecord::STATUS_REDIRECT) && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
                         Craft::info('Transaction found for payment intent: ' . json_encode([
                                 'childTransactionId' => $updateTransaction->id,
