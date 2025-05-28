@@ -576,13 +576,13 @@ abstract class SubscriptionGateway extends Gateway
 
                 foreach ($children as $child) {
                     Craft::info('Looking for child: ' . json_encode([
-                            'childTransactionId' => $updateTransaction->id,
+                            'childTransactionId' => $child->id,
                         ]), 'stripe');
 
                     if ($child->reference === $transaction->reference && ($child->status === TransactionRecord::STATUS_PROCESSING || $child->status === TransactionRecord::STATUS_REDIRECT) && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
                         Craft::info('Transaction found for payment intent: ' . json_encode([
-                                'childTransactionId' => $updateTransaction->id,
+                                'childTransactionId' => $child->id,
                             ]), 'stripe');
                         break;
                     }
@@ -595,23 +595,29 @@ abstract class SubscriptionGateway extends Gateway
                     ]), 'stripe');
 
                 $transactionRecord = TransactionRecord::findOne($updateTransaction->id);
-                $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
-                $transactionRecord->message = '';
-                $transactionRecord->response = $paymentIntent;
 
-                if ($transactionRecord->save(false)) {
-                    Craft::info('Transaction saved as successful: ' . json_encode([
-                            'transactionRecordId' => $transactionRecord->id,
-                        ]), 'stripe');
+                // FIXED: Added null check
+                if ($transactionRecord) {
+                    $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                    $transactionRecord->message = '';
+                    $transactionRecord->response = $paymentIntent;
 
-                    // Silently drop successful child transactions as they are now consolidated into the parent transaction
-                    TransactionRecord::deleteAll([
-                        'parentId' => $updateTransaction->id,
-                        'status' => TransactionRecord::STATUS_SUCCESS,
-                    ]);
+                    if ($transactionRecord->save(false)) {
+                        Craft::info('Transaction saved as successful: ' . json_encode([
+                                'transactionRecordId' => $transactionRecord->id,
+                            ]), 'stripe');
+
+                        // Silently drop successful child transactions as they are now consolidated into the parent transaction
+                        TransactionRecord::deleteAll([
+                            'parentId' => $updateTransaction->id,
+                            'status' => TransactionRecord::STATUS_SUCCESS,
+                        ]);
+                    }
+
+                    $transaction->getOrder()->updateOrderPaidInformation();
+                } else {
+                    Craft::warning('Transaction record not found for ID: ' . $updateTransaction->id, 'stripe');
                 }
-
-                $transaction->getOrder()->updateOrderPaidInformation();
             }
         }
     }
