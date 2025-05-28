@@ -574,6 +574,9 @@ abstract class SubscriptionGateway extends Gateway
                 }
 
                 foreach ($children as $child) {
+                    Craft::info('Looking for child: ' . json_encode([
+                            'childTransactionId' => $updateTransaction->id,
+                        ]), 'stripe');
                     if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
                         Craft::info('Transaction found for payment intent: ' . json_encode([
