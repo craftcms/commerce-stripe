@@ -567,7 +567,6 @@ abstract class SubscriptionGateway extends Gateway
                 }
 
                 foreach ($children as $child) {
-
                     if ($child->reference === $transaction->reference && ($child->status === TransactionRecord::STATUS_PROCESSING || $child->status === TransactionRecord::STATUS_REDIRECT) && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
                         break;
