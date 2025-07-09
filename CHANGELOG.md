@@ -2,7 +2,7 @@
 
 ## 4.1.8 - 2025-07-09
 
-- Fixed a bug where successful payment intents webhooks were not marking the transaction as successfully completed.. ([#337](https://github.com/craftcms/commerce-stripe/issues/337))
+- Fixed a bug where successful payment intents webhooks were not marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337))
 
 ## 4.1.7 - 2025-03-19
 
