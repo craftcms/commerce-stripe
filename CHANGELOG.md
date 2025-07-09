@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.1.8 - 2025-07-09
+
+- Fixed a bug where some successful payment intents were not marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337))
+
 ## 4.1.7 - 2025-03-19
 
 - Fixed an error that could occur when attempting a payment while using asynchronous CSRF inputs. ([#334](https://github.com/craftcms/commerce-stripe/issues/334))
