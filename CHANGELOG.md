@@ -2,14 +2,14 @@
 
 ## Unreleased
 
-- Stripe API version are now set on all client requests. ([#340](https://github.com/craftcms/commerce-stripe/issues/340))
-- Added support for fonts in the Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
+- Added support for fonts in Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
+- Stripe Element forms now accept a `locale` payment form parameter. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
 - Added `craft\commerce\stripe\db\Table`.
-- Stripe for Commerce is more defensive about DB tables already existing during install. ([#350](https://github.com/craftcms/commerce-stripe/issues/350))
-- You can now pass a `locale` payment form parameter when creating a Stripe element form. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
-- Fixed a bug where the Stripe elements form locale was determined by the browser and not the current Craft language.
-- Fixed a bug where successful payment intents webhooks were not marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337),[#207](https://github.com/craftcms/commerce-stripe/issues/207))
-- Fixed a bug where some refund transactions were not being marked as successfully refunded from webhooks. ([#341](https://github.com/craftcms/commerce-stripe/issues/341)
+- Fixed a bug where the Stripe API version wasn’t being set on all API requests. ([#340](https://github.com/craftcms/commerce-stripe/issues/340))
+- Fixed a bug where the Stripe Elements were using the browser’s preferred language rather than the current application locale.
+- Fixed a bug where successful payment intent webhooks weren’t marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337), [#207](https://github.com/craftcms/commerce-stripe/issues/207))
+- Fixed a bug where some successful refund webhooks weren’t marking transactions as refunded. ([#341](https://github.com/craftcms/commerce-stripe/issues/341))
+- Fixed an error that could occur on install, if the plugin had been installed previously. ([#350](https://github.com/craftcms/commerce-stripe/issues/350))
 
 ## 5.0.7 - 2025-03-19
 
