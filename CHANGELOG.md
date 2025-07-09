@@ -6,6 +6,8 @@
 - Added support for fonts in the Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
 - Added `craft\commerce\stripe\db\Table`.
 - Stripe for Commerce is more defensive about DB tables already existing during install.
+- You can now pass a `locale` payment form parameter when creating a Stripe element form.
+- Fixed a bug where the Stripe elements form locale was determined by the browser and not the current Craft language.
 
 ## 5.0.7 - 2025-03-19
 

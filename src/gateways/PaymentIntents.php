@@ -93,6 +93,7 @@ class PaymentIntents extends BaseGateway
             'gateway' => $this,
             'paymentForm' => $this->getPaymentFormModel(),
             'scenario' => 'payment',
+            'locale' => Craft::$app->language,
             'handle' => $this->handle,
         ];
 
