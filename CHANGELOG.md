@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.1.0 - 2025-07-09
 
 - Added support for fonts in Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
 - Stripe Element forms now accept a `locale` payment form parameter. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
