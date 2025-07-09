@@ -487,9 +487,13 @@ abstract class SubscriptionGateway extends Gateway
                 $this->handleCustomerCashBalanceTransaction($data);
                 break;
             case 'charge.refunded':
+            // We don’t need to handle this at the moment as we are handling the `refund.updated` event
+            // which also is triggered once the refund is refunded successfully.
                 $this->handleRefunded($data);
                 break;
-            case 'charge.refund.updated':
+            case 'refund.updated':
+                // refund.updated is triggered for all payment methods, charge.refund.updated is only for selected payment methods.
+                // See: https://docs.stripe.com/api/events/types#event_types-charge.refund.updated
                 $this->handleRefundUpdated($data);
                 break;
             case 'plan.deleted':
@@ -923,13 +927,21 @@ abstract class SubscriptionGateway extends Gateway
                     $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
                     $transactionRecord->message = "";
                     break;
+                case Refund::STATUS_REQUIRES_ACTION:
+                    $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+                    $transactionRecord->message = "Requires action, see next action data in response.";
+                    break;
                 case Refund::STATUS_PENDING:
                     $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
-                    $transactionRecord->message = "Processing";
+                    $transactionRecord->message = $stripeRefund['pending_reason'];
                     break;
                 case Refund::STATUS_FAILED:
                     $transactionRecord->status = TransactionRecord::STATUS_FAILED;
                     $transactionRecord->message = $stripeRefund['failure_reason'];
+                    break;
+                case Refund::STATUS_CANCELED:
+                    $transactionRecord->status = TransactionRecord::STATUS_FAILED;
+                    $transactionRecord->message = "Cancelled";
                     break;
                 default:
                     $transactionRecord->status = TransactionRecord::STATUS_FAILED;
@@ -951,7 +963,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     protected function handleRefunded(array $data)
     {
-        // We don’t need to handle this at the moment as we are handling the refund.updated event which also is triggered once the refund is refunded successfully.
     }
 
     /**
