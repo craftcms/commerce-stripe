@@ -8,6 +8,7 @@
 - Stripe for Commerce is more defensive about DB tables already existing during install. ([#350](https://github.com/craftcms/commerce-stripe/issues/350))
 - You can now pass a `locale` payment form parameter when creating a Stripe element form. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
 - Fixed a bug where the Stripe elements form locale was determined by the browser and not the current Craft language.
+- Fixed a bug where successful payment intents webhooks were not marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337))
 
 ## 5.0.7 - 2025-03-19
 
