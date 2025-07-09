@@ -3,7 +3,7 @@ class PaymentIntentsElements {
     this.container = container;
     this.formNamespace = this.container.dataset.paymentFormNamespace;
     this.stripeInstance = Stripe(publishableKey, {
-      locale: this.container.dataset.locale
+      locale: this.container.dataset.locale,
     });
     this.elements = null;
     this.scenario = this.container.dataset.clientScenario;
