@@ -548,27 +548,28 @@ abstract class SubscriptionGateway extends Gateway
             $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
 
             if (!$transaction?->id) {
-                Craft::warning('Transaction with the reference “' . $paymentIntent['id'] . '” not found when processing webhook ' . $data['id'], 'stripe');
+                Craft::warning('Transaction with the reference "' . $paymentIntent['id'] . '" not found when processing webhook ' . $data['id'], 'stripe');
                 return;
             }
 
             $updateTransaction = null;
 
             if ($transaction->parentId === null) {
+
                 // Try and retrieve child transactions if this is a saved transaction
                 /** @var Transaction[] $children */
                 $children = $transaction->id
                     ? CommercePlugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
                     : [];
 
-                if (empty($children) && $transaction->status === TransactionRecord::STATUS_PROCESSING) {
+                if (empty($children) && ($transaction->status === TransactionRecord::STATUS_PROCESSING || $transaction->status === TransactionRecord::STATUS_REDIRECT)) {
                     $updateTransaction = $transaction;
                 }
 
                 foreach ($children as $child) {
-                    if ($child->reference === $transaction->reference && $child->status === TransactionRecord::STATUS_PROCESSING && $paymentIntent['status'] === 'succeeded') {
-                        $updateTransaction = $child;
 
+                    if ($child->reference === $transaction->reference && ($child->status === TransactionRecord::STATUS_PROCESSING || $child->status === TransactionRecord::STATUS_REDIRECT) && $paymentIntent['status'] === 'succeeded') {
+                        $updateTransaction = $child;
                         break;
                     }
                 }
@@ -576,19 +577,25 @@ abstract class SubscriptionGateway extends Gateway
 
             if ($updateTransaction) {
                 $transactionRecord = TransactionRecord::findOne($updateTransaction->id);
-                $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
-                $transactionRecord->message = '';
-                $transactionRecord->response = $paymentIntent;
 
-                if ($transactionRecord->save(false)) {
-                    // Silently drop successful child transactions as they are now consolidated into the parent transaction
-                    TransactionRecord::deleteAll([
-                        'parentId' => $updateTransaction->id,
-                        'status' => TransactionRecord::STATUS_SUCCESS,
-                    ]);
+                // FIXED: Added null check
+                if ($transactionRecord) {
+                    $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
+                    $transactionRecord->message = '';
+                    $transactionRecord->response = $paymentIntent;
+
+                    if ($transactionRecord->save(false)) {
+                        // Silently drop successful child transactions as they are now consolidated into the parent transaction
+                        TransactionRecord::deleteAll([
+                            'parentId' => $updateTransaction->id,
+                            'status' => TransactionRecord::STATUS_SUCCESS,
+                        ]);
+                    }
+
+                    $transaction->getOrder()->updateOrderPaidInformation();
+                } else {
+                    Craft::warning('Transaction record not found for ID: ' . $updateTransaction->id, 'stripe');
                 }
-
-                $transaction->getOrder()->updateOrderPaidInformation();
             }
         }
     }
