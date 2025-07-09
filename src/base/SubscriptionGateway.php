@@ -530,8 +530,6 @@ abstract class SubscriptionGateway extends Gateway
      */
     public function handlePaymentIntentSucceeded(array $data): void
     {
-        Craft::info('PaymentIntent succeeded webhook received with data: ' . json_encode($data), 'stripe');
-
         $paymentIntent = $data['data']['object'];
         if ($paymentIntent['object'] === 'payment_intent') {
 
@@ -554,15 +552,9 @@ abstract class SubscriptionGateway extends Gateway
                 return;
             }
 
-            // FIXED: Moved after null check
-            Craft::info('Transaction found for payment intent: ' . json_encode([
-                    'transactionId' => $transaction->id,
-                ]), 'stripe');
-
             $updateTransaction = null;
 
             if ($transaction->parentId === null) {
-                Craft::info('Transaction had no parent as expected', 'stripe');
 
                 // Try and retrieve child transactions if this is a saved transaction
                 /** @var Transaction[] $children */
@@ -575,25 +567,15 @@ abstract class SubscriptionGateway extends Gateway
                 }
 
                 foreach ($children as $child) {
-                    Craft::info('Looking for child: ' . json_encode([
-                            'childTransactionId' => $child->id,
-                        ]), 'stripe');
 
                     if ($child->reference === $transaction->reference && ($child->status === TransactionRecord::STATUS_PROCESSING || $child->status === TransactionRecord::STATUS_REDIRECT) && $paymentIntent['status'] === 'succeeded') {
                         $updateTransaction = $child;
-                        Craft::info('Transaction found for payment intent: ' . json_encode([
-                                'childTransactionId' => $child->id,
-                            ]), 'stripe');
                         break;
                     }
                 }
             }
 
             if ($updateTransaction) {
-                Craft::info('Update transaction found: ' . json_encode([
-                        'updateTransactionId' => $updateTransaction->id,
-                    ]), 'stripe');
-
                 $transactionRecord = TransactionRecord::findOne($updateTransaction->id);
 
                 // FIXED: Added null check
@@ -603,10 +585,6 @@ abstract class SubscriptionGateway extends Gateway
                     $transactionRecord->response = $paymentIntent;
 
                     if ($transactionRecord->save(false)) {
-                        Craft::info('Transaction saved as successful: ' . json_encode([
-                                'transactionRecordId' => $transactionRecord->id,
-                            ]), 'stripe');
-
                         // Silently drop successful child transactions as they are now consolidated into the parent transaction
                         TransactionRecord::deleteAll([
                             'parentId' => $updateTransaction->id,
