@@ -143,6 +143,7 @@ class PaymentIntents extends BaseGateway
             'subscription' => '',
             'scenario' => 'payment',
             'order' => null,
+            'locale' => Craft::$app->language,
             'gateway' => $this,
             'handle' => $this->handle,
             'appearance' => [

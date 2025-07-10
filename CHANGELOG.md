@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where the Stripe Elements were using the browser’s preferred language rather than the current application locale. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
+
 ## 5.1.0 - 2025-07-09
 
 - Added support for fonts in Stripe Elements. ([#258](https://github.com/craftcms/commerce-stripe/issues/258))
