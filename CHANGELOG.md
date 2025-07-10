@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.1.0.1 - 2025-07-09
 
 - Fixed a bug where the Stripe Elements were using the browser’s preferred language rather than the current application locale. ([#351](https://github.com/craftcms/commerce-stripe/issues/351))
 
