@@ -23,6 +23,7 @@ class Install extends Migration
      */
     public function safeUp(): bool
     {
+        $this->archiveTableIfExists('{{%stripe_customers}}');
         $this->createTable('{{%stripe_customers}}', [
             'id' => $this->primaryKey(),
             'userId' => $this->integer()->notNull(),
@@ -34,6 +35,7 @@ class Install extends Migration
             'uid' => $this->uid(),
         ]);
 
+        $this->archiveTableIfExists('{{%stripe_invoices}}');
         $this->createTable('{{%stripe_invoices}}', [
             'id' => $this->primaryKey(),
             'reference' => $this->string(),
@@ -44,6 +46,7 @@ class Install extends Migration
             'uid' => $this->uid(),
         ]);
 
+        $this->archiveTableIfExists('{{%stripe_paymentintents}}');
         $this->createTable('{{%stripe_paymentintents}}', [
             'id' => $this->primaryKey(),
             'reference' => $this->string(),
