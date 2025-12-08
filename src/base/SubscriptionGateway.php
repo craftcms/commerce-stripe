@@ -557,11 +557,23 @@ abstract class SubscriptionGateway extends Gateway
 
             if ($transaction->parentId === null) {
 
+                // If the parent is already successful, skip to avoid duplicates
+                if ($transaction->status === TransactionRecord::STATUS_SUCCESS) {
+                    return;
+                }
+
                 // Try and retrieve child transactions if this is a saved transaction
                 /** @var Transaction[] $children */
                 $children = $transaction->id
                     ? CommercePlugin::getInstance()->getTransactions()->getChildrenByTransactionId($transaction->id)
                     : [];
+
+                // Check if there's already a successful child - if so, skip to avoid duplicates
+                foreach ($children as $child) {
+                    if ($child->status === TransactionRecord::STATUS_SUCCESS) {
+                        return; // Already have a successful transaction, avoid duplicate
+                    }
+                }
 
                 if (empty($children) && ($transaction->status === TransactionRecord::STATUS_PROCESSING || $transaction->status === TransactionRecord::STATUS_REDIRECT)) {
                     $updateTransaction = $transaction;
