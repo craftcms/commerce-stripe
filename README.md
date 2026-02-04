@@ -218,7 +218,7 @@ There are no customizations available when reactivating a subscription.
 
 ### Subscription Status Mapping
 
-When Stripe sends webhook events, the plugin maps Stripe's subscription statuses to Commerce's subscription properties. This determines how subscriptions appear in the control panel and are queried via `craft.subscriptions`.
+When Stripe sends webhook events, the plugin maps [Stripe's subscription statuses](https://docs.stripe.com/api/subscriptions/object#subscription_object-status) to Commerce's subscription properties. This determines how subscriptions appear in the control panel and are queried via `craft.subscriptions`.
 
 | Stripe Status        | `hasStarted` | `isSuspended` | `isExpired` | Commerce Status |
 |----------------------|--------------|---------------|-------------|-----------------|
