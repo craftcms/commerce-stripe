@@ -1,0 +1,63 @@
+{# @var subscription \craft\commerce\elements\Subscription #}
+{# @var gateway \craft\commerce\stripe\base\Gateway #}
+
+{% set data = subscription.subscriptionData %}
+{% set stripeStatus = data.status ?? null %}
+{% set liveMode = data.livemode ?? false %}
+
+{% if stripeStatus %}
+<div class="meta read-only">
+    <div class="data">
+        <h5 class="heading">{{ 'Stripe Status'|t('commerce-stripe') }}</h5>
+        <div class="value">
+            {% set statusColors = {
+                'incomplete': '',
+                'incomplete_expired': 'red',
+                'trialing': 'blue',
+                'active': 'green',
+                'past_due': 'orange',
+                'unpaid': 'orange',
+                'canceled': 'red',
+                'paused': 'orange',
+            } %}
+            <span class="status {{ statusColors[stripeStatus] ?? '' }}"></span>
+            <code>{{ stripeStatus }}</code>
+        </div>
+    </div>
+
+    {% if data.cancel_at_period_end ?? false %}
+    <div class="data">
+        <h5 class="heading">{{ 'Cancels at period end'|t('commerce-stripe') }}</h5>
+        <div class="value">
+            {% set cancelAt = data.cancel_at ?? data.current_period_end ?? null %}
+            {% if cancelAt %}
+                {{ cancelAt|datetime }}
+            {% else %}
+                {{ 'Yes'|t('commerce-stripe') }}
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% set periodEnd = data.current_period_end ?? null %}
+    {% if periodEnd %}
+    <div class="data">
+        <h5 class="heading">{{ 'Current Period End'|t('commerce-stripe') }}</h5>
+        <div class="value">{{ periodEnd|datetime }}</div>
+    </div>
+    {% endif %}
+
+    <div class="data">
+        <h5 class="heading">{{ 'Dashboard'|t('commerce-stripe') }}</h5>
+        <div class="value">
+            {% set dashboardUrl = liveMode
+                ? 'https://dashboard.stripe.com/subscriptions/' ~ subscription.reference
+                : 'https://dashboard.stripe.com/test/subscriptions/' ~ subscription.reference
+            %}
+            <a href="{{ dashboardUrl }}" target="_blank" rel="noopener">
+                {{ 'View in Stripe'|t('commerce-stripe') }} <span data-icon="external"></span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}

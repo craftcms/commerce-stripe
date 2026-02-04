@@ -7,6 +7,8 @@
 
 namespace craft\commerce\stripe;
 
+use Craft;
+use craft\commerce\elements\Subscription;
 use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
 use craft\commerce\Plugin as CommercePlugin;
 use craft\commerce\services\Customers as CommerceCustomers;
@@ -20,7 +22,9 @@ use craft\commerce\stripe\services\Invoices;
 use craft\commerce\stripe\services\PaymentMethods;
 use craft\commerce\stripe\utilities\Sync;
 use craft\events\RegisterComponentTypesEvent;
+use craft\events\RegisterTemplateRootsEvent;
 use craft\services\Utilities;
+use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\Event;
 
@@ -87,6 +91,25 @@ class Plugin extends \craft\base\Plugin
                 Plugin::getInstance()->getPaymentMethods()->handlePrimaryPaymentSourceUpdated($event);
             }
         );
+
+        // Register template hook for subscription meta sidebar
+        Craft::$app->getView()->hook('cp.commerce.subscriptions.edit.meta', function(array &$context) {
+            /** @var Subscription $subscription */
+            $subscription = $context['subscription'] ?? null;
+            if (!$subscription) {
+                return '';
+            }
+
+            $gateway = $subscription->getGateway();
+            if (!$gateway instanceof Gateway) {
+                return '';
+            }
+
+            return Craft::$app->getView()->renderTemplate(
+                'commerce-stripe/_subscriptions/meta',
+                ['subscription' => $subscription, 'gateway' => $gateway],
+            );
+        });
     }
 
     /**
