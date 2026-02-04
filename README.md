@@ -216,6 +216,35 @@ If this parameter is set to `true`, the subscription switch is billed immediatel
 
 There are no customizations available when reactivating a subscription.
 
+### Subscription Status Mapping
+
+When Stripe sends webhook events, the plugin maps Stripe's subscription statuses to Commerce's subscription properties. This determines how subscriptions appear in the control panel and are queried via `craft.subscriptions`.
+
+| Stripe Status        | `hasStarted` | `isSuspended` | `isExpired` | Commerce Status |
+|----------------------|--------------|---------------|-------------|-----------------|
+| `incomplete`         | `false`      | `false`       | `false`     | —               |
+| `incomplete_expired` | `false`      | `false`       | `true`      | Expired         |
+| `trialing`           | `true`       | `false`       | `false`     | Active          |
+| `active`             | `true`       | `false`       | `false`     | Active          |
+| `past_due`           | `true`       | `true`        | `false`     | Suspended       |
+| `unpaid`             | `true`       | `true`        | `false`     | Suspended       |
+| `canceled`           | `true`       | `false`       | `true`      | Expired         |
+
+**Commerce statuses in element queries:**
+
+- **Active** — `hasStarted = true`, `isSuspended = false`, `isExpired = false`
+- **Suspended** — `isExpired = false`, `isSuspended = true`
+- **Expired** — `isExpired = true`
+
+**Key webhook events:**
+
+- `customer.subscription.created` — Sets `hasStarted` based on initial status
+- `customer.subscription.updated` — Updates status properties based on current Stripe status
+- `customer.subscription.deleted` — Marks subscription as expired
+
+> [!NOTE]
+> A subscription with `isCanceled = true` will continue to be **Active** until its billing period ends (when Stripe changes its status to `canceled`). Use `subscription.isCanceled` to check if a user has requested cancellation.
+
 ## Events
 
 The plugin provides several events you can use to modify the behavior of your integration.
