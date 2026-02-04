@@ -22,9 +22,7 @@ use craft\commerce\stripe\services\Invoices;
 use craft\commerce\stripe\services\PaymentMethods;
 use craft\commerce\stripe\utilities\Sync;
 use craft\events\RegisterComponentTypesEvent;
-use craft\events\RegisterTemplateRootsEvent;
 use craft\services\Utilities;
-use craft\web\View;
 use Illuminate\Support\Collection;
 use yii\base\Event;
 
