@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where Stripe subscription statuses `trialing` and `unpaid` were not being mapped correctly to Craft Commerce subscription statuses.
+
 ## 5.1.0.2 - 2026-02-03
 
 - Fixed a bug where more than one child transaction could be marked as successful.

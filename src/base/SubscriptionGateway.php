@@ -1217,11 +1217,13 @@ abstract class SubscriptionGateway extends Gateway
                 break;
             // Definitely not suspended
             case 'active':
+            case 'trialing':
                 $subscription->isSuspended = false;
                 $subscription->dateSuspended = null;
                 break;
             // Suspend this and make a guess at the suspension date
             case 'past_due':
+            case 'unpaid':
                 $timeLastInvoiceCreated = $subscriptionData['latest_invoice']['created'] ?? null;
                 $dateSuspended = $timeLastInvoiceCreated ? DateTimeHelper::toDateTime($timeLastInvoiceCreated) : null;
                 $subscription->dateSuspended = $subscription->isSuspended ? $subscription->dateSuspended : $dateSuspended;
