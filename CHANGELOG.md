@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## 4.1.8.1 - 2026-02-03
+
+- Fixed a bug where more than one child transaction could be marked as successful.
+
 ## 4.1.8 - 2025-07-09
 
 - Fixed a bug where successful payment intents webhooks were not marking the transaction as successfully completed. ([#337](https://github.com/craftcms/commerce-stripe/issues/337))
