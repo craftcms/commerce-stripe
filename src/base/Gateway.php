@@ -278,7 +278,7 @@ abstract class Gateway extends BaseGateway
      */
     public function getSendReceiptEmail(bool $parse = true): bool|string
     {
-        return $parse ? App::parseBooleanEnv($this->_sendReceiptEmail) : $this->_sendReceiptEmail;
+        return $parse ? (App::parseBooleanEnv($this->_sendReceiptEmail) ?? false) : $this->_sendReceiptEmail;
     }
 
     /**
