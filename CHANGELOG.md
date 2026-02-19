@@ -3,7 +3,7 @@
 ## Unreleased
 
 - Fixed a bug where Stripe subscription statuses `trialing` and `unpaid` were not being mapped correctly to Craft Commerce subscription statuses.
-- Fixed a PHP error that could occur when `sendReceiptEmail` was not set. ([#364](https://github.com/craftcms/commerce-stripe/issues/364))
+- Fixed a PHP error that could occur when `sendReceiptEmail` was set to a missing environment variable. ([#364](https://github.com/craftcms/commerce-stripe/issues/364))
 
 ## 5.1.0.2 - 2026-02-03
 
