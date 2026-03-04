@@ -66,7 +66,7 @@ abstract class SubscriptionGateway extends Gateway
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
-     *     if ($e->invoiceData['billing'] === 'send_invoice') {
+     *     if (($e->invoiceData['collection_method'] ?? $e->invoiceData['billing'] ?? null) === 'send_invoice') {
      *         // Forward this invoice to the accounting dpt.
      *     }
      * });
@@ -144,17 +144,24 @@ abstract class SubscriptionGateway extends Gateway
     public function getNextPaymentAmount(Subscription $subscription): string
     {
         $data = $subscription->getSubscriptionData();
-        $currencyCode = strtoupper($data['plan']['currency']);
+        $planOrPrice = $data['plan'] ?? $data['items']['data'][0]['price'] ?? null;
+
+        if (!$planOrPrice) {
+            return '0';
+        }
+
+        $currencyCode = strtoupper($planOrPrice['currency']);
         $currencyService = CommercePlugin::getInstance()->getCurrencies();
         $currency = $currencyService->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
             Craft::warning('Unsupported currency - ' . $currencyCode, 'stripe');
 
-            return 0.0;
+            return '0';
         }
 
-        return $data['plan']['amount'] / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
+        $amount = $planOrPrice['amount'] ?? $planOrPrice['unit_amount'] ?? 0;
+        return $amount / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
     }
 
     /**
@@ -363,7 +370,7 @@ abstract class SubscriptionGateway extends Gateway
         $stripeSubscription->items = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
             ],
         ];
 
@@ -403,7 +410,7 @@ abstract class SubscriptionGateway extends Gateway
         $request['items'] = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
                 'quantity' => $parameters->quantity ?: $item->quantity,
             ],
         ];
@@ -451,7 +458,7 @@ abstract class SubscriptionGateway extends Gateway
         $items = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
             ],
         ];
 
@@ -805,7 +812,7 @@ abstract class SubscriptionGateway extends Gateway
             'paymentAmount' => $data['amount_due'] / (10 ** $subUnits),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
-            'paymentReference' => $data['charge'],
+            'paymentReference' => $data['charge'] ?? $data['payment_intent'] ?? '',
             'paid' => $data['paid'],
             'response' => Json::encode($data),
         ]);
@@ -1036,7 +1043,7 @@ abstract class SubscriptionGateway extends Gateway
             ]));
         }
 
-        $stripeInvoiceBilling = isset($stripeInvoice['billing']) && $stripeInvoice['billing'] ? $stripeInvoice['billing'] : null;
+        $stripeInvoiceBilling = $stripeInvoice['collection_method'] ?? $stripeInvoice['billing'] ?? null;
 
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoiceBilling === 'charge_automatically';
 
@@ -1176,10 +1183,12 @@ abstract class SubscriptionGateway extends Gateway
 
         $this->setSubscriptionStatusData($subscription);
 
-        if (empty($data['data']['object']['plan'])) {
+        $planOrPrice = $data['data']['object']['plan'] ?? $data['data']['object']['items']['data'][0]['price'] ?? null;
+
+        if (empty($planOrPrice)) {
             Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
         } else {
-            $planReference = $data['data']['object']['plan']['id'];
+            $planReference = $planOrPrice['id'];
             $plan = CommercePlugin::getInstance()->getPlans()->getPlanByReference($planReference);
 
             if ($plan) {

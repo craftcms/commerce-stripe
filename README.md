@@ -22,8 +22,11 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 
 
 - Craft CMS 5.1 or later
-- Craft Commerce 5.0 or later 
-- Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
+- Craft Commerce 5.0 or later
+- Stripe [API version](https://stripe.com/docs/api/versioning) `2026-01-28.clover`
+
+> [!IMPORTANT]
+> If you have custom code that interacts with Stripe API data (e.g. event listeners, custom webhook handlers, or code that reads stored Stripe response data), review the [Stripe API changelog](https://docs.stripe.com/changelog) for breaking changes between your previous API version and `2026-01-28.clover`.
 
 ## Installation
 
