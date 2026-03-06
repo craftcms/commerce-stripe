@@ -490,6 +490,9 @@ abstract class SubscriptionGateway extends Gateway
             case 'payment_intent.succeeded':
                 $this->handlePaymentIntentSucceeded($data);
                 break;
+            case 'payment_intent.requires_action':
+                $this->handlePaymentIntentRequiresAction($data);
+                break;
             case CustomerCashBalanceTransaction::OBJECT_NAME . '.created':
                 $this->handleCustomerCashBalanceTransaction($data);
                 break;
@@ -616,6 +619,43 @@ abstract class SubscriptionGateway extends Gateway
                     Craft::warning('Transaction record not found for ID: ' . $updateTransaction->id, 'stripe');
                 }
             }
+        }
+    }
+
+    /**
+     * Handle a payment_intent.requires_action webhook.
+     *
+     * Marks the transaction as processing instead of failed for payment methods
+     * that require asynchronous actions (e.g. ACH micro-deposit verification).
+     *
+     * @param array $data
+     * @return void
+     */
+    public function handlePaymentIntentRequiresAction(array $data): void
+    {
+        $paymentIntent = $data['data']['object'];
+        if ($paymentIntent['object'] !== 'payment_intent') {
+            return;
+        }
+
+        $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
+
+        if (!$transaction?->id) {
+            Craft::warning('Transaction with the reference "' . $paymentIntent['id'] . '" not found when processing webhook ' . $data['id'], 'stripe');
+            return;
+        }
+
+        // Only update if the transaction is currently failed or redirect
+        if (!in_array($transaction->status, [TransactionRecord::STATUS_FAILED, TransactionRecord::STATUS_REDIRECT])) {
+            return;
+        }
+
+        $transactionRecord = TransactionRecord::findOne($transaction->id);
+        if ($transactionRecord) {
+            $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+            $transactionRecord->message = '';
+            $transactionRecord->response = $paymentIntent;
+            $transactionRecord->save(false);
         }
     }
 
