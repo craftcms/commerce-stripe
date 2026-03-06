@@ -738,7 +738,11 @@ abstract class SubscriptionGateway extends Gateway
     public function getBillingIssueDescription(Subscription $subscription): string
     {
         $subscriptionData = $this->getExpandedSubscriptionData($subscription);
-        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'] ?? null;
+
+        if (!$intentData) {
+            return '';
+        }
 
         if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
             switch ($intentData['status']) {
@@ -759,7 +763,11 @@ abstract class SubscriptionGateway extends Gateway
     {
         $subscription = $this->refreshSubscriptionData($subscription);
         $subscriptionData = $subscription->getSubscriptionData();
-        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'] ?? null;
+
+        if (!$intentData) {
+            return false;
+        }
 
         return in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid']) && in_array($intentData['status'], ['requires_payment_method', 'requires_confirmation', 'requires_action']);
     }
@@ -1274,7 +1282,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $subscriptionData = $subscription->getSubscriptionData();
 
-        if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
+        if (!empty($subscriptionData['latest_invoice']) && empty($subscriptionData['latest_invoice']['payment_intent'])) {
             $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve(
                 $subscription->reference,
                 [
