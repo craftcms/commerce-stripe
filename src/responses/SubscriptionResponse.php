@@ -54,7 +54,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
      */
     public function getTrialDays(): int
     {
-        if (empty($this->data)) {
+        if (empty($this->data) || empty($this->data['trial_end']) || empty($this->data['trial_start'])) {
             return 0;
         }
 
