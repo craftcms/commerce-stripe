@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 4.1.8.2 - 2026-03-05
 
 - Fixed a PHP error that could occur when `sendReceiptEmail` was not set. ([#364](https://github.com/craftcms/commerce-stripe/issues/364))
 
