@@ -926,6 +926,7 @@ abstract class SubscriptionGateway extends Gateway
                 /** @phpstan-ignore-next-line */
                 if (!$user->getPrimaryPaymentSourceId()) {
                     CommercePlugin::getInstance()->getCustomers()->savePrimaryPaymentSourceId($user, $paymentSource->id);
+                    $this->setPaymentSourceAsDefault($stripeCustomer->id, $stripePaymentMethod['id']);
                 }
             }
 
