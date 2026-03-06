@@ -473,7 +473,11 @@ class PaymentIntents extends BaseGateway
     public function getBillingIssueResolveFormHtml(Subscription $subscription): string
     {
         $subscriptionData = $this->getExpandedSubscriptionData($subscription);
-        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'] ?? null;
+
+        if (!$intentData) {
+            return '';
+        }
 
         if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
             $clientSecret = $intentData['client_secret'];
@@ -510,6 +514,10 @@ class PaymentIntents extends BaseGateway
             'metadata' => $metadata,
             'capture_method' => $capture ? 'automatic' : 'manual',
         ];
+
+        if (!empty($metadata['description'])) {
+            $paymentIntentData['description'] = $metadata['description'];
+        }
 
         $paymentIntentData['automatic_payment_methods'] = ['enabled' => true];
 
