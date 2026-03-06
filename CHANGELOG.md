@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a PHP error that could occur when `sendReceiptEmail` was not set. ([#364](https://github.com/craftcms/commerce-stripe/issues/364))
+
 ## 4.1.8.1 - 2026-02-03
 
 - Fixed a bug where more than one child transaction could be marked as successful.
