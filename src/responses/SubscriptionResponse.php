@@ -71,7 +71,8 @@ class SubscriptionResponse implements SubscriptionResponseInterface
             throw new InvalidConfigException();
         }
 
-        $timestamp = $this->data['current_period_end'];
+        $itemPeriodEnds = array_column($this->data['items']['data'] ?? [], 'current_period_end');
+        $timestamp = !empty($itemPeriodEnds) ? min($itemPeriodEnds) : ($this->data['current_period_end'] ?? null);
 
         return DateTimeHelper::toDateTime($timestamp);
     }
