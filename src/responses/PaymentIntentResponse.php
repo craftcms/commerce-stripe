@@ -120,6 +120,13 @@ class PaymentIntentResponse implements RequestResponseInterface
         // If we have a payment intent that was created without a payment source / payment method, then we
         // make the return URL the same page as the request as they only need the redirect data with contains the client secret.
         if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
+
+            // if this is a console request return a blank redirect URL. processPayment redirect and redirectData will
+            // have the redirect information that can be used.
+            if (\Craft::$app->getRequest()->getIsConsoleRequest()) {
+                return '';
+            }
+            
             return \Craft::$app->getRequest()->getUrl();
         }
 
