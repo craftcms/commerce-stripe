@@ -66,7 +66,10 @@ class PaymentIntentResponse implements RequestResponseInterface
 
         if (array_key_exists('object', $this->data) && $this->data['object'] == PaymentIntent::OBJECT_NAME
             && array_key_exists('next_action', $this->data) && is_array($this->data['next_action'])
-            && array_key_exists('type', $this->data['next_action']) && $this->data['next_action']['type'] == 'display_bank_transfer_instructions') {
+            && array_key_exists('type', $this->data['next_action']) && in_array($this->data['next_action']['type'], [
+                'display_bank_transfer_instructions',
+                'verify_with_microdeposits',
+            ])) {
             return true;
         }
 

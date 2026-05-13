@@ -22,8 +22,11 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 
 
 - Craft CMS 5.1 or later
-- Craft Commerce 5.0 or later 
-- Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
+- Craft Commerce 5.0 or later
+- Stripe [API version](https://stripe.com/docs/api/versioning) `2026-01-28.clover`
+
+> [!IMPORTANT]
+> If you have custom code that interacts with Stripe API data (e.g. event listeners, custom webhook handlers, or code that reads stored Stripe response data), review the [Stripe API changelog](https://docs.stripe.com/changelog) for breaking changes between your previous API version and `2026-01-28.clover`.
 
 ## Installation
 
@@ -69,6 +72,32 @@ Your **Publishable API Key** and **Secret API Key** can be found in (or generate
 
 Stripe provides different keys for testing—use those until you are ready to launch, then replace the testing keys in the live server’s `.env` file.
 
+#### Restricted API Keys
+
+Using a [restricted API key](https://stripe.com/docs/keys#limit-access) instead of a standard secret key is optional, but improves security by limiting what the key can do if it is ever compromised. If you choose to use a restricted key, grant **Write** access (which includes read) to the following resources:
+
+| Resource | Access |
+|---|---|
+| Payment Intents | Write |
+| Payment Methods | Write |
+| Setup Intents | Write |
+| Customers | Write |
+| Checkout Sessions | Write |
+| Refunds | Write |
+| Subscriptions | Write |
+| Invoices | Write |
+| Prices | Read |
+| Products | Read |
+| Billing Portal | Write |
+
+> [!NOTE]
+> The **Webhook Signing Secret** is separate from the API key and is obtained when you register your webhook endpoint in Stripe—see [Webhooks](#webhooks) below.
+
+> [!WARNING]
+> If you use a restricted key, any third-party plugins or custom modules that interact with the Stripe API may require additional permissions beyond those listed above. Review their documentation and add permissions accordingly.
+> 
+> Whenever this plugin begins using a new API resource or permission, it will be noted in the [changelog](./CHANGELOG.md).
+
 ### Webhooks
 
 Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a [new webhook](https://stripe.com/docs/webhooks#webhooks-summary) in your Stripe dashboard. A signing secret will be generated for you—save this in your `.env` file with the other secrets, then return to the gateway’s settings screen and populate the **Webhook Signing Secret** field with the variable’s name.
@@ -76,7 +105,34 @@ Once the gateway has been saved (and it has an ID), revisiting its edit screen w
 > [!WARNING]
 > Webhooks will not be processed if the signing secret is missing or invalid!
 
-We recommend enabling _all_ available events for the webhook, in Stripe. Events that the plugin has no use for will be ignored.
+Rather than enabling all available events, we recommend selecting only the specific events the plugin handles. Selecting all events causes Stripe to warn about inefficiency, and may result in Stripe splitting your endpoint into two separate endpoints with different signing secrets—one for standard (snapshot) payloads and one for [thin payloads](https://docs.stripe.com/event-destinations)—which is incompatible with the plugin's single signing secret field.
+
+The plugin handles the following webhook events:
+
+| Event |
+|---|
+| `charge.refunded` |
+| `customer.subscription.deleted` |
+| `customer.subscription.updated` |
+| `customer.updated` |
+| `customer_cash_balance_transaction.created` |
+| `invoice.created` |
+| `invoice.payment_failed` |
+| `invoice.payment_succeeded` |
+| `payment_intent.requires_action` |
+| `payment_intent.succeeded` |
+| `payment_method.attached` |
+| `payment_method.automatically_updated` |
+| `payment_method.detached` |
+| `payment_method.updated` |
+| `plan.deleted` |
+| `plan.updated` |
+| `refund.updated` |
+
+> [!WARNING]
+> Restricting webhook events to this list is optional, but improves efficiency. Any third-party plugins or custom modules that listen to Stripe webhooks via the [`receiveWebhook`](#receivewebhook) event may require additional event types to be enabled in Stripe.
+>
+> Whenever this plugin begins handling a new webhook event type, it will be noted in the [changelog](./CHANGELOG.md).
 
 Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)).
 

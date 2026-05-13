@@ -66,7 +66,7 @@ abstract class SubscriptionGateway extends Gateway
      * use yii\base\Event;
      *
      * Event::on(StripeGateway::class, StripeGateway::EVENT_CREATE_INVOICE, function(CreateInvoiceEvent $e) {
-     *     if ($e->invoiceData['billing'] === 'send_invoice') {
+     *     if (($e->invoiceData['collection_method'] ?? $e->invoiceData['billing'] ?? null) === 'send_invoice') {
      *         // Forward this invoice to the accounting dpt.
      *     }
      * });
@@ -144,17 +144,24 @@ abstract class SubscriptionGateway extends Gateway
     public function getNextPaymentAmount(Subscription $subscription): string
     {
         $data = $subscription->getSubscriptionData();
-        $currencyCode = strtoupper($data['plan']['currency']);
+        $planOrPrice = $data['plan'] ?? $data['items']['data'][0]['price'] ?? null;
+
+        if (!$planOrPrice) {
+            return '0';
+        }
+
+        $currencyCode = strtoupper($planOrPrice['currency']);
         $currencyService = CommercePlugin::getInstance()->getCurrencies();
         $currency = $currencyService->getCurrencyByIso($currencyCode);
 
         if (!$currency) {
             Craft::warning('Unsupported currency - ' . $currencyCode, 'stripe');
 
-            return 0.0;
+            return '0';
         }
 
-        return $data['plan']['amount'] / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
+        $amount = $planOrPrice['amount'] ?? $planOrPrice['unit_amount'] ?? 0;
+        return $amount / (10 ** $currencyService->getSubunitFor($currency)) . ' ' . $currencyCode;
     }
 
     /**
@@ -363,7 +370,7 @@ abstract class SubscriptionGateway extends Gateway
         $stripeSubscription->items = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
             ],
         ];
 
@@ -403,7 +410,7 @@ abstract class SubscriptionGateway extends Gateway
         $request['items'] = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
                 'quantity' => $parameters->quantity ?: $item->quantity,
             ],
         ];
@@ -451,7 +458,7 @@ abstract class SubscriptionGateway extends Gateway
         $items = [
             [
                 'id' => $item->id,
-                'plan' => $plan->reference,
+                'price' => $plan->reference,
             ],
         ];
 
@@ -482,6 +489,9 @@ abstract class SubscriptionGateway extends Gateway
                 break;
             case 'payment_intent.succeeded':
                 $this->handlePaymentIntentSucceeded($data);
+                break;
+            case 'payment_intent.requires_action':
+                $this->handlePaymentIntentRequiresAction($data);
                 break;
             case CustomerCashBalanceTransaction::OBJECT_NAME . '.created':
                 $this->handleCustomerCashBalanceTransaction($data);
@@ -613,6 +623,43 @@ abstract class SubscriptionGateway extends Gateway
     }
 
     /**
+     * Handle a payment_intent.requires_action webhook.
+     *
+     * Marks the transaction as processing instead of failed for payment methods
+     * that require asynchronous actions (e.g. ACH micro-deposit verification).
+     *
+     * @param array $data
+     * @return void
+     */
+    public function handlePaymentIntentRequiresAction(array $data): void
+    {
+        $paymentIntent = $data['data']['object'];
+        if ($paymentIntent['object'] !== 'payment_intent') {
+            return;
+        }
+
+        $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($paymentIntent['id']);
+
+        if (!$transaction?->id) {
+            Craft::warning('Transaction with the reference "' . $paymentIntent['id'] . '" not found when processing webhook ' . $data['id'], 'stripe');
+            return;
+        }
+
+        // Only update if the transaction is currently failed or redirect
+        if (!in_array($transaction->status, [TransactionRecord::STATUS_FAILED, TransactionRecord::STATUS_REDIRECT])) {
+            return;
+        }
+
+        $transactionRecord = TransactionRecord::findOne($transaction->id);
+        if ($transactionRecord) {
+            $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
+            $transactionRecord->message = '';
+            $transactionRecord->response = $paymentIntent;
+            $transactionRecord->save(false);
+        }
+    }
+
+    /**
      * @param array $data
      * @return void
      * @throws ElementNotFoundException
@@ -738,7 +785,11 @@ abstract class SubscriptionGateway extends Gateway
     public function getBillingIssueDescription(Subscription $subscription): string
     {
         $subscriptionData = $this->getExpandedSubscriptionData($subscription);
-        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'] ?? null;
+
+        if (!$intentData) {
+            return '';
+        }
 
         if (in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid'])) {
             switch ($intentData['status']) {
@@ -759,7 +810,11 @@ abstract class SubscriptionGateway extends Gateway
     {
         $subscription = $this->refreshSubscriptionData($subscription);
         $subscriptionData = $subscription->getSubscriptionData();
-        $intentData = $subscriptionData['latest_invoice']['payment_intent'];
+        $intentData = $subscriptionData['latest_invoice']['payment_intent'] ?? null;
+
+        if (!$intentData) {
+            return false;
+        }
 
         return in_array($subscriptionData['status'], ['incomplete', 'past_due', 'unpaid']) && in_array($intentData['status'], ['requires_payment_method', 'requires_confirmation', 'requires_action']);
     }
@@ -805,7 +860,7 @@ abstract class SubscriptionGateway extends Gateway
             'paymentAmount' => $data['amount_due'] / (10 ** $subUnits),
             'paymentCurrency' => $currency,
             'paymentDate' => $data['created'],
-            'paymentReference' => $data['charge'],
+            'paymentReference' => $data['charge'] ?? $data['payment_intent'] ?? '',
             'paid' => $data['paid'],
             'response' => Json::encode($data),
         ]);
@@ -911,6 +966,7 @@ abstract class SubscriptionGateway extends Gateway
                 /** @phpstan-ignore-next-line */
                 if (!$user->getPrimaryPaymentSourceId()) {
                     CommercePlugin::getInstance()->getCustomers()->savePrimaryPaymentSourceId($user, $paymentSource->id);
+                    $this->setPaymentSourceAsDefault($stripeCustomer->id, $stripePaymentMethod['id']);
                 }
             }
 
@@ -1036,7 +1092,7 @@ abstract class SubscriptionGateway extends Gateway
             ]));
         }
 
-        $stripeInvoiceBilling = isset($stripeInvoice['billing']) && $stripeInvoice['billing'] ? $stripeInvoice['billing'] : null;
+        $stripeInvoiceBilling = $stripeInvoice['collection_method'] ?? $stripeInvoice['billing'] ?? null;
 
         $canBePaid = empty($stripeInvoice['paid']) && $stripeInvoiceBilling === 'charge_automatically';
 
@@ -1176,10 +1232,12 @@ abstract class SubscriptionGateway extends Gateway
 
         $this->setSubscriptionStatusData($subscription);
 
-        if (empty($data['data']['object']['plan'])) {
+        $planOrPrice = $data['data']['object']['plan'] ?? $data['data']['object']['items']['data'][0]['price'] ?? null;
+
+        if (empty($planOrPrice)) {
             Craft::warning($subscription->reference . ' contains multiple plans, which is not supported. (event "' . $data['id'] . '")', 'stripe');
         } else {
-            $planReference = $data['data']['object']['plan']['id'];
+            $planReference = $planOrPrice['id'];
             $plan = CommercePlugin::getInstance()->getPlans()->getPlanByReference($planReference);
 
             if ($plan) {
@@ -1274,7 +1332,7 @@ abstract class SubscriptionGateway extends Gateway
     {
         $subscriptionData = $subscription->getSubscriptionData();
 
-        if (empty($subscriptionData['latest_invoice']['payment_intent'])) {
+        if (!empty($subscriptionData['latest_invoice']) && empty($subscriptionData['latest_invoice']['payment_intent'])) {
             $stripeSubscription = $this->getStripeClient()->subscriptions->retrieve(
                 $subscription->reference,
                 [

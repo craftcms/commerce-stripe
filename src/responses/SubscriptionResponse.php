@@ -54,7 +54,7 @@ class SubscriptionResponse implements SubscriptionResponseInterface
      */
     public function getTrialDays(): int
     {
-        if (empty($this->data)) {
+        if (empty($this->data) || empty($this->data['trial_end']) || empty($this->data['trial_start'])) {
             return 0;
         }
 
@@ -71,7 +71,8 @@ class SubscriptionResponse implements SubscriptionResponseInterface
             throw new InvalidConfigException();
         }
 
-        $timestamp = $this->data['current_period_end'];
+        $itemPeriodEnds = array_column($this->data['items']['data'] ?? [], 'current_period_end');
+        $timestamp = !empty($itemPeriodEnds) ? min($itemPeriodEnds) : ($this->data['current_period_end'] ?? null);
 
         return DateTimeHelper::toDateTime($timestamp);
     }
