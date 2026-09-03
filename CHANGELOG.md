@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where `getBillingPortalUrl()` could return and invalid URL.
+
 ## 5.1.0.3 - 2026-02-19
 
 - Fixed a bug where Stripe subscription statuses `trialing` and `unpaid` were not being mapped correctly to Craft Commerce subscription statuses.
