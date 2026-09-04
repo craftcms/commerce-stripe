@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Added the `--force` option to the `commerce-stripe/reset-data` command. ([#372](https://github.com/craftcms/commerce-stripe/issues/372))
 - Fixed a bug where `getBillingPortalUrl()` could return and invalid URL. ([#373](https://github.com/craftcms/commerce-stripe/issues/373))
 
 ## 5.1.0.3 - 2026-02-19
