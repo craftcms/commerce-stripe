@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.2.0 - 2026-09-04
 
 - Added the `--force` option to the `commerce-stripe/reset-data` command. ([#372](https://github.com/craftcms/commerce-stripe/issues/372))
 - Fixed a bug where `getBillingPortalUrl()` could return and invalid URL. ([#373](https://github.com/craftcms/commerce-stripe/issues/373))
