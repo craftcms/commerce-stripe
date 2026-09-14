@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
+
 ## 5.2.0 - 2026-09-04
 
 - Added the `--force` option to the `commerce-stripe/reset-data` command. ([#372](https://github.com/craftcms/commerce-stripe/issues/372))
