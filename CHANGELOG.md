@@ -7,6 +7,7 @@
 - Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
 - Fixed a bug where payment intents requiring further action were marked as failed instead of processing. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
 - Fixed a bug where the stripe payment description wasn’t being set on the PaymentIntent. ([#360](https://github.com/craftcms/commerce-stripe/issues/360))
+- Fixed a bug where a transaction’s `payment_method` could be stored as an unexpanded ID instead of the full object. ([#363](https://github.com/craftcms/commerce-stripe/issues/363))
 
 ## 5.2.0 - 2026-09-04
 
