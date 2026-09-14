@@ -670,6 +670,15 @@ class PaymentIntents extends BaseGateway
         $immediatelyConfirmLegacy = false;
         if ($form->paymentMethodId) {
             $immediatelyConfirmLegacy = true;
+
+            // PayPal payment methods can't be confirmed server-side for on-session use: Stripe requires
+            // a `risk_correlation_id` that can only be supplied by PayPal's client-side SDK during a live
+            // browser session. Fall back to returning the unconfirmed intent so the front end can complete
+            // confirmation via Stripe.js, which supplies that value automatically.
+            $paymentMethod = $this->getStripeClient()->paymentMethods->retrieve($form->paymentMethodId);
+            if ($paymentMethod->type === 'paypal') {
+                $immediatelyConfirmLegacy = false;
+            }
         }
 
         $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form);

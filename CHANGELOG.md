@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
 - Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
 - Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
 - Fixed a bug where payment intents requiring further action were marked as failed instead of processing. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
