@@ -733,6 +733,8 @@ class PaymentIntents extends BaseGateway
 
         $session = $this->getStripeClient()->billingPortal->sessions->create($params);
 
-        return $session->url . '?customer_id=' . $customer->reference;
+        $separator = parse_url($session->url, PHP_URL_QUERY) === null ? '?' : '&';
+
+        return $session->url . $separator . 'customer_id=' . $customer->reference;
     }
 }

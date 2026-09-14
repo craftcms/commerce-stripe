@@ -4,6 +4,11 @@
 
 -Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
 
+## 5.2.0 - 2026-09-04
+
+- Added the `--force` option to the `commerce-stripe/reset-data` command. ([#372](https://github.com/craftcms/commerce-stripe/issues/372))
+- Fixed a bug where `getBillingPortalUrl()` could return and invalid URL. ([#373](https://github.com/craftcms/commerce-stripe/issues/373))
+
 ## 5.1.0.3 - 2026-02-19
 
 - Fixed a bug where Stripe subscription statuses `trialing` and `unpaid` were not being mapped correctly to Craft Commerce subscription statuses.

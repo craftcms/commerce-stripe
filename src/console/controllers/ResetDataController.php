@@ -25,11 +25,25 @@ use yii\console\ExitCode;
 class ResetDataController extends Controller
 {
     /**
+     * @var bool|null Whether to reset the data without prompting for confirmation.
+     * @since 5.2.0
+     */
+    public ?bool $force = null;
+
+    /**
+     * @inheritdoc
+     */
+    public function options($actionID): array
+    {
+        return array_merge(parent::options($actionID), ['force']);
+    }
+
+    /**
      * Reset Commerce data.
      */
     public function actionIndex(): int
     {
-        $reset = $this->prompt('Resetting Stripe plugin data will permanently delete all customers, payment intents, and invoice records ... do you wish to continue?', [
+        $reset = $this->force ?? $this->prompt('Resetting Stripe plugin data will permanently delete all customers, payment intents, and invoice records ... do you wish to continue?', [
             'required' => true,
             'default' => 'no',
             'validator' => function($input) {
