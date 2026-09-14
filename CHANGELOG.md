@@ -2,7 +2,16 @@
 
 ## Unreleased
 
--Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
+- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
+- Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
+- Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
+- Fixed a bug where payment intents requiring further action were marked as failed instead of processing. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
+- Fixed a bug where the stripe payment description wasn’t being set on the PaymentIntent. ([#360](https://github.com/craftcms/commerce-stripe/issues/360))
+
+## 5.2.0 - 2026-09-04
+
+- Added the `--force` option to the `commerce-stripe/reset-data` command. ([#372](https://github.com/craftcms/commerce-stripe/issues/372))
+- Fixed a bug where `getBillingPortalUrl()` could return and invalid URL. ([#373](https://github.com/craftcms/commerce-stripe/issues/373))
 
 ## 5.1.0.3 - 2026-02-19
 

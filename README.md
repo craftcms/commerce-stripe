@@ -68,6 +68,9 @@ From the **Gateway** dropdown, select **Stripe**, then provide the following inf
 Your **Publishable API Key** and **Secret API Key** can be found in (or generated from) your Stripe dashboard, within the **Developers** &rarr; **API Keys** tab. Read more about [Stripe API keys](https://stripe.com/docs/keys).
 
 > [!NOTE]
+> Use a **standard** Secret API Key. [Restricted keys](https://stripe.com/docs/keys#limit-access) are not currently supported, as the plugin needs broad access to the Stripe API to function correctly.
+
+> [!NOTE]
 > To prevent secrets leaking into project config, put them in your `.env` file, then use the special [environment variable syntax](https://craftcms.com/docs/4.x/config/#control-panel-settings) in the gateway settings.
 
 Stripe provides different keys for testing—use those until you are ready to launch, then replace the testing keys in the live server’s `.env` file.
