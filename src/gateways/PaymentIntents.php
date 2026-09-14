@@ -513,6 +513,7 @@ class PaymentIntents extends BaseGateway
             'confirm' => false,
             'metadata' => $metadata,
             'capture_method' => $capture ? 'automatic' : 'manual',
+            'expand' => ['payment_method'],
         ];
 
         if (!empty($metadata['description'])) {
@@ -709,6 +710,7 @@ class PaymentIntents extends BaseGateway
 
         $parameters = [
             'return_url' => $returnUrl,
+            'expand' => ['payment_method'],
         ];
 
         $event = new PaymentIntentConfirmationEvent([
