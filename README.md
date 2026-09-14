@@ -79,7 +79,27 @@ Once the gateway has been saved (and it has an ID), revisiting its edit screen w
 > [!WARNING]
 > Webhooks will not be processed if the signing secret is missing or invalid!
 
-We recommend enabling _all_ available events for the webhook, in Stripe. Events that the plugin has no use for will be ignored.
+Rather than selecting _all_ available events (which Stripe will flag as inefficient, and may require splitting across two endpoints with separate signing secrets due to mixed payload styles), select only the events the plugin actually listens for:
+
+- `payment_method.attached`
+- `payment_method.updated`
+- `payment_method.automatically_updated`
+- `payment_method.detached`
+- `payment_intent.succeeded`
+- `payment_intent.requires_action`
+- `customer_cash_balance_transaction.created`
+- `charge.refunded`
+- `refund.updated`
+- `plan.deleted`
+- `plan.updated`
+- `invoice.payment_succeeded`
+- `invoice.created`
+- `invoice.payment_failed`
+- `customer.subscription.deleted`
+- `customer.subscription.updated`
+- `customer.updated`
+
+If Stripe’s webhook setup asks you to choose a payload style, choose **Snapshot**—the plugin reads the full Stripe object out of `data.object` in the webhook body, which the leaner **Thin** payload style doesn’t include. All of the events above support the Snapshot style, so a single endpoint (and a single signing secret) is all you need.
 
 Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)).
 
