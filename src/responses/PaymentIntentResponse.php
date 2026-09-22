@@ -85,7 +85,7 @@ class PaymentIntentResponse implements RequestResponseInterface
             return false;
         }
 
-        if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
+        if (array_key_exists('status', $this->data) && in_array($this->data['status'], ['requires_payment_method', 'requires_confirmation'], true)) {
             return true;
         }
 
@@ -105,7 +105,7 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function getRedirectData(): array
     {
-        if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
+        if (array_key_exists('status', $this->data) && in_array($this->data['status'], ['requires_payment_method', 'requires_confirmation'], true)) {
             return [
                 'client_secret' => $this->data['client_secret'],
                 'payment_intent' => $this->data['id'],
@@ -120,9 +120,10 @@ class PaymentIntentResponse implements RequestResponseInterface
      */
     public function getRedirectUrl(): string
     {
-        // If we have a payment intent that was created without a payment source / payment method, then we
-        // make the return URL the same page as the request as they only need the redirect data with contains the client secret.
-        if (array_key_exists('status', $this->data) && $this->data['status'] === 'requires_payment_method') {
+        // If we have a payment intent that still needs a payment method attached, or one that has a payment
+        // method attached but hasn't been confirmed yet, then we make the return URL the same page as the
+        // request as they only need the redirect data which contains the client secret.
+        if (array_key_exists('status', $this->data) && in_array($this->data['status'], ['requires_payment_method', 'requires_confirmation'], true)) {
 
             // if this is a console request return a blank redirect URL. processPayment redirect and redirectData will
             // have the redirect information that can be used.
