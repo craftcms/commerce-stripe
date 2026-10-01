@@ -1,9 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.2.1 - 2026-10-01
 
-- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error, or leave the PaymentIntent stuck in `requires_confirmation` and the transaction marked as failed. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
 - Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
+- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error and the transaction marked as failed. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
 - Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
 - Fixed a bug where payment intents requiring further action were marked as failed instead of processing. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
 - Fixed a bug where the stripe payment description wasn’t being set on the PaymentIntent. ([#360](https://github.com/craftcms/commerce-stripe/issues/360))
