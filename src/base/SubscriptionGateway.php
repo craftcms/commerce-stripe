@@ -544,6 +544,12 @@ abstract class SubscriptionGateway extends Gateway
 
             if ($session = $sessions->data[0] ?? null) {
                 $transaction = CommercePlugin::getInstance()->getTransactions()->getTransactionByReference($session['id']);
+
+                if (!$transaction?->id) {
+                    Craft::warning('Transaction with the reference "' . $session['id'] . '" not found when processing webhook ' . $data['id'], 'stripe');
+                    return;
+                }
+
                 $error = '';
                 CommercePlugin::getInstance()->getPayments()->completePayment($transaction, $error);
                 return;
