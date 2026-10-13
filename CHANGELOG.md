@@ -1,5 +1,9 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+- Fixed a PHP error that could occur when processing a `payment_intent.succeeded` webhook for a checkout session that wasn’t created by Craft Commerce.
+
 ## 5.2.1 - 2026-10-01
 
 - Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
