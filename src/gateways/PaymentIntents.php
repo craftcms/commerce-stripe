@@ -406,7 +406,7 @@ class PaymentIntents extends BaseGateway
 
         $subscriptionParameters = [
             'customer' => $customer->reference,
-            'items' => [['plan' => $plan->reference]],
+            'items' => [['price' => $plan->reference]],
         ];
 
         if ($parameters->trialDays !== null) {

@@ -131,7 +131,7 @@ abstract class Gateway extends BaseGateway
     /**
      * string The Stripe API version to use.
      */
-    public const STRIPE_API_VERSION = '2022-11-15';
+    public const STRIPE_API_VERSION = '2026-01-28.clover';
 
     /**
      * @var string|null

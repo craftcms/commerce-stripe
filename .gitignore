@@ -6,5 +6,5 @@
 *Thumbs.db
 vendor/
 node_modules
-/.claude
-/CLAUDE.md
+CLAUDE.md
+.claude/

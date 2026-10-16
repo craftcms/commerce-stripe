@@ -39,6 +39,14 @@ class Plan extends BasePlan
         $thisPlanData = Json::decode($this->planData);
         $otherPlanData = Json::decode($plan->planData);
 
-        return $thisPlanData['plan']['interval'] === $otherPlanData['plan']['interval'] && $thisPlanData['plan']['interval_count'] === $otherPlanData['plan']['interval_count'];
+        $thisInfo = $thisPlanData['plan'] ?? $thisPlanData['price'] ?? [];
+        $otherInfo = $otherPlanData['plan'] ?? $otherPlanData['price'] ?? [];
+
+        $thisInterval = $thisInfo['interval'] ?? $thisInfo['recurring']['interval'] ?? null;
+        $thisIntervalCount = $thisInfo['interval_count'] ?? $thisInfo['recurring']['interval_count'] ?? null;
+        $otherInterval = $otherInfo['interval'] ?? $otherInfo['recurring']['interval'] ?? null;
+        $otherIntervalCount = $otherInfo['interval_count'] ?? $otherInfo['recurring']['interval_count'] ?? null;
+
+        return $thisInterval === $otherInterval && $thisIntervalCount === $otherIntervalCount;
     }
 }
