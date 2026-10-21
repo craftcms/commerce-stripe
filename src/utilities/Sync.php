@@ -25,7 +25,7 @@ class Sync extends Utility
      */
     public static function displayName(): string
     {
-        return Craft::t('commerce', 'Stripe Sync');
+        return Craft::t('commerce-stripe', 'Stripe Sync');
     }
 
     /**

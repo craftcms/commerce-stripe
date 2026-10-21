@@ -158,8 +158,8 @@ class PaymentIntents extends BaseGateway
             'fonts' => [],
             'submitButtonClasses' => '',
             'errorMessageClasses' => '',
-            'submitButtonText' => Craft::t('commerce', 'Pay'),
-            'processingButtonText' => Craft::t('commerce', 'Processing…'),
+            'submitButtonText' => Craft::t('commerce-stripe', 'Pay'),
+            'processingButtonText' => Craft::t('commerce-stripe', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
         ];
 
@@ -330,7 +330,7 @@ class PaymentIntents extends BaseGateway
         $isCommercePayRequest = $appRequest->getIsSiteRequest() && $appRequest->getIsActionRequest() && $appRequest->getActionSegments() == ['commerce', 'payments', 'pay'];
 
         if ($isCommercePayRequest) {
-            throw new PaymentSourceCreatedLaterException(Craft::t('commerce', 'The payment source should be created after successful payment.'));
+            throw new PaymentSourceCreatedLaterException(Craft::t('commerce-stripe', 'The payment source should be created after successful payment.'));
         }
 
         /** @var PaymentIntentForm $sourceData */
