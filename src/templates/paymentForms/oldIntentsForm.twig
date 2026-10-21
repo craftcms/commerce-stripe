@@ -11,7 +11,7 @@
             {% import "_includes/forms" as forms %}
 
             <fieldset class="card-holder">
-                <legend>{{ 'Card Holder'|t('commerce') }}</legend>
+                <legend>{{ 'Card Holder'|t('commerce-stripe') }}</legend>
 
                 <div class="md:flex md:-mx-4">
                     <!-- Card Holder Name -->
@@ -19,7 +19,7 @@
                         {{ forms.text({
                             name: 'firstName',
                             maxlength: 70,
-                            placeholder: "First Name"|t('commerce'),
+                            placeholder: "First Name"|t('commerce-stripe'),
                             autocomplete: false,
                             class: 'card-holder-first-name'~(paymentForm.getErrors('firstName') ? ' error'),
 
@@ -31,7 +31,7 @@
                         {{ forms.text({
                             name: 'lastName',
                             maxlength: 70,
-                            placeholder: "Last Name"|t('commerce'),
+                            placeholder: "Last Name"|t('commerce-stripe'),
                             autocomplete: false,
                             class: 'card-holder-last-name'~(paymentForm.getErrors('lastName') ? ' error'),
 
@@ -50,14 +50,14 @@
 
             <!-- Card Number -->
             <fieldset class="card-data">
-                <legend>{{ 'Card'|t('commerce') }}</legend>
+                <legend>{{ 'Card'|t('commerce-stripe') }}</legend>
 
                 <div>
                     <div>
                         {{ forms.text({
                             name: 'number',
                             maxlength: 19,
-                            placeholder: "Card Number"|t('commerce'),
+                            placeholder: "Card Number"|t('commerce-stripe'),
                             autocomplete: false,
                             class: 'card-number'~(paymentForm.getErrors('number') ? ' error'),
 
@@ -70,14 +70,14 @@
                             class: 'card-expiry'~(paymentForm.getErrors('month') or paymentForm.getErrors('year') ? ' error'),
                             type: 'text',
                             name: 'expiry',
-                            placeholder: "MM"|t('commerce')~' / '~"YYYY"|t('commerce'),
+                            placeholder: "MM"|t('commerce-stripe')~' / '~"YYYY"|t('commerce-stripe'),
 
                         }) }}
 
                         {{ forms.text({
                             type: 'tel',
                             name: 'cvv',
-                            placeholder: "CVV"|t('commerce'),
+                            placeholder: "CVV"|t('commerce-stripe'),
                             class: 'card-cvc'~(paymentForm.getErrors('cvv') ? ' error'),
 
                         }) }}
