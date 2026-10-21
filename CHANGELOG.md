@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Fixed a PHP error that could occur when processing a `payment_intent.succeeded` webhook for a checkout session that wasn’t created by Craft Commerce.
+- Fixed a bug where some translatable strings used the `commerce` or `app` translation categories instead of `commerce-stripe`. ([#376](https://github.com/craftcms/commerce-stripe/issues/376))
 
 ## 5.2.1 - 2026-10-01
 
