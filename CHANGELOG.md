@@ -1,5 +1,20 @@
 # Release Notes for Stripe for Craft Commerce
 
+## Unreleased
+
+> [!WARNING]
+> This release requires Craft Commerce 6. See [UPGRADE.md](UPGRADE.md) for the breaking changes.
+
+- Stripe for Craft Commerce now requires Craft CMS 6, Craft Commerce 6 and PHP 8.5.
+- Moved all classes to the `CraftCms\CommerceStripe` namespace. `craft\commerce\stripe\gateways\PaymentIntents` is kept as an alias of `CraftCms\CommerceStripe\Gateway`.
+- The plugin’s events are now Laravel events: `GatewayRequestBuilding`, `SetupIntentRequestBuilding`, `WebhookReceived`, `PaymentIntentConfirming`, `ServerSideConfirming`, `PaymentFormRendering` and `CustomerCreating`.
+- The payment form is now built with `paymentFormUi()`, and the gateway settings with `settingsUi()`. The payment form and gateway settings templates were removed.
+- The `commerce-stripe/reset-data` and `commerce-stripe/sync/payment-sources` console commands are now `php artisan commerce-stripe:reset-data` and `php artisan commerce-stripe:sync:payment-sources`.
+- The `commerce-stripe/customers/confirm-setup-intent` action now responds with 403 if the setup intent belongs to another user’s Stripe customer.
+- Removed subscriptions, plans and invoices, which Craft Commerce 6 doesn’t support, along with the `chargeInvoicesImmediately` config setting and the `commerce-stripe/default/fetch-plans` action. The `stripe_invoices` table is kept.
+- Removed the Stripe Sync utility. Use the `commerce-stripe:sync:payment-sources` command instead.
+- Removed `craft\commerce\stripe\gateways\PaymentIntents::getOldPaymentFormHtml()`.
+
 ## 5.2.3 - 2026-11-10
 
 - Added the `serverSideConfirmation` payment form option, which creates and confirms the Payment Intent on the server when the payment form is submitted. ([#355](https://github.com/craftcms/commerce-stripe/issues/355))
