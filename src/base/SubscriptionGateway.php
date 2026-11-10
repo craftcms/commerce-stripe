@@ -611,7 +611,7 @@ abstract class SubscriptionGateway extends Gateway
                 if ($transactionRecord) {
                     $transactionRecord->status = TransactionRecord::STATUS_SUCCESS;
                     $transactionRecord->message = '';
-                    $transactionRecord->response = $paymentIntent;
+                    $transactionRecord->response = $this->_expandPaymentMethod($paymentIntent);
 
                     if ($transactionRecord->save(false)) {
                         // Silently drop successful child transactions as they are now consolidated into the parent transaction
@@ -668,9 +668,35 @@ abstract class SubscriptionGateway extends Gateway
         if ($transactionRecord) {
             $transactionRecord->status = TransactionRecord::STATUS_PROCESSING;
             $transactionRecord->message = '';
-            $transactionRecord->response = $paymentIntent;
+            $transactionRecord->response = $this->_expandPaymentMethod($paymentIntent);
             $transactionRecord->save(false);
         }
+    }
+
+    /**
+     * Expands the payment method on a payment intent from a webhook payload, which only contains the payment method ID.
+     *
+     * This keeps the stored transaction response consistent with the responses stored when paying, which expand the
+     * payment method so its details (e.g. the card brand and last 4 digits) are available.
+     *
+     * @param array $paymentIntent
+     * @return array
+     */
+    private function _expandPaymentMethod(array $paymentIntent): array
+    {
+        $paymentMethodId = $paymentIntent['payment_method'] ?? null;
+
+        if (!is_string($paymentMethodId) || $paymentMethodId === '') {
+            return $paymentIntent;
+        }
+
+        try {
+            $paymentIntent['payment_method'] = $this->getStripeClient()->paymentMethods->retrieve($paymentMethodId)->toArray();
+        } catch (Throwable $exception) {
+            Craft::warning('Unable to retrieve payment method "' . $paymentMethodId . '": ' . $exception->getMessage(), 'stripe');
+        }
+
+        return $paymentIntent;
     }
 
     /**
