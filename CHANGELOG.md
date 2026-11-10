@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Fixed a bug where orders paid with redirect-based payment methods (e.g. Klarna) could fail to complete when a `payment_intent.requires_action` webhook was received before the customer returned. ([#378](https://github.com/craftcms/commerce-stripe/issues/378))
+- Documented which webhook events to select in Stripe, and to use the “Snapshot” payload style, to avoid needing two webhook endpoints. ([#369](https://github.com/craftcms/commerce-stripe/issues/369))
 
 ## 5.2.2 - 2026-10-22
 
