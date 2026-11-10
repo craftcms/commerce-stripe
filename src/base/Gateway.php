@@ -317,9 +317,13 @@ abstract class Gateway extends BaseGateway
             return $response;
         }
 
+        // Allow the tolerance to be configured via an environment variable.
+        // If not set, use the default tolerance of 5 minutes (300 seconds) as recommended by Stripe: https://stripe.com/docs/webhooks/signatures#verify-official-libraries
+        $tolerance = (int) (App::env('WEBHOOK_TOLERANCE_HEADER')?? Webhook::DEFAULT_TOLERANCE);
+
         try {
             // Check the payload and signature
-            Webhook::constructEvent($rawData, $stripeSignature, $secret);
+            Webhook::constructEvent($rawData, $stripeSignature, $secret, $tolerance);
         } catch (Exception $exception) {
             Craft::warning('Webhook signature check failed: ' . $exception->getMessage(), 'stripe');
             $response->data = 'Webhook signature check failed.';
