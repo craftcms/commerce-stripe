@@ -1,6 +1,6 @@
 # Release Notes for Stripe for Craft Commerce
 
-## Unreleased
+## 5.2.3 - 2026-11-10
 
 - Added the `serverSideConfirmation` payment form option, which creates and confirms the Payment Intent on the server when the payment form is submitted. ([#355](https://github.com/craftcms/commerce-stripe/issues/355))
 - Documented that subscriptions will be removed in Craft Commerce 6, and how to move them to the [Stripe plugin for Craft CMS](https://plugins.craftcms.com/stripe). ([#138](https://github.com/craftcms/commerce-stripe/issues/138))
