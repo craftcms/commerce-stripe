@@ -412,81 +412,79 @@ class PaymentIntentsElements {
         this.$submitButton.disabled = false;
       };
 
-      // Validate the Payment Element and collect any wallet details
-      const {error: submitError} = await this.elements.submit();
-      if (submitError) {
-        showError(submitError.message);
-        return;
-      }
-
-      const {error: tokenError, confirmationToken} =
-        await this.stripeInstance.createConfirmationToken({
-          elements: this.elements,
-          params: this._getConfirmationTokenParams(),
-        });
-
-      if (tokenError) {
-        showError(tokenError.message);
-        return;
-      }
-
-      // Submit the payment form to `commerce/payments/pay`, which creates and confirms the payment intent
-      const userSessionJson = await this._resolveCsrf();
-      const form = this.getFormData();
-      form.append(
-        userSessionJson.csrfTokenName,
-        userSessionJson.csrfTokenValue
-      );
-      form.append(
-        `${this.formNamespace}[confirmationToken]`,
-        confirmationToken.id
-      );
-
-      let json;
-      let responseError = false;
+      // Stripe.js can throw (e.g. an IntegrationError) rather than returning an error
       try {
-        const res = await fetch(window.location.href, {
-          method: 'post',
-          body: form,
-          headers: {
-            Accept: 'application/json',
-          },
-        });
-        responseError = res.status !== 200;
-        json = await res.json();
+        await this._submitServerSideConfirmation(showError);
       } catch (e) {
         showError(e.message);
-        return;
       }
-
-      if (responseError) {
-        showError(json.message);
-        return;
-      }
-
-      const redirectData = json.redirectData || {};
-
-      // The payment needs further action from the customer (e.g. 3D Secure or a redirect to Klarna)
-      if (redirectData.status === 'requires_action') {
-        const {error} = await this.stripeInstance.handleNextAction({
-          clientSecret: redirectData.client_secret,
-        });
-
-        if (error) {
-          showError(error.message);
-          return;
-        }
-      }
-
-      // Complete the payment and the order the same way as returning from Stripe
-      if (redirectData.complete_payment_url) {
-        window.location.href = redirectData.complete_payment_url;
-        return;
-      }
-
-      // Fall back to reloading the page if the form has no `redirect` param
-      window.location.href = json.redirect || window.location.href;
     });
+  }
+
+  async _submitServerSideConfirmation(showError) {
+    // Validate the Payment Element and collect any wallet details
+    const {error: submitError} = await this.elements.submit();
+    if (submitError) {
+      showError(submitError.message);
+      return;
+    }
+
+    const {error: tokenError, confirmationToken} =
+      await this.stripeInstance.createConfirmationToken({
+        elements: this.elements,
+        params: this._getConfirmationTokenParams(),
+      });
+
+    if (tokenError) {
+      showError(tokenError.message);
+      return;
+    }
+
+    // Submit the payment form to `commerce/payments/pay`, which creates and confirms the payment intent
+    const userSessionJson = await this._resolveCsrf();
+    const form = this.getFormData();
+    form.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+    form.append(
+      `${this.formNamespace}[confirmationToken]`,
+      confirmationToken.id
+    );
+
+    const res = await fetch(window.location.href, {
+      method: 'post',
+      body: form,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const json = await res.json();
+
+    if (res.status !== 200) {
+      showError(json.message);
+      return;
+    }
+
+    const redirectData = json.redirectData || {};
+
+    // The payment needs further action from the customer (e.g. 3D Secure or a redirect to Klarna)
+    if (redirectData.status === 'requires_action') {
+      const {error} = await this.stripeInstance.handleNextAction({
+        clientSecret: redirectData.client_secret,
+      });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+    }
+
+    // Complete the payment and the order the same way as returning from Stripe
+    if (redirectData.complete_payment_url) {
+      window.location.href = redirectData.complete_payment_url;
+      return;
+    }
+
+    // Fall back to reloading the page if the form has no `redirect` param
+    window.location.href = json.redirect || window.location.href;
   }
 
   _getConfirmationTokenParams() {

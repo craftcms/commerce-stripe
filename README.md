@@ -580,7 +580,7 @@ Only used with [`serverSideConfirmation`](#serversideconfirmation). Additional [
 
 ### `billingDetails`
 
-Only used with [`serverSideConfirmation`](#serversideconfirmation). Overrides the billing details taken from the order’s billing address, which are sent to Stripe when the Payment Element is set not to collect them (`elementOptions.fields.billingDetails` is `'never'`):
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Overrides the billing details taken from the order’s billing address, which are sent to Stripe when the Payment Element is set not to collect them (`elementOptions.fields.billingDetails` is `'never'`). Stripe requires every billing detail in that case, so `phone` is sent as `null` unless you provide one:
 
 ```twig
 {% set params = {

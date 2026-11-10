@@ -191,7 +191,10 @@ class PaymentIntents extends BaseGateway
 
             if ($order) {
                 $params['elementsOptions'] = ArrayHelper::merge($this->_getDeferredElementsOptions($order), $params['elementsOptions']);
-                $params['billingDetails'] = ArrayHelper::merge($order->getBillingAddress() ? $this->_getBillingDetails($order) : [], $params['billingDetails']);
+                // Stripe requires every billing detail when the Payment Element is set not to collect them,
+                // and Craft addresses don't have a phone number by default.
+                $billingDetails = $order->getBillingAddress() ? array_merge($this->_getBillingDetails($order), ['phone' => null]) : [];
+                $params['billingDetails'] = ArrayHelper::merge($billingDetails, $params['billingDetails']);
             } else {
                 $params['serverSideConfirmation'] = false;
             }
