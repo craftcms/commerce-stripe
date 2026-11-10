@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed a bug where `payment_intent.succeeded` and `payment_intent.requires_action` webhooks replaced a transaction’s expanded `payment_method` with its ID, removing details like the card brand and last 4 digits from the transaction response. ([#377](https://github.com/craftcms/commerce-stripe/issues/377))
 - Fixed a bug where orders paid with redirect-based payment methods (e.g. Klarna) could fail to complete when a `payment_intent.requires_action` webhook was received before the customer returned. ([#378](https://github.com/craftcms/commerce-stripe/issues/378))
 - Documented which webhook events to select in Stripe, and to use the “Snapshot” payload style, to avoid needing two webhook endpoints. ([#369](https://github.com/craftcms/commerce-stripe/issues/369))
 
