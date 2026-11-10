@@ -1,132 +1,51 @@
 <?php
-/**
- * @link https://craftcms.com/
- * @copyright Copyright (c) Pixel & Tonic, Inc.
- * @license MIT
- */
 
-namespace craft\commerce\stripe;
+declare(strict_types=1);
 
-use Craft;
-use craft\commerce\elements\Subscription;
-use craft\commerce\events\UpdatePrimaryPaymentSourceEvent;
-use craft\commerce\Plugin as CommercePlugin;
-use craft\commerce\services\Customers as CommerceCustomers;
-use craft\commerce\services\Gateways;
-use craft\commerce\stripe\base\Gateway;
-use craft\commerce\stripe\gateways\PaymentIntents;
-use craft\commerce\stripe\models\Settings;
-use craft\commerce\stripe\plugin\Services;
-use craft\commerce\stripe\services\Customers;
-use craft\commerce\stripe\services\Invoices;
-use craft\commerce\stripe\services\PaymentMethods;
-use craft\commerce\stripe\utilities\Sync;
-use craft\events\RegisterComponentTypesEvent;
-use craft\services\Utilities;
+namespace CraftCms\CommerceStripe;
+
+use CraftCms\Cms\Plugin\Plugin as BasePlugin;
+use CraftCms\Commerce\Payment\Events\PrimaryPaymentSourceUpdated;
+use CraftCms\Commerce\Payment\Gateway\Gateways;
+use CraftCms\Commerce\Payment\Gateway\GatewayTypes;
+use CraftCms\CommerceStripe\Console\Commands\ResetDataCommand;
+use CraftCms\CommerceStripe\Console\Commands\SyncPaymentSourcesCommand;
 use Illuminate\Support\Collection;
-use yii\base\Event;
+use Illuminate\Support\Facades\Event;
 
 /**
- * Plugin represents the Stripe integration plugin.
- *
- * @method Settings getSettings()
- * @author Pixel & Tonic, Inc. <support@pixelandtonic.com>
- * @since 1.0
- *
- * @property-read Settings $settings
+ * Stripe for Craft Commerce.
  */
-class Plugin extends \craft\base\Plugin
+class Plugin extends BasePlugin
 {
-    /**
-     * @inheritDoc
-     */
-    public string $schemaVersion = '3.0.0';
+    public string $schemaVersion = '4.0.0';
 
-    use Services;
+    public string $minVersionRequired = '5.2.3';
 
-    /**
-     * @inheritDoc
-     */
-    public static function config(): array
+    protected array $commands = [
+        ResetDataCommand::class,
+        SyncPaymentSourcesCommand::class,
+    ];
+
+    public function boot(GatewayTypes $gatewayTypes): void
     {
-        return [
-            'components' => [
-                'customers' => Customers::class,
-                'invoices' => Invoices::class,
-                'paymentIntents' => PaymentIntents::class,
-                'paymentMethods' => PaymentMethods::class,
-            ],
-        ];
+        $gatewayTypes->register(Gateway::class);
+
+        Event::listen(PrimaryPaymentSourceUpdated::class, [PaymentMethods::class, 'handlePrimaryPaymentSourceUpdated']);
     }
 
     /**
-     * @inheritdoc
+     * Returns all Stripe gateways.
+     *
+     * @return Collection<int, Gateway>
      */
-    public function init(): void
+    public function getStripeGateways(): Collection
     {
-        parent::init();
+        /** @var Collection<int, Gateway> $gateways */
+        $gateways = app(Gateways::class)->getAllGateways()
+            ->filter(fn($gateway) => $gateway instanceof Gateway)
+            ->values();
 
-        Event::on(
-            Gateways::class,
-            Gateways::EVENT_REGISTER_GATEWAY_TYPES,
-            function(RegisterComponentTypesEvent $event) {
-                $event->types[] = PaymentIntents::class;
-            }
-        );
-
-        Event::on(
-            Utilities::class,
-            Utilities::EVENT_REGISTER_UTILITIES,
-            function(RegisterComponentTypesEvent $event) {
-                $event->types[] = Sync::class;
-            }
-        );
-
-        Event::on(
-            CommerceCustomers::class,
-            CommerceCustomers::EVENT_UPDATE_PRIMARY_PAYMENT_SOURCE,
-            function(UpdatePrimaryPaymentSourceEvent $event) {
-                Plugin::getInstance()->getPaymentMethods()->handlePrimaryPaymentSourceUpdated($event);
-            }
-        );
-
-        // Register template hook for subscription meta sidebar
-        Craft::$app->getView()->hook('cp.commerce.subscriptions.edit.meta', function(array &$context) {
-            /** @var Subscription $subscription */
-            $subscription = $context['subscription'] ?? null;
-            if (!$subscription) {
-                return '';
-            }
-
-            $gateway = $subscription->getGateway();
-            if (!$gateway instanceof Gateway) {
-                return '';
-            }
-
-            return Craft::$app->getView()->renderTemplate(
-                'commerce-stripe/_subscriptions/meta',
-                ['subscription' => $subscription, 'gateway' => $gateway],
-            );
-        });
-    }
-
-    /**
-     * @return Collection<Gateway>
-     * @throws \yii\base\InvalidConfigException
-     */
-    public function getStripeGateways()
-    {
-        return collect(CommercePlugin::getInstance()->getGateways()->getAllGateways())
-            ->filter(function($gateway) {
-                return $gateway instanceof Gateway;
-            });
-    }
-
-    /**
-     * @inheritdoc
-     */
-    protected function createSettingsModel(): Settings
-    {
-        return new Settings();
+        return $gateways;
     }
 }

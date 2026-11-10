@@ -1,0 +1,487 @@
+class PaymentIntentsElements {
+  constructor(publishableKey, container) {
+    this.container = container;
+    this.formNamespace = this.container.dataset.paymentFormNamespace;
+    this.stripeInstance = Stripe(publishableKey, {
+      locale: this.container.dataset.locale,
+    });
+    this.elements = null;
+    this.scenario = this.container.dataset.clientScenario;
+    this.completePaymentActionUrl =
+      this.container.dataset.completePaymentActionUrl;
+    this.usersSessionInfoUrl = this.container.dataset.usersSessionInfoUrl;
+    this.processingButtonText = this.container.dataset.processingButtonText;
+    this.hiddenClass = this.container.dataset.hiddenClass;
+    this.serverSideConfirmation =
+      this.container.dataset.serverSideConfirmation === 'true';
+    this.$submitButton = this.container.querySelector(
+      '.stripe-payment-elements-submit-button'
+    );
+    this.$savePaymentSourceField = this.container
+      .closest('form')
+      .querySelector('input[name="savePaymentSource"]');
+    this.$paymentAmountField = this.container
+      .closest('form')
+      .querySelector('[name="paymentAmount"]');
+    this.$paymentCurrencyField = this.container
+      .closest('form')
+      .querySelector('[name="paymentCurrency"]');
+  }
+
+  getFormData() {
+    return new FormData(this.container.closest('form'));
+  }
+
+  showErrorMessage(message) {
+    this.container.classList.remove(this.hiddenClass);
+    const errorMessage = this.container.querySelector('.stripe-error-message');
+    errorMessage.classList.remove(this.hiddenClass);
+    errorMessage.innerText = message;
+  }
+
+  createStripeElementsForm(options) {
+    this.elements = this.stripeInstance.elements(options);
+    const paymentElement = this.elements.create(
+      'payment',
+      JSON.parse(this.container.dataset.elementOptions)
+    );
+    const paymentElementDiv = this.container.querySelector(
+      '.stripe-payment-element'
+    );
+    paymentElement.mount(paymentElementDiv);
+
+    // Listen for the ready event and simulate a window resize:
+    const layoutChangeHandler = (e) => {
+      window.dispatchEvent(new Event('resize'));
+    };
+
+    paymentElement.on('ready', layoutChangeHandler);
+    paymentElement.on('change', layoutChangeHandler);
+
+    // Show the container:
+    this.container.classList.remove(this.hiddenClass);
+  }
+
+  setupIntentFlow() {
+    this._resolveCsrf().then((userSessionJson) => {
+      const form = this.getFormData();
+      const setupIntentFormData = new FormData();
+      setupIntentFormData.append(
+        'action',
+        'commerce-stripe/customers/create-setup-intent'
+      );
+      setupIntentFormData.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
+      setupIntentFormData.append('gatewayId', this.container.dataset.gatewayId);
+      let responseError = false;
+
+      fetch(window.location.href, {
+        method: 'post',
+        body: setupIntentFormData,
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+        .then((res) => {
+          if (res.status !== 200) {
+            responseError = true;
+          }
+          return res.json();
+        })
+        .then((json) => {
+          if (responseError) {
+            this.showErrorMessage(json.error);
+            return;
+          }
+
+          const options = {
+            clientSecret: json.client_secret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+            fonts: JSON.parse(this.container.dataset.fonts),
+          };
+
+          this.createStripeElementsForm(options);
+
+          this.$submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            const submitText = this.$submitButton.innerText;
+            this.$submitButton.innerText = this.processingButtonText;
+
+            const elements = this.elements;
+            const form = this.getFormData();
+            const formDataArray = [...form.entries()];
+            const params = formDataArray
+              .map(
+                (x) => `${encodeURIComponent(x[0])}=${encodeURIComponent(x[1])}`
+              )
+              .join('&');
+
+            const baseUrl = this.container.dataset.confirmSetupIntentUrl;
+            const hasQueryString = baseUrl.includes('?');
+            const returnUrl = `${baseUrl}${
+              hasQueryString ? '&' : '?'
+            }${params}`;
+
+            this.stripeInstance
+              .confirmSetup({
+                elements,
+                confirmParams: {
+                  return_url: `${returnUrl}`,
+                },
+              })
+              .then((result) => {
+                if (result.error) {
+                  this.showErrorMessage(result.error.message);
+                  this.$submitButton.innerText = submitText;
+                }
+              });
+          });
+        });
+    });
+  }
+
+  cartPaymentFlow() {
+    if (this.$paymentAmountField) {
+      this.$paymentAmountField.addEventListener('change', (event) => {
+        this._callPayAction();
+      });
+    }
+
+    if (this.$paymentCurrencyField) {
+      this.$paymentCurrencyField.addEventListener('change', (event) => {
+        this._callPayAction();
+      });
+    }
+
+    this._callPayAction();
+  }
+
+  async _resolveCsrf() {
+    return fetch(this.usersSessionInfoUrl, {
+      headers: {
+        Accept: 'application/json',
+      },
+    }).then((res) => {
+      return res.json();
+    });
+  }
+
+  _callPayAction() {
+    this._resolveCsrf().then((userSessionJson) => {
+      const form = this.getFormData();
+      form.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
+
+      let responseError = false;
+      fetch(window.location.href, {
+        method: 'post',
+        body: form,
+        headers: {
+          Accept: 'application/json',
+        },
+      })
+        .then((res) => {
+          if (res.status !== 200) {
+            responseError = true;
+          }
+          return res.json();
+        })
+        .then((json) => {
+          if (responseError) {
+            this.container.classList.add(this.hiddenClass);
+            this.showErrorMessage(json.message);
+            return;
+          }
+
+          if (
+            json.redirect &&
+            typeof json.cart !== 'undefined' &&
+            json.cart.isCompleted === true
+          ) {
+            window.location.href = json.redirect;
+            return;
+          }
+
+          const completePaymentActionUrl = new URL(
+            this.completePaymentActionUrl
+          );
+          completePaymentActionUrl.searchParams.append(
+            'commerceTransactionHash',
+            json.transactionHash
+          );
+          completePaymentActionUrl.searchParams.append(
+            'commerceTransactionId',
+            json.transactionId
+          );
+          this.completePaymentActionUrl = completePaymentActionUrl.toString();
+
+          const options = {
+            clientSecret: json.redirectData.client_secret,
+            appearance: JSON.parse(this.container.dataset.appearance),
+            fonts: JSON.parse(this.container.dataset.fonts),
+          };
+
+          this.createStripeElementsForm(options);
+
+          const updatePaymentIntentForm = new FormData();
+          updatePaymentIntentForm.append(
+            'action',
+            'commerce-stripe/payments/save-payment-intent'
+          );
+
+          updatePaymentIntentForm.append(
+            userSessionJson.csrfTokenName,
+            userSessionJson.csrfTokenValue
+          );
+          updatePaymentIntentForm.append(
+            'paymentIntentId',
+            json.redirectData.payment_intent
+          );
+          updatePaymentIntentForm.append(
+            'gatewayId',
+            this.container.dataset.gatewayId
+          );
+
+          const savePaymentSourceCheckbox = this.container
+            .closest('form')
+            .querySelector('input[name="savePaymentSource"]');
+
+          if (this.$savePaymentSourceField) {
+            this.$savePaymentSourceField.removeEventListener(
+              'click',
+              function () {}
+            );
+            this.$savePaymentSourceField.addEventListener(
+              'click',
+              function () {
+                updatePaymentIntentForm.append(
+                  'paymentIntent[setup_future_usage]',
+                  this.$savePaymentSourceField.checked ? '1' : '0'
+                );
+
+                fetch(window.location.href, {
+                  method: 'post',
+                  body: updatePaymentIntentForm,
+                  headers: {
+                    Accept: 'application/json',
+                  },
+                })
+                  .then((response) => response.json())
+                  .then((data) => {
+                    this.elements.fetchUpdates();
+                  })
+                  .catch((error) => {
+                    console.error(
+                      'There was an error updating the Payment Intent:',
+                      error
+                    );
+                  });
+              }.bind(this)
+            );
+          }
+
+          this.$submitButton.addEventListener('click', async (event) => {
+            event.preventDefault();
+
+            const submitText = this.$submitButton.innerText;
+            this.$submitButton.innerText = this.processingButtonText;
+
+            const elements = this.elements;
+            const {error} = await this.stripeInstance.confirmPayment({
+              elements,
+              confirmParams: {
+                return_url: this.completePaymentActionUrl,
+              },
+            });
+            this.$submitButton.innerText = submitText;
+            this.showErrorMessage(error.message);
+          });
+        });
+    });
+  }
+
+  serverSideConfirmationFlow() {
+    const options = {
+      ...JSON.parse(this.container.dataset.elementsOptions || '{}'),
+      appearance: JSON.parse(this.container.dataset.appearance),
+      fonts: JSON.parse(this.container.dataset.fonts),
+    };
+
+    if (this.$savePaymentSourceField && this.$savePaymentSourceField.checked) {
+      options.setupFutureUsage = 'off_session';
+    }
+
+    this.createStripeElementsForm(options);
+
+    // The payment intent's `setup_future_usage` must match the Elements options
+    if (this.$savePaymentSourceField) {
+      this.$savePaymentSourceField.addEventListener('change', () => {
+        this.elements.update({
+          setupFutureUsage: this.$savePaymentSourceField.checked
+            ? 'off_session'
+            : null,
+        });
+      });
+    }
+
+    this.$submitButton.addEventListener('click', async (event) => {
+      event.preventDefault();
+
+      const submitText = this.$submitButton.innerText;
+      this.$submitButton.innerText = this.processingButtonText;
+      this.$submitButton.disabled = true;
+
+      const showError = (message) => {
+        this.showErrorMessage(message);
+        this.$submitButton.innerText = submitText;
+        this.$submitButton.disabled = false;
+      };
+
+      // Stripe.js can throw (e.g. an IntegrationError) rather than returning an error
+      try {
+        await this._submitServerSideConfirmation(showError);
+      } catch (e) {
+        showError(e.message);
+      }
+    });
+  }
+
+  async _submitServerSideConfirmation(showError) {
+    // Validate the Payment Element and collect any wallet details
+    const {error: submitError} = await this.elements.submit();
+    if (submitError) {
+      showError(submitError.message);
+      return;
+    }
+
+    const {error: tokenError, confirmationToken} =
+      await this.stripeInstance.createConfirmationToken({
+        elements: this.elements,
+        params: this._getConfirmationTokenParams(),
+      });
+
+    if (tokenError) {
+      showError(tokenError.message);
+      return;
+    }
+
+    // Submit the payment form to `commerce/payments/pay`, which creates and confirms the payment intent
+    const userSessionJson = await this._resolveCsrf();
+    const form = this.getFormData();
+    form.append(userSessionJson.csrfTokenName, userSessionJson.csrfTokenValue);
+    form.append(
+      `${this.formNamespace}[confirmationToken]`,
+      confirmationToken.id
+    );
+
+    const res = await fetch(window.location.href, {
+      method: 'post',
+      body: form,
+      headers: {
+        Accept: 'application/json',
+      },
+    });
+    const json = await res.json();
+
+    if (res.status !== 200) {
+      showError(json.message);
+      return;
+    }
+
+    const redirectData = json.redirectData || {};
+
+    // The payment needs further action from the customer (e.g. 3D Secure or a redirect to Klarna)
+    if (redirectData.status === 'requires_action') {
+      const {error} = await this.stripeInstance.handleNextAction({
+        clientSecret: redirectData.client_secret,
+      });
+
+      if (error) {
+        showError(error.message);
+        return;
+      }
+    }
+
+    // Complete the payment and the order the same way as returning from Stripe
+    if (redirectData.complete_payment_url) {
+      window.location.href = redirectData.complete_payment_url;
+      return;
+    }
+
+    // Fall back to reloading the page if the form has no `redirect` param
+    window.location.href = json.redirect || window.location.href;
+  }
+
+  _getConfirmationTokenParams() {
+    // Billing details must be supplied when the Payment Element is set not to collect them
+    const billingDetailsField = JSON.parse(
+      this.container.dataset.elementOptions
+    ).fields?.billingDetails;
+    let billingDetails = JSON.parse(
+      this.container.dataset.billingDetails || '{}'
+    );
+
+    if (Array.isArray(billingDetails) || !billingDetailsField) {
+      return {};
+    }
+
+    if (billingDetailsField !== 'never') {
+      billingDetails = Object.fromEntries(
+        Object.entries(billingDetails).filter(
+          ([key]) => billingDetailsField[key] === 'never'
+        )
+      );
+    }
+
+    if (Object.keys(billingDetails).length === 0) {
+      return {};
+    }
+
+    return {
+      payment_method_data: {
+        billing_details: billingDetails,
+      },
+    };
+  }
+
+  handle() {
+    const formData = this.getFormData();
+    const action = formData.get('action');
+
+    if (this.scenario === 'payment') {
+      if (action.includes('commerce/payments/pay')) {
+        if (this.serverSideConfirmation) {
+          this.serverSideConfirmationFlow();
+        } else {
+          this.cartPaymentFlow();
+        }
+      } else if (action.includes('commerce/payment-sources/add')) {
+        this.setupIntentFlow();
+      }
+    }
+  }
+}
+
+function initStripe() {
+  if (typeof Stripe === 'undefined') {
+    setTimeout(initStripe, 200);
+  } else {
+    document
+      .querySelectorAll('.stripe-payment-elements-form')
+      .forEach((container) => {
+        const handlerInstance = new PaymentIntentsElements(
+          container.dataset.publishablekey,
+          container
+        );
+        container.handlerInstance = handlerInstance;
+        handlerInstance.handle();
+      });
+  }
+}
+
+initStripe();
