@@ -15,6 +15,8 @@ class PaymentIntentsElements {
     this.subscription = this.container.dataset.subscription;
     this.processingButtonText = this.container.dataset.processingButtonText;
     this.hiddenClass = this.container.dataset.hiddenClass;
+    this.serverSideConfirmation =
+      this.container.dataset.serverSideConfirmation === 'true';
     this.$submitButton = this.container.querySelector(
       '.stripe-payment-elements-submit-button'
     );
@@ -373,13 +375,164 @@ class PaymentIntentsElements {
     });
   }
 
+  serverSideConfirmationFlow() {
+    const options = {
+      ...JSON.parse(this.container.dataset.elementsOptions || '{}'),
+      appearance: JSON.parse(this.container.dataset.appearance),
+      fonts: JSON.parse(this.container.dataset.fonts),
+    };
+
+    if (this.$savePaymentSourceField && this.$savePaymentSourceField.checked) {
+      options.setupFutureUsage = 'off_session';
+    }
+
+    this.createStripeElementsForm(options);
+
+    // The payment intent's `setup_future_usage` must match the Elements options
+    if (this.$savePaymentSourceField) {
+      this.$savePaymentSourceField.addEventListener('change', () => {
+        this.elements.update({
+          setupFutureUsage: this.$savePaymentSourceField.checked
+            ? 'off_session'
+            : null,
+        });
+      });
+    }
+
+    this.$submitButton.addEventListener('click', async (event) => {
+      event.preventDefault();
+
+      const submitText = this.$submitButton.innerText;
+      this.$submitButton.innerText = this.processingButtonText;
+      this.$submitButton.disabled = true;
+
+      const showError = (message) => {
+        this.showErrorMessage(message);
+        this.$submitButton.innerText = submitText;
+        this.$submitButton.disabled = false;
+      };
+
+      // Validate the Payment Element and collect any wallet details
+      const {error: submitError} = await this.elements.submit();
+      if (submitError) {
+        showError(submitError.message);
+        return;
+      }
+
+      const {error: tokenError, confirmationToken} =
+        await this.stripeInstance.createConfirmationToken({
+          elements: this.elements,
+          params: this._getConfirmationTokenParams(),
+        });
+
+      if (tokenError) {
+        showError(tokenError.message);
+        return;
+      }
+
+      // Submit the payment form to `commerce/payments/pay`, which creates and confirms the payment intent
+      const userSessionJson = await this._resolveCsrf();
+      const form = this.getFormData();
+      form.append(
+        userSessionJson.csrfTokenName,
+        userSessionJson.csrfTokenValue
+      );
+      form.append(
+        `${this.formNamespace}[confirmationToken]`,
+        confirmationToken.id
+      );
+
+      let json;
+      let responseError = false;
+      try {
+        const res = await fetch(window.location.href, {
+          method: 'post',
+          body: form,
+          headers: {
+            Accept: 'application/json',
+          },
+        });
+        responseError = res.status !== 200;
+        json = await res.json();
+      } catch (e) {
+        showError(e.message);
+        return;
+      }
+
+      if (responseError) {
+        showError(json.message);
+        return;
+      }
+
+      const redirectData = json.redirectData || {};
+
+      // The payment needs further action from the customer (e.g. 3D Secure or a redirect to Klarna)
+      if (redirectData.status === 'requires_action') {
+        const {error} = await this.stripeInstance.handleNextAction({
+          clientSecret: redirectData.client_secret,
+        });
+
+        if (error) {
+          showError(error.message);
+          return;
+        }
+      }
+
+      // Complete the payment and the order the same way as returning from Stripe
+      if (redirectData.complete_payment_url) {
+        window.location.href = redirectData.complete_payment_url;
+        return;
+      }
+
+      if (json.redirect) {
+        window.location.href = json.redirect;
+      }
+    });
+  }
+
+  _getConfirmationTokenParams() {
+    // Billing details must be supplied when the Payment Element is set not to collect them
+    const billingDetailsField = JSON.parse(
+      this.container.dataset.elementOptions
+    ).fields?.billingDetails;
+    let billingDetails = JSON.parse(
+      this.container.dataset.billingDetails || '{}'
+    );
+
+    if (Array.isArray(billingDetails) || !billingDetailsField) {
+      return {};
+    }
+
+    if (billingDetailsField !== 'never') {
+      billingDetails = Object.fromEntries(
+        Object.entries(billingDetails).filter(
+          ([key]) => billingDetailsField[key] === 'never'
+        )
+      );
+    }
+
+    if (Object.keys(billingDetails).length === 0) {
+      return {};
+    }
+
+    return {
+      payment_method_data: {
+        billing_details: billingDetails,
+      },
+    };
+  }
+
   handle() {
     const formData = this.getFormData();
     const action = formData.get('action');
 
     if (this.scenario === 'payment') {
       if (action.includes('commerce/payments/pay')) {
-        this.cartPaymentFlow();
+        if (this.serverSideConfirmation) {
+          this.serverSideConfirmationFlow();
+        } else {
+          this.cartPaymentFlow();
+        }
       } else if (action.includes('commerce/payment-sources/add')) {
         this.setupIntentFlow();
       } else if (action.includes('commerce/subscriptions/subscribe')) {

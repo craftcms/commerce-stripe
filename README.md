@@ -524,6 +524,46 @@ This generates a form ready to redirect to a hosted [Stripe Checkout](https://st
 {{ gateway.getPaymentFormHtml(params)|raw }}
 ```
 
+### `serverSideConfirmation`
+
+By default, the payment form creates a Payment Intent as soon as the page loads, and Stripe.js confirms it in the browser. Set `serverSideConfirmation` to `true` to instead [finalize the payment on the server](https://docs.stripe.com/payments/finalize-payments-on-the-server):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+} %}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
+```
+
+With this option enabled:
+
+- Nothing is sent to `commerce/payments/pay` until the customer submits the form. Stripe Elements is created without a Payment Intent, and Stripe.js creates a [ConfirmationToken](https://docs.stripe.com/api/confirmation_tokens) from the customer’s payment details.
+- The form is then submitted to `commerce/payments/pay`, which runs Commerce’s usual order and payment amount checks, then creates and confirms the Payment Intent on the server for the current outstanding balance.
+- If the payment needs further action (like 3D Secure, or redirecting to Klarna), Stripe.js handles it. The customer is then sent to `commerce/payments/complete-payment`, just like the default flow.
+
+The order’s billing details can be sent to Stripe instead of being collected by the Payment Element. Tell the Payment Element not to collect them with `elementOptions`, and the plugin will provide them from the order’s billing address:
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+} %}
+```
+
+You can also set individual fields to `'never'` (e.g. `billingDetails: { address: 'never' }`). Use the `billingDetails` param to override any of the values taken from the order.
+
+The amount and currency shown by Stripe Elements are taken from the order when the form is rendered, and are only used to decide which payment methods to show. The amount actually charged is calculated on the server. Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) can be passed with the `elementsOptions` param.
+
+> [!NOTE]
+> If you modify the Payment Intent with the [`buildGatewayRequest`](#buildgatewayrequest) event (e.g. `payment_method_types`, `capture_method`, or `setup_future_usage`), make sure the matching `elementsOptions` are passed to the payment form, as Stripe requires them to match.
+
 ### `appearance`
 
 You can pass an array of appearance options to the `stripe.elements()` configurator function. This expects data compatible with the [Elements Appearance API](https://stripe.com/docs/elements/appearance-api).
