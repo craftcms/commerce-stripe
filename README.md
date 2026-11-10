@@ -101,6 +101,9 @@ Rather than selecting _all_ available events (which Stripe will flag as ineffici
 
 If Stripe’s webhook setup asks you to choose a payload style, choose **Snapshot**—the plugin reads the full Stripe object out of `data.object` in the webhook body, which the leaner **Thin** payload style doesn’t include. All of the events above support the Snapshot style, so a single endpoint (and a single signing secret) is all you need.
 
+> [!NOTE]
+> Stripe only sends the events you select. If a plugin or module listens for webhooks via the [`receiveWebhook`](#receivewebhook) event and relies on other event types, add those events to the endpoint as well.
+
 Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)).
 
 #### Local Development
