@@ -37,6 +37,12 @@ class PaymentIntent extends BasePaymentForm
     public ?string $paymentMethodId = null;
 
     /**
+     * @var string|null $confirmationToken the Stripe ConfirmationToken ID when confirming the payment intent server-side.
+     * @since 6.0.0
+     */
+    public ?string $confirmationToken = null;
+
+    /**
      * @inheritdoc
      */
     public function populateFromPaymentSource(PaymentSource $paymentSource): void
