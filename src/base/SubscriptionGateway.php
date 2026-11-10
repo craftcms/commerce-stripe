@@ -32,6 +32,7 @@ use craft\commerce\stripe\models\forms\SwitchPlans;
 use craft\commerce\stripe\models\Invoice;
 use craft\commerce\stripe\models\Plan;
 use craft\commerce\stripe\Plugin as StripePlugin;
+use craft\commerce\stripe\responses\PaymentIntentResponse;
 use craft\commerce\stripe\responses\SubscriptionResponse;
 use craft\errors\ElementNotFoundException;
 use craft\helpers\DateTimeHelper;
@@ -651,8 +652,15 @@ abstract class SubscriptionGateway extends Gateway
             return;
         }
 
-        // Only update if the transaction is currently failed or redirect
-        if (!in_array($transaction->status, [TransactionRecord::STATUS_FAILED, TransactionRecord::STATUS_REDIRECT])) {
+        // Only update failed transactions. Redirect transactions are left alone so the customer returning to
+        // `commerce/payments/complete-payment` can still complete the payment and the order.
+        if ($transaction->status !== TransactionRecord::STATUS_FAILED) {
+            return;
+        }
+
+        // Only asynchronous next actions (e.g. ACH micro-deposit verification) should be treated as processing,
+        // not actions the customer completes immediately (e.g. `redirect_to_url` for Klarna or 3D Secure).
+        if (!(new PaymentIntentResponse($paymentIntent))->isProcessing()) {
             return;
         }
 

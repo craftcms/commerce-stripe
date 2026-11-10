@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Fixed a PHP error that could occur when processing a `payment_intent.succeeded` webhook for a checkout session that wasn’t created by Craft Commerce.
+- Fixed a bug where orders paid with redirect-based payment methods (e.g. Klarna) could fail to complete when a `payment_intent.requires_action` webhook was received before the customer returned. ([#378](https://github.com/craftcms/commerce-stripe/issues/378))
 
 ## 5.2.1 - 2026-10-01
 
