@@ -484,9 +484,8 @@ class PaymentIntentsElements {
         return;
       }
 
-      if (json.redirect) {
-        window.location.href = json.redirect;
-      }
+      // Fall back to reloading the page if the form has no `redirect` param
+      window.location.href = json.redirect || window.location.href;
     });
   }
 

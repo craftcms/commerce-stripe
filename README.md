@@ -564,6 +564,39 @@ The amount and currency shown by Stripe Elements are taken from the order when t
 > [!NOTE]
 > If you modify the Payment Intent with the [`buildGatewayRequest`](#buildgatewayrequest) event (e.g. `payment_method_types`, `capture_method`, or `setup_future_usage`), make sure the matching `elementsOptions` are passed to the payment form, as Stripe requires them to match.
 
+### `elementsOptions`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) for creating Stripe Elements without a Payment Intent. These are merged over the defaults the plugin sets from the order and gateway (`mode`, `amount`, `currency`, `captureMethod`, and `paymentMethodCreation`):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementsOptions: {
+    paymentMethodTypes: ['card', 'klarna'],
+  },
+} %}
+```
+
+### `billingDetails`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Overrides the billing details taken from the order’s billing address, which are sent to Stripe when the Payment Element is set not to collect them (`elementOptions.fields.billingDetails` is `'never'`):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+  billingDetails: {
+    email: currentUser.email ?? cart.email,
+  },
+} %}
+```
+
 ### `appearance`
 
 You can pass an array of appearance options to the `stripe.elements()` configurator function. This expects data compatible with the [Elements Appearance API](https://stripe.com/docs/elements/appearance-api).
