@@ -20,6 +20,9 @@
      data-hidden-class="{{ hiddenClass }}"
      data-subscription="{{ subscription }}"
      data-locale="{{ locale ?? 'auto'}}"
+     data-server-side-confirmation="{{ serverSideConfirmation ? 'true' : 'false' }}"
+     data-elements-options="{{ elementsOptions|json_encode }}"
+     data-billing-details="{{ billingDetails|json_encode }}"
 >
     <div class="{{ hiddenClass }} stripe-error-message {{ errorMessageClasses }}">
         {# Error messages are displayed to your customers, here. #}

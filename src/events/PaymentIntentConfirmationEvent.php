@@ -7,6 +7,7 @@
 
 namespace craft\commerce\stripe\events;
 
+use craft\commerce\models\Transaction;
 use yii\base\Event;
 
 /**
@@ -21,4 +22,10 @@ class PaymentIntentConfirmationEvent extends Event
      * @var array The parameters passed to the PaymentIntent.
      */
     public array $parameters;
+
+    /**
+     * @var Transaction|null The transaction the payment intent is being confirmed for.
+     * @since 6.0.0
+     */
+    public ?Transaction $transaction = null;
 }

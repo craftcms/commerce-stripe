@@ -340,6 +340,71 @@ Event::on(
 > [!NOTE]
 > [Subscription events](#subscription-events) are handled separately.
 
+#### `beforeRenderPaymentForm`
+
+Modify the params passed to `getPaymentFormHtml()` before the payment form is rendered. The event’s `params` property has already been merged with the defaults, and `order` is the order passed with the [`order`](#order-optional) param, if any.
+
+This is useful for setting payment form options for every template, like filling in a billing phone number from a custom address field when using [`serverSideConfirmation`](#serversideconfirmation):
+
+```php
+use craft\commerce\stripe\events\PaymentFormEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_RENDER_PAYMENT_FORM,
+    function(PaymentFormEvent $e) {
+        $e->params['serverSideConfirmation'] = true;
+        // Assumes addresses have a custom `phone` field
+        $e->params['billingDetails']['phone'] = $e->order?->getBillingAddress()?->getFieldValue('phone');
+    }
+);
+```
+
+#### `beforeServerSideConfirmation`
+
+Triggered when the payment form uses [`serverSideConfirmation`](#serversideconfirmation), before the Payment Intent is created and confirmed. The event’s `confirmationToken` property is the [ConfirmationToken](https://docs.stripe.com/api/confirmation_tokens/object) created by Stripe.js, and its `payment_method_preview` describes the customer’s payment method (type, card brand, funding, country, and so on).
+
+Set `isValid` to `false` to reject the payment before it is confirmed. The `errorMessage` is shown to the customer:
+
+```php
+use craft\commerce\stripe\events\ServerSideConfirmationEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_SERVER_SIDE_CONFIRMATION,
+    function(ServerSideConfirmationEvent $e) {
+        if ($e->confirmationToken->payment_method_preview->card?->funding === 'prepaid') {
+            $e->isValid = false;
+            $e->errorMessage = 'Prepaid cards are not accepted.';
+        }
+    }
+);
+```
+
+Retrieving the ConfirmationToken requires an extra request to Stripe, which is only made when a handler is attached.
+
+#### `beforeConfirmPaymentIntent`
+
+Modify the parameters used to confirm a Payment Intent, like the `return_url`. The event’s `transaction` property is the transaction being paid. Changes to `amount` and `currency` are ignored.
+
+```php
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT,
+    function(PaymentIntentConfirmationEvent $e) {
+        $e->parameters['receipt_email'] = $e->transaction?->getOrder()->email;
+    }
+);
+```
+
 #### `receiveWebhook`
 
 In addition to the generic [`craft\commerce\services\Webhooks::EVENT_BEFORE_PROCESS_WEBHOOK` event](https://docs.craftcms.com/commerce/api/v4/craft-commerce-services-webhooks.html#event-before-process-webhook), you can listen to `craft\commerce\stripe\gateways\PaymentIntents::EVENT_RECEIVE_WEBHOOK`. This event is only emitted after validating a webhook’s authenticity—but it doesn’t make any indication about whether an action was taken in response to it.
@@ -522,6 +587,84 @@ This generates a form ready to redirect to a hosted [Stripe Checkout](https://st
 } %}
 
 {{ gateway.getPaymentFormHtml(params)|raw }}
+```
+
+### `serverSideConfirmation`
+
+By default, the payment form creates a Payment Intent as soon as the page loads, and Stripe.js confirms it in the browser. Set `serverSideConfirmation` to `true` to instead [finalize the payment on the server](https://docs.stripe.com/payments/finalize-payments-on-the-server):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+} %}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
+```
+
+With this option enabled:
+
+- Nothing is sent to `commerce/payments/pay` until the customer submits the form. Stripe Elements is created without a Payment Intent, and Stripe.js creates a [ConfirmationToken](https://docs.stripe.com/api/confirmation_tokens) from the customer’s payment details.
+- The form is then submitted to `commerce/payments/pay`, which runs Commerce’s usual order and payment amount checks, then creates and confirms the Payment Intent on the server for the current outstanding balance.
+- If the payment needs further action (like 3D Secure, or redirecting to Klarna), Stripe.js handles it. The customer is then sent to `commerce/payments/complete-payment`, just like the default flow.
+
+Use the [`beforeServerSideConfirmation`](#beforeserversideconfirmation) event to inspect the customer’s payment method and reject the payment before it is confirmed.
+
+> [!NOTE]
+> This param only changes how the payment form behaves. The gateway confirms a payment on the server whenever a ConfirmationToken is submitted with the payment form, whether or not the template sets `serverSideConfirmation`. Commerce’s order and payment amount checks apply either way.
+
+The order’s billing details can be sent to Stripe instead of being collected by the Payment Element. Tell the Payment Element not to collect them with `elementOptions`, and the plugin will provide them from the order’s billing address:
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+} %}
+```
+
+You can also set individual fields to `'never'` (e.g. `billingDetails: { address: 'never' }`). Use the `billingDetails` param to override any of the values taken from the order.
+
+The amount and currency shown by Stripe Elements are taken from the order when the form is rendered, and are only used to decide which payment methods to show. The amount actually charged is calculated on the server. Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) can be passed with the `elementsOptions` param.
+
+> [!NOTE]
+> If you modify the Payment Intent with the [`buildGatewayRequest`](#buildgatewayrequest) event (e.g. `payment_method_types`, `capture_method`, or `setup_future_usage`), make sure the matching `elementsOptions` are passed to the payment form, as Stripe requires them to match.
+
+### `elementsOptions`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) for creating Stripe Elements without a Payment Intent. These are merged over the defaults the plugin sets from the order and gateway (`mode`, `amount`, `currency`, `captureMethod`, and `paymentMethodCreation`):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementsOptions: {
+    paymentMethodTypes: ['card', 'klarna'],
+  },
+} %}
+```
+
+### `billingDetails`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Overrides the billing details taken from the order’s billing address, which are sent to Stripe when the Payment Element is set not to collect them (`elementOptions.fields.billingDetails` is `'never'`). Stripe requires every billing detail in that case, so `phone` is sent as `null` unless you provide one:
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+  billingDetails: {
+    email: currentUser.email ?? cart.email,
+  },
+} %}
 ```
 
 ### `appearance`
