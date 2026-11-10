@@ -18,6 +18,9 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 > [!NOTE]
 > Looking for [3.x documentation](https://github.com/craftcms/commerce-stripe/tree/v3)?
 
+> [!WARNING]
+> Subscriptions will be removed from this plugin in Craft Commerce 6 (on Craft CMS 6). We recommend using the [Stripe plugin for Craft CMS](https://plugins.craftcms.com/stripe) for subscriptions moving forward. See [Moving Subscriptions to the Stripe Plugin](#moving-subscriptions-to-the-stripe-plugin).
+
 ## Requirements
 
 
@@ -225,6 +228,22 @@ For subscriptions with automatic payments, Stripe creates an invoice 1-2 hours b
 ## Subscriptions
 
 The Stripe plugin provides an interface between Commerce’s subscriptions system and Stripe’s [Billing](https://stripe.com/docs/subscriptions) APIs.
+
+### Moving Subscriptions to the Stripe Plugin
+
+Subscriptions will be removed from this plugin in Craft Commerce 6 (on Craft CMS 6). We recommend using the [Stripe plugin for Craft CMS](https://plugins.craftcms.com/stripe) (`craftcms/stripe`) for subscriptions moving forward. It works directly with Stripe’s products, prices, and subscriptions, and doesn’t require Craft Commerce.
+
+The Stripe plugin can migrate your existing Commerce subscriptions without losing any customer data. Once you have [installed and configured it](https://github.com/craftcms/stripe#installation), run its migrate command, then a full sync:
+
+```bash
+# Pre-populate the Stripe plugin’s tables with your existing Commerce subscription data:
+php craft stripe/commerce/migrate
+
+# Bring in the remaining records from Stripe:
+php craft stripe/sync/all
+```
+
+Subscriptions behave a little differently in the Stripe plugin, so review its [migration guide](https://github.com/craftcms/stripe#migrating-from-craft-commerce) for the API changes before updating your templates.
 
 ### Creating a Subscription Plan
 
