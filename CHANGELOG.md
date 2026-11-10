@@ -2,6 +2,7 @@
 
 ## 5.2.3 - 2026-11-10
 
+- Added the `serverSideConfirmation` payment form option, which creates and confirms the Payment Intent on the server when the payment form is submitted. ([#355](https://github.com/craftcms/commerce-stripe/issues/355))
 - Documented that subscriptions will be removed in Craft Commerce 6, and how to move them to the [Stripe plugin for Craft CMS](https://plugins.craftcms.com/stripe). ([#138](https://github.com/craftcms/commerce-stripe/issues/138))
 - Fixed a bug where `payment_intent.succeeded` and `payment_intent.requires_action` webhooks replaced a transaction’s expanded `payment_method` with its ID, removing details like the card brand and last 4 digits from the transaction response. ([#377](https://github.com/craftcms/commerce-stripe/issues/377))
 - Fixed a bug where orders paid with redirect-based payment methods (e.g. Klarna) could fail to complete when a `payment_intent.requires_action` webhook was received before the customer returned. ([#378](https://github.com/craftcms/commerce-stripe/issues/378))

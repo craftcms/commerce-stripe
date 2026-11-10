@@ -22,16 +22,20 @@ use craft\commerce\models\subscriptions\SubscriptionForm as BaseSubscriptionForm
 use craft\commerce\models\Transaction;
 use craft\commerce\Plugin;
 use craft\commerce\Plugin as Commerce;
+use craft\commerce\records\Transaction as TransactionRecord;
 use craft\commerce\stripe\base\SubscriptionGateway as BaseGateway;
 use craft\commerce\stripe\errors\PaymentSourceException;
 use craft\commerce\stripe\events\BuildGatewayRequestEvent;
+use craft\commerce\stripe\events\PaymentFormEvent;
 use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
+use craft\commerce\stripe\events\ServerSideConfirmationEvent;
 use craft\commerce\stripe\events\SubscriptionRequestEvent;
 use craft\commerce\stripe\models\forms\payment\PaymentIntent as PaymentIntentForm;
 use craft\commerce\stripe\models\forms\Subscription as SubscriptionForm;
 use craft\commerce\stripe\Plugin as StripePlugin;
 use craft\commerce\stripe\responses\CheckoutSessionResponse;
 use craft\commerce\stripe\responses\PaymentIntentResponse;
+use craft\commerce\stripe\responses\ServerConfirmedPaymentIntentResponse;
 use craft\commerce\stripe\web\assets\elementsform\ElementsFormAsset;
 use craft\commerce\stripe\web\assets\intentsform\IntentsFormAsset;
 use craft\elements\User;
@@ -43,6 +47,7 @@ use craft\web\View;
 use Exception;
 use Stripe\Card;
 use Stripe\Checkout\Session as StripeCheckoutSession;
+use Stripe\Exception\ApiErrorException;
 use Stripe\PaymentIntent;
 use Throwable;
 use yii\base\NotSupportedException;
@@ -67,6 +72,47 @@ class PaymentIntents extends BaseGateway
      * @event BeforeConfirmPaymentIntent The event that is triggered before a PaymentIntent is confirmed
      */
     public const EVENT_BEFORE_CONFIRM_PAYMENT_INTENT = 'beforeConfirmPaymentIntent';
+
+    /**
+     * @event ServerSideConfirmationEvent The event that is triggered before a payment intent is created and confirmed
+     * with a ConfirmationToken, when the payment form uses `serverSideConfirmation`.
+     *
+     * The event’s `confirmationToken` contains a preview of the customer’s payment method, so the payment can be
+     * rejected before it is confirmed:
+     *
+     * ```php
+     * use craft\commerce\stripe\events\ServerSideConfirmationEvent;
+     * use craft\commerce\stripe\gateways\PaymentIntents;
+     * use yii\base\Event;
+     *
+     * Event::on(PaymentIntents::class, PaymentIntents::EVENT_BEFORE_SERVER_SIDE_CONFIRMATION, function(ServerSideConfirmationEvent $e) {
+     *     if ($e->confirmationToken->payment_method_preview->card?->funding === 'prepaid') {
+     *         $e->isValid = false;
+     *         $e->errorMessage = 'Prepaid cards are not accepted.';
+     *     }
+     * });
+     * ```
+     *
+     * @since 6.0.0
+     */
+    public const EVENT_BEFORE_SERVER_SIDE_CONFIRMATION = 'beforeServerSideConfirmation';
+
+    /**
+     * @event PaymentFormEvent The event that is triggered before the payment form is rendered, so its params can be modified.
+     *
+     * ```php
+     * use craft\commerce\stripe\events\PaymentFormEvent;
+     * use craft\commerce\stripe\gateways\PaymentIntents;
+     * use yii\base\Event;
+     *
+     * Event::on(PaymentIntents::class, PaymentIntents::EVENT_BEFORE_RENDER_PAYMENT_FORM, function(PaymentFormEvent $e) {
+     *     $e->params['appearance']['theme'] = 'night';
+     * });
+     * ```
+     *
+     * @since 6.0.0
+     */
+    public const EVENT_BEFORE_RENDER_PAYMENT_FORM = 'beforeRenderPaymentForm';
 
     /**
      * @inheritdoc
@@ -161,33 +207,52 @@ class PaymentIntents extends BaseGateway
             'submitButtonText' => Craft::t('commerce-stripe', 'Pay'),
             'processingButtonText' => Craft::t('commerce-stripe', 'Processing…'),
             'paymentFormType' => self::PAYMENT_FORM_TYPE_ELEMENTS,
+            'serverSideConfirmation' => false,
+            'elementsOptions' => [],
+            'billingDetails' => [],
         ];
 
         /** @var ?Order $order */
         $order = $params['order'] ?? null;
         if ($order && $order->getBillingAddress()) {
-            $defaultBillingAddressValues = [
-                'country' => $order->getBillingAddress()->getCountryCode() ?: '',
-                'line1' => $order->getBillingAddress()->addressLine1 ?? '',
-                'line2' => $order->getBillingAddress()->addressLine2 ?? '',
-                'city' => $order->getBillingAddress()->locality ?? '',
-                'postal_code' => $order->getBillingAddress()->postalCode ?? '',
-                'state' => $order->getBillingAddress()->getAdministrativeArea() ?? '',
-            ];
-
             $defaults['elementOptions']['defaultValues'] = [
-                'billingDetails' => [
-                    'name' => $order->getBillingAddress()->fullName ?? '',
-                    'email' => $order->email,
-                    'address' => $defaultBillingAddressValues,
-                ],
+                'billingDetails' => $this->_getBillingDetails($order),
             ];
         }
 
         $params = ArrayHelper::merge($defaults, $params);
 
+        if ($this->hasEventHandlers(self::EVENT_BEFORE_RENDER_PAYMENT_FORM)) {
+            $paymentFormEvent = new PaymentFormEvent([
+                'params' => $params,
+                'order' => $order,
+            ]);
+
+            $this->trigger(self::EVENT_BEFORE_RENDER_PAYMENT_FORM, $paymentFormEvent);
+
+            $params = $paymentFormEvent->params;
+            $order = $params['order'] ?? $order;
+        }
+
         if ($params['scenario'] == '') {
             return Craft::t('commerce-stripe', 'Commerce Stripe 4.0+ requires a scenario is set on the payment form.');
+        }
+
+        if ($params['serverSideConfirmation']) {
+            // Server-side confirmation needs an order to know the amount and currency to show in the Payment Element
+            if (!$order && !Craft::$app->getRequest()->getIsCpRequest()) {
+                $order = Commerce::getInstance()->getCarts()->getCart();
+            }
+
+            if ($order) {
+                $params['elementsOptions'] = ArrayHelper::merge($this->_getDeferredElementsOptions($order), $params['elementsOptions']);
+                // Stripe requires every billing detail when the Payment Element is set not to collect them,
+                // and Craft addresses don't have a phone number by default.
+                $billingDetails = $order->getBillingAddress() ? array_merge($this->_getBillingDetails($order), ['phone' => null]) : [];
+                $params['billingDetails'] = ArrayHelper::merge($billingDetails, $params['billingDetails']);
+            } else {
+                $params['serverSideConfirmation'] = false;
+            }
         }
 
         $view = Craft::$app->getView();
@@ -406,7 +471,7 @@ class PaymentIntents extends BaseGateway
 
         $subscriptionParameters = [
             'customer' => $customer->reference,
-            'items' => [['plan' => $plan->reference]],
+            'items' => [['price' => $plan->reference]],
         ];
 
         if ($parameters->trialDays !== null) {
@@ -542,6 +607,29 @@ class PaymentIntents extends BaseGateway
             }
         }
 
+        // Confirm the payment intent on creation using the ConfirmationToken created by Stripe.js
+        if ($form->confirmationToken) {
+            $confirmationEvent = new PaymentIntentConfirmationEvent([
+                'parameters' => [
+                    'return_url' => $this->_getCompletePaymentUrl($transaction),
+                    'expand' => ['payment_method'],
+                ],
+                'transaction' => $transaction,
+            ]);
+
+            $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $confirmationEvent);
+
+            $paymentIntentData = array_merge($paymentIntentData, $confirmationEvent->parameters, [
+                'confirm' => true,
+                'confirmation_token' => $form->confirmationToken,
+                // Lets Stripe.js handle any next action (e.g. 3D Secure) with `stripe.handleNextAction()`
+                'use_stripe_sdk' => true,
+                // Do not allow these to be modified by event handlers
+                'amount' => $paymentIntentData['amount'],
+                'currency' => $paymentIntentData['currency'],
+            ]);
+        }
+
         $event = new BuildGatewayRequestEvent([
             'type' => 'payment_intent',
             'transaction' => $transaction,
@@ -663,6 +751,41 @@ class PaymentIntents extends BaseGateway
             return new CheckoutSessionResponse($session->toArray());
         }
 
+        if ($form->confirmationToken) {
+            if (!str_starts_with($form->confirmationToken, 'ctoken_')) {
+                return $this->getResponseModel([
+                    'id' => null,
+                    'code' => 'invalid_confirmation_token',
+                    'message' => Craft::t('commerce-stripe', 'Invalid confirmation token.'),
+                ]);
+            }
+
+            try {
+                if ($this->hasEventHandlers(self::EVENT_BEFORE_SERVER_SIDE_CONFIRMATION)) {
+                    $serverSideConfirmationEvent = new ServerSideConfirmationEvent([
+                        'transaction' => $transaction,
+                        'confirmationToken' => $this->getStripeClient()->confirmationTokens->retrieve($form->confirmationToken),
+                    ]);
+
+                    $this->trigger(self::EVENT_BEFORE_SERVER_SIDE_CONFIRMATION, $serverSideConfirmationEvent);
+
+                    if (!$serverSideConfirmationEvent->isValid) {
+                        return $this->getResponseModel([
+                            'id' => null,
+                            'code' => 'payment_rejected',
+                            'message' => $serverSideConfirmationEvent->errorMessage ?? Craft::t('commerce-stripe', 'Unable to make payment at this time.'),
+                        ]);
+                    }
+                }
+
+                $paymentIntent = $this->createPaymentIntent($transaction, $amount, $metadata, $capture, $form);
+            } catch (ApiErrorException $exception) {
+                return $this->createPaymentResponseFromError($exception);
+            }
+
+            return new ServerConfirmedPaymentIntentResponse($paymentIntent->toArray(), $this->_getCompletePaymentUrl($transaction));
+        }
+
         /**
          * The previous version of the Stripe plugin accepted a payment method ID on initial
          * payment intent creation. We can attach it to the payment intent
@@ -705,8 +828,7 @@ class PaymentIntents extends BaseGateway
         // If you’d prefer to redirect to a mobile application, you can alternatively supply an application URI scheme.
         // This parameter can only be used with confirm=true.
         // https://stripe.com/docs/api/payment_intents/create#create_payment_intent-return_url
-        $defaultReturnUrl = UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]);
-        $returnUrl = $returnUrl ?? $defaultReturnUrl;
+        $returnUrl = $returnUrl ?? $this->_getCompletePaymentUrl($transaction);
 
         $parameters = [
             'return_url' => $returnUrl,
@@ -715,11 +837,73 @@ class PaymentIntents extends BaseGateway
 
         $event = new PaymentIntentConfirmationEvent([
             'parameters' => $parameters,
+            'transaction' => $transaction,
         ]);
 
         $this->trigger(self::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT, $event);
 
         $stripePaymentIntent->confirm($event->parameters);
+    }
+
+    /**
+     * Returns the URL that completes the payment for a transaction.
+     *
+     * @param Transaction $transaction
+     * @return string
+     */
+    private function _getCompletePaymentUrl(Transaction $transaction): string
+    {
+        return UrlHelper::actionUrl('commerce/payments/complete-payment', ['commerceTransactionId' => $transaction->id, 'commerceTransactionHash' => $transaction->hash]);
+    }
+
+    /**
+     * Returns the order's billing details in the format Stripe.js expects.
+     *
+     * @param Order $order
+     * @return array
+     */
+    private function _getBillingDetails(Order $order): array
+    {
+        $billingAddress = $order->getBillingAddress();
+
+        return [
+            'name' => $billingAddress?->fullName ?? '',
+            'email' => $order->email,
+            'address' => [
+                'country' => $billingAddress?->getCountryCode() ?: '',
+                'line1' => $billingAddress?->addressLine1 ?? '',
+                'line2' => $billingAddress?->addressLine2 ?? '',
+                'city' => $billingAddress?->locality ?? '',
+                'postal_code' => $billingAddress?->postalCode ?? '',
+                'state' => $billingAddress?->getAdministrativeArea() ?? '',
+            ],
+        ];
+    }
+
+    /**
+     * Returns the options for creating Stripe Elements without a payment intent, so the payment intent
+     * can be created and confirmed on the server when the customer submits the payment form.
+     *
+     * The amount is only used by Stripe Elements to show the available payment methods. The amount charged
+     * is calculated on the server when the payment intent is created.
+     *
+     * @param Order $order
+     * @return array
+     * @see https://docs.stripe.com/payments/finalize-payments-on-the-server
+     */
+    private function _getDeferredElementsOptions(Order $order): array
+    {
+        $currencyService = Commerce::getInstance()->getCurrencies();
+        $paymentCurrency = $order->getPaymentCurrency();
+        $currency = $currencyService->getCurrencyByIso($paymentCurrency);
+
+        return [
+            'mode' => 'payment',
+            'amount' => (int)round($order->getPaymentAmount() * (10 ** $currencyService->getSubunitFor($currency ?? $paymentCurrency))),
+            'currency' => strtolower($paymentCurrency),
+            'captureMethod' => $this->paymentType === TransactionRecord::TYPE_AUTHORIZE ? 'manual' : 'automatic',
+            'paymentMethodCreation' => 'manual',
+        ];
     }
 
     /**

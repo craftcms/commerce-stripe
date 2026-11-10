@@ -25,8 +25,11 @@ This plugin provides a [gateway](https://craftcms.com/docs/commerce/4.x/payment-
 
 
 - Craft CMS 5.1 or later
-- Craft Commerce 5.0 or later 
-- Stripe [API version](https://stripe.com/docs/api/versioning) `2022-11-15`
+- Craft Commerce 5.0 or later
+- Stripe [API version](https://stripe.com/docs/api/versioning) `2026-01-28.clover`
+
+> [!IMPORTANT]
+> If you have custom code that interacts with Stripe API data (e.g. event listeners, custom webhook handlers, or code that reads stored Stripe response data), review the [Stripe API changelog](https://docs.stripe.com/changelog) for breaking changes between your previous API version and `2026-01-28.clover`.
 
 ## Installation
 
@@ -75,6 +78,32 @@ Your **Publishable API Key** and **Secret API Key** can be found in (or generate
 
 Stripe provides different keys for testing—use those until you are ready to launch, then replace the testing keys in the live server’s `.env` file.
 
+#### Restricted API Keys
+
+Using a [restricted API key](https://stripe.com/docs/keys#limit-access) instead of a standard secret key is optional, but improves security by limiting what the key can do if it is ever compromised. If you choose to use a restricted key, grant **Write** access (which includes read) to the following resources:
+
+| Resource | Access |
+|---|---|
+| Payment Intents | Write |
+| Payment Methods | Write |
+| Setup Intents | Write |
+| Customers | Write |
+| Checkout Sessions | Write |
+| Refunds | Write |
+| Subscriptions | Write |
+| Invoices | Write |
+| Prices | Read |
+| Products | Read |
+| Billing Portal | Write |
+
+> [!NOTE]
+> The **Webhook Signing Secret** is separate from the API key and is obtained when you register your webhook endpoint in Stripe—see [Webhooks](#webhooks) below.
+
+> [!WARNING]
+> If you use a restricted key, any third-party plugins or custom modules that interact with the Stripe API may require additional permissions beyond those listed above. Review their documentation and add permissions accordingly.
+> 
+> Whenever this plugin begins using a new API resource or permission, it will be noted in the [changelog](./CHANGELOG.md).
+
 ### Webhooks
 
 Once the gateway has been saved (and it has an ID), revisiting its edit screen will reveal a **Webhook URL** that can be copied into a [new webhook](https://stripe.com/docs/webhooks#webhooks-summary) in your Stripe dashboard. A signing secret will be generated for you—save this in your `.env` file with the other secrets, then return to the gateway’s settings screen and populate the **Webhook Signing Secret** field with the variable’s name.
@@ -82,30 +111,34 @@ Once the gateway has been saved (and it has an ID), revisiting its edit screen w
 > [!WARNING]
 > Webhooks will not be processed if the signing secret is missing or invalid!
 
-Rather than selecting _all_ available events (which Stripe will flag as inefficient, and may require splitting across two endpoints with separate signing secrets due to mixed payload styles), select only the events the plugin actually listens for:
+Rather than enabling all available events, we recommend selecting only the specific events the plugin handles. Selecting all events causes Stripe to warn about inefficiency, and may result in Stripe splitting your endpoint into two separate endpoints with different signing secrets—one for standard (snapshot) payloads and one for [thin payloads](https://docs.stripe.com/event-destinations)—which is incompatible with the plugin's single signing secret field.
 
-- `payment_method.attached`
-- `payment_method.updated`
-- `payment_method.automatically_updated`
-- `payment_method.detached`
-- `payment_intent.succeeded`
-- `payment_intent.requires_action`
-- `customer_cash_balance_transaction.created`
-- `charge.refunded`
-- `refund.updated`
-- `plan.deleted`
-- `plan.updated`
-- `invoice.payment_succeeded`
-- `invoice.created`
-- `invoice.payment_failed`
-- `customer.subscription.deleted`
-- `customer.subscription.updated`
-- `customer.updated`
+The plugin handles the following webhook events:
 
-If Stripe’s webhook setup asks you to choose a payload style, choose **Snapshot**—the plugin reads the full Stripe object out of `data.object` in the webhook body, which the leaner **Thin** payload style doesn’t include. All of the events above support the Snapshot style, so a single endpoint (and a single signing secret) is all you need.
+| Event |
+|---|
+| `charge.refunded` |
+| `customer.subscription.deleted` |
+| `customer.subscription.updated` |
+| `customer.updated` |
+| `customer_cash_balance_transaction.created` |
+| `invoice.created` |
+| `invoice.payment_failed` |
+| `invoice.payment_succeeded` |
+| `payment_intent.requires_action` |
+| `payment_intent.succeeded` |
+| `payment_method.attached` |
+| `payment_method.automatically_updated` |
+| `payment_method.detached` |
+| `payment_method.updated` |
+| `plan.deleted` |
+| `plan.updated` |
+| `refund.updated` |
 
-> [!NOTE]
-> Stripe only sends the events you select. If a plugin or module listens for webhooks via the [`receiveWebhook`](#receivewebhook) event and relies on other event types, add those events to the endpoint as well.
+> [!WARNING]
+> Restricting webhook events to this list is optional, but improves efficiency. Any third-party plugins or custom modules that listen to Stripe webhooks via the [`receiveWebhook`](#receivewebhook) event may require additional event types to be enabled in Stripe.
+>
+> Whenever this plugin begins handling a new webhook event type, it will be noted in the [changelog](./CHANGELOG.md).
 
 Remember that the webhook URL will be different for each of your environments! The gateway itself may have a different ID in production than in development, due to [the way Project Config works](https://craftcms.com/docs/4.x/project-config.html#ids-uuids-and-handles)).
 
@@ -326,6 +359,71 @@ Event::on(
 > [!NOTE]
 > [Subscription events](#subscription-events) are handled separately.
 
+#### `beforeRenderPaymentForm`
+
+Modify the params passed to `getPaymentFormHtml()` before the payment form is rendered. The event’s `params` property has already been merged with the defaults, and `order` is the order passed with the [`order`](#order-optional) param, if any.
+
+This is useful for setting payment form options for every template, like filling in a billing phone number from a custom address field when using [`serverSideConfirmation`](#serversideconfirmation):
+
+```php
+use craft\commerce\stripe\events\PaymentFormEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_RENDER_PAYMENT_FORM,
+    function(PaymentFormEvent $e) {
+        $e->params['serverSideConfirmation'] = true;
+        // Assumes addresses have a custom `phone` field
+        $e->params['billingDetails']['phone'] = $e->order?->getBillingAddress()?->getFieldValue('phone');
+    }
+);
+```
+
+#### `beforeServerSideConfirmation`
+
+Triggered when the payment form uses [`serverSideConfirmation`](#serversideconfirmation), before the Payment Intent is created and confirmed. The event’s `confirmationToken` property is the [ConfirmationToken](https://docs.stripe.com/api/confirmation_tokens/object) created by Stripe.js, and its `payment_method_preview` describes the customer’s payment method (type, card brand, funding, country, and so on).
+
+Set `isValid` to `false` to reject the payment before it is confirmed. The `errorMessage` is shown to the customer:
+
+```php
+use craft\commerce\stripe\events\ServerSideConfirmationEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_SERVER_SIDE_CONFIRMATION,
+    function(ServerSideConfirmationEvent $e) {
+        if ($e->confirmationToken->payment_method_preview->card?->funding === 'prepaid') {
+            $e->isValid = false;
+            $e->errorMessage = 'Prepaid cards are not accepted.';
+        }
+    }
+);
+```
+
+Retrieving the ConfirmationToken requires an extra request to Stripe, which is only made when a handler is attached.
+
+#### `beforeConfirmPaymentIntent`
+
+Modify the parameters used to confirm a Payment Intent, like the `return_url`. The event’s `transaction` property is the transaction being paid. Changes to `amount` and `currency` are ignored.
+
+```php
+use craft\commerce\stripe\events\PaymentIntentConfirmationEvent;
+use craft\commerce\stripe\gateways\PaymentIntents;
+use yii\base\Event;
+
+Event::on(
+    PaymentIntents::class,
+    PaymentIntents::EVENT_BEFORE_CONFIRM_PAYMENT_INTENT,
+    function(PaymentIntentConfirmationEvent $e) {
+        $e->parameters['receipt_email'] = $e->transaction?->getOrder()->email;
+    }
+);
+```
+
 #### `receiveWebhook`
 
 In addition to the generic [`craft\commerce\services\Webhooks::EVENT_BEFORE_PROCESS_WEBHOOK` event](https://docs.craftcms.com/commerce/api/v4/craft-commerce-services-webhooks.html#event-before-process-webhook), you can listen to `craft\commerce\stripe\gateways\PaymentIntents::EVENT_RECEIVE_WEBHOOK`. This event is only emitted after validating a webhook’s authenticity—but it doesn’t make any indication about whether an action was taken in response to it.
@@ -508,6 +606,84 @@ This generates a form ready to redirect to a hosted [Stripe Checkout](https://st
 } %}
 
 {{ gateway.getPaymentFormHtml(params)|raw }}
+```
+
+### `serverSideConfirmation`
+
+By default, the payment form creates a Payment Intent as soon as the page loads, and Stripe.js confirms it in the browser. Set `serverSideConfirmation` to `true` to instead [finalize the payment on the server](https://docs.stripe.com/payments/finalize-payments-on-the-server):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+} %}
+
+{{ cart.gateway.getPaymentFormHtml(params)|raw }}
+```
+
+With this option enabled:
+
+- Nothing is sent to `commerce/payments/pay` until the customer submits the form. Stripe Elements is created without a Payment Intent, and Stripe.js creates a [ConfirmationToken](https://docs.stripe.com/api/confirmation_tokens) from the customer’s payment details.
+- The form is then submitted to `commerce/payments/pay`, which runs Commerce’s usual order and payment amount checks, then creates and confirms the Payment Intent on the server for the current outstanding balance.
+- If the payment needs further action (like 3D Secure, or redirecting to Klarna), Stripe.js handles it. The customer is then sent to `commerce/payments/complete-payment`, just like the default flow.
+
+Use the [`beforeServerSideConfirmation`](#beforeserversideconfirmation) event to inspect the customer’s payment method and reject the payment before it is confirmed.
+
+> [!NOTE]
+> This param only changes how the payment form behaves. The gateway confirms a payment on the server whenever a ConfirmationToken is submitted with the payment form, whether or not the template sets `serverSideConfirmation`. Commerce’s order and payment amount checks apply either way.
+
+The order’s billing details can be sent to Stripe instead of being collected by the Payment Element. Tell the Payment Element not to collect them with `elementOptions`, and the plugin will provide them from the order’s billing address:
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+} %}
+```
+
+You can also set individual fields to `'never'` (e.g. `billingDetails: { address: 'never' }`). Use the `billingDetails` param to override any of the values taken from the order.
+
+The amount and currency shown by Stripe Elements are taken from the order when the form is rendered, and are only used to decide which payment methods to show. The amount actually charged is calculated on the server. Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) can be passed with the `elementsOptions` param.
+
+> [!NOTE]
+> If you modify the Payment Intent with the [`buildGatewayRequest`](#buildgatewayrequest) event (e.g. `payment_method_types`, `capture_method`, or `setup_future_usage`), make sure the matching `elementsOptions` are passed to the payment form, as Stripe requires them to match.
+
+### `elementsOptions`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Additional [Elements options](https://docs.stripe.com/js/elements_object/create_without_intent) for creating Stripe Elements without a Payment Intent. These are merged over the defaults the plugin sets from the order and gateway (`mode`, `amount`, `currency`, `captureMethod`, and `paymentMethodCreation`):
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementsOptions: {
+    paymentMethodTypes: ['card', 'klarna'],
+  },
+} %}
+```
+
+### `billingDetails`
+
+Only used with [`serverSideConfirmation`](#serversideconfirmation). Overrides the billing details taken from the order’s billing address, which are sent to Stripe when the Payment Element is set not to collect them (`elementOptions.fields.billingDetails` is `'never'`). Stripe requires every billing detail in that case, so `phone` is sent as `null` unless you provide one:
+
+```twig
+{% set params = {
+  order: cart,
+  serverSideConfirmation: true,
+  elementOptions: {
+    fields: {
+      billingDetails: 'never',
+    },
+  },
+  billingDetails: {
+    email: currentUser.email ?? cart.email,
+  },
+} %}
 ```
 
 ### `appearance`
