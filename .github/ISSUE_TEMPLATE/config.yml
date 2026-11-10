@@ -3,3 +3,6 @@ contact_links:
   - name: Feature Request
     url: https://github.com/craftcms/commerce-stripe/discussions/new?category=ideas
     about: Start a new discussion about your idea
+  - name: Subscriptions
+    url: https://github.com/craftcms/commerce-stripe/tree/5.x#moving-subscriptions-to-the-stripe-plugin
+    about: Subscriptions will be removed from this plugin in Craft Commerce 6 (on Craft CMS 6). We recommend using the Stripe plugin for Craft CMS for subscriptions moving forward.
