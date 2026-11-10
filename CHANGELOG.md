@@ -2,12 +2,22 @@
 
 ## Unreleased
 
-- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
+- Fixed a bug where orders paid with redirect-based payment methods (e.g. Klarna) could fail to complete when a `payment_intent.requires_action` webhook was received before the customer returned. ([#378](https://github.com/craftcms/commerce-stripe/issues/378))
 - Documented which webhook events to select in Stripe, and to use the “Snapshot” payload style, to avoid needing two webhook endpoints. ([#369](https://github.com/craftcms/commerce-stripe/issues/369))
+
+## 5.2.2 - 2026-10-22
+
+- Fixed a PHP error that could occur when processing a `payment_intent.succeeded` webhook for a checkout session that wasn’t created by Craft Commerce.
+- Fixed a bug where some translatable strings used the `commerce` or `app` translation categories instead of `commerce-stripe`. ([#376](https://github.com/craftcms/commerce-stripe/issues/376))
+
+## 5.2.1 - 2026-10-01
+
 - Fixed a PHP error that could occur when processing a payment from a console request. ([#370](https://github.com/craftcms/commerce-stripe/issues/370))
-- Fixed a bug where a PHP error could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
-- Fixed a bug where payment intents requiring further action were marked as failed instead of processing. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
-- Fixed a bug where the stripe payment description wasn’t being set on the PaymentIntent. ([#360](https://github.com/craftcms/commerce-stripe/issues/360))
+- Fixed a bug where paying with a saved PayPal payment source could result in a `risk_correlation_id` error and mark the transaction as failed. ([#358](https://github.com/craftcms/commerce-stripe/issues/358))
+- Fixed a PHP error that could occur for subscriptions with no `latest_invoice`. ([#365](https://github.com/craftcms/commerce-stripe/issues/365))
+- Fixed a bug where payment intents requiring further action were marked as failed instead of being processed. ([#349](https://github.com/craftcms/commerce-stripe/issues/349))
+- Fixed a bug where the Stripe payment description wasn’t being set on the PaymentIntent. ([#360](https://github.com/craftcms/commerce-stripe/issues/360))
+- Fixed a bug where a transaction’s `payment_method` could be stored as an unexpanded ID instead of the full object. ([#363](https://github.com/craftcms/commerce-stripe/issues/363))
 
 ## 5.2.0 - 2026-09-04
 

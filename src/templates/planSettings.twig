@@ -4,7 +4,7 @@
 
     {% if plan is defined %}
     {{ selectField({
-        label: "Gateway plan"|t('app'),
+        label: "Gateway plan"|t('commerce-stripe'),
         instructions: "Which gateway subscription plan do you want to use?"|t('commerce-stripe'),
         name: 'reference',
         id: 'plan',
