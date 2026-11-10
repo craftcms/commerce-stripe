@@ -7,6 +7,12 @@ labels:
   - Craft Commerce → Stripe # Linear
 ---
 
+<!--
+Subscriptions will be removed from this plugin in Craft Commerce 6 (on Craft CMS 6), so new subscription features won't be added.
+We recommend using the Stripe plugin for Craft CMS for subscriptions moving forward: https://plugins.craftcms.com/stripe
+See https://github.com/craftcms/commerce-stripe/tree/5.x#moving-subscriptions-to-the-stripe-plugin for how to migrate.
+-->
+
 ### Description
 
 
